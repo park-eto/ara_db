@@ -1,0 +1,12 @@
+# 엑셀 원본 파일 및 임시 파일 (GitHub 업로드 제외)
+*.xlsx
+~$*.xlsx
+
+# 임시 및 테스트 스크립트 디렉토리
+scratch/
+__pycache__/
+*.pyc
+
+# 로컬 개발 서버용 스크립트 (선택 사항: GitHub Pages는 정적 서빙이므로 필요 없음)
+# server.py
+# tools/

@@ -1,0 +1,702 @@
+[
+  {
+    "id": "merc-1",
+    "name": "떠돌이 영혼",
+    "grade": "일반",
+    "recommend": "X",
+    "ability": "영웅의 공격력이 N% 증가",
+    "tierValues": {
+      "B": "10",
+      "A": "25",
+      "S": "40",
+      "SS": "75",
+      "SSS": "100"
+    },
+    "img": "assets/mercenaries/merc_떠돌이영혼.webp",
+    "search": {
+      "name": "떠돌이영혼",
+      "cho": "ㄸㄷㅇㅇㅎ",
+      "text": "떠돌이영혼영웅의공격력이n%증가b:10a:25s:40ss:75sss:100"
+    }
+  },
+  {
+    "id": "merc-2",
+    "name": "장사꾼 고블린",
+    "grade": "일반",
+    "recommend": "X",
+    "ability": "웨이브가 끝날 때마다 N% 확률로 타워 카드를 획득",
+    "tierValues": {
+      "B": "2",
+      "A": "4",
+      "S": "8",
+      "SS": "12",
+      "SSS": "16"
+    },
+    "img": "assets/mercenaries/merc_장사꾼고블린.webp",
+    "search": {
+      "name": "장사꾼고블린",
+      "cho": "ㅈㅅㄲㄱㅂㄹ",
+      "text": "장사꾼고블린웨이브가끝날때마다n%확률로타워카드를획득b:2a:4s:8ss:12sss:16"
+    }
+  },
+  {
+    "id": "merc-3",
+    "name": "어설픈 엘프",
+    "grade": "일반",
+    "recommend": "B",
+    "ability": "영웅의 공격 속도가 N% 증가합니다.",
+    "tierValues": {
+      "B": "6",
+      "A": "12",
+      "S": "18",
+      "SS": "24",
+      "SSS": "30"
+    },
+    "img": "assets/mercenaries/merc_어설픈엘프.webp",
+    "search": {
+      "name": "어설픈엘프",
+      "cho": "ㅇㅅㅍㅇㅍ",
+      "text": "어설픈엘프영웅의공격속도가n%증가합니다b:6a:12s:18ss:24sss:30"
+    }
+  },
+  {
+    "id": "merc-4",
+    "name": "아무 생각 없는 드워프",
+    "grade": "희귀",
+    "recommend": "J",
+    "ability": "웨이브가 끝날 때마다 N% 확률로 버프를 선택",
+    "tierValues": {
+      "B": "4",
+      "A": "8",
+      "S": "12",
+      "SS": "16",
+      "SSS": "20"
+    },
+    "img": "assets/mercenaries/merc_아무생각없는드워프.webp",
+    "search": {
+      "name": "아무생각없는드워프",
+      "cho": "ㅇㅁㅅㄱㅇㄴㄷㅇㅍ",
+      "text": "아무생각없는드워프웨이브가끝날때마다n%확률로버프를선택b:4a:8s:12ss:16sss:20"
+    }
+  },
+  {
+    "id": "merc-5",
+    "name": "주황머리 마법사",
+    "grade": "희귀",
+    "recommend": "B",
+    "ability": "보스의 이동 속도가 N% 감소",
+    "tierValues": {
+      "B": "4",
+      "A": "8",
+      "S": "12",
+      "SS": "16",
+      "SSS": "20"
+    },
+    "img": "assets/mercenaries/merc_주황머리마법사.webp",
+    "search": {
+      "name": "주황머리마법사",
+      "cho": "ㅈㅎㅁㄹㅁㅂㅅ",
+      "text": "주황머리마법사보스의이동속도가n%감소b:4a:8s:12ss:16sss:20"
+    }
+  },
+  {
+    "id": "merc-6",
+    "name": "겜블우드",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "모든 타워와 영웅의 공격력이 N% 증가",
+    "tierValues": {
+      "B": "20",
+      "A": "40",
+      "S": "60",
+      "SS": "100",
+      "SSS": "150"
+    },
+    "img": "assets/mercenaries/merc_겜블우드.webp",
+    "search": {
+      "name": "겜블우드",
+      "cho": "ㄱㅂㅇㄷ",
+      "text": "겜블우드모든타워와영웅의공격력이n%증가b:20a:40s:60ss:100sss:150"
+    }
+  },
+  {
+    "id": "merc-7",
+    "name": "아그니",
+    "grade": "희귀",
+    "recommend": "X",
+    "ability": "타워의 치명타 확률이 N% 증가",
+    "tierValues": {
+      "B": "4",
+      "A": "6",
+      "S": "8",
+      "SS": "12",
+      "SSS": "16"
+    },
+    "img": "assets/mercenaries/merc_아그니.webp",
+    "search": {
+      "name": "아그니",
+      "cho": "ㅇㄱㄴ",
+      "text": "아그니타워의치명타확률이n%증가b:4a:6s:8ss:12sss:16"
+    }
+  },
+  {
+    "id": "merc-8",
+    "name": "개구쟁이 악마",
+    "grade": "전설",
+    "recommend": "J",
+    "ability": "인게임 종료 시, 계정 경험치를 N% 추가로 획득",
+    "tierValues": {
+      "B": "25",
+      "A": "50",
+      "S": "100",
+      "SS": "200",
+      "SSS": "300"
+    },
+    "img": "assets/mercenaries/merc_개구쟁이악마.webp",
+    "search": {
+      "name": "개구쟁이악마",
+      "cho": "ㄱㄱㅈㅇㅇㅁ",
+      "text": "개구쟁이악마인게임종료시계정경험치를n%추가로획득b:25a:50s:100ss:200sss:300"
+    }
+  },
+  {
+    "id": "merc-9",
+    "name": "어쩌다 함께한 닭",
+    "grade": "전설",
+    "recommend": "S",
+    "ability": "타워 공격 범위가 N 증가",
+    "tierValues": {
+      "B": "0.3",
+      "A": "0.7",
+      "S": "1",
+      "SS": "1.5",
+      "SSS": "2"
+    },
+    "img": "assets/mercenaries/merc_어쩌다함께한닭.webp",
+    "search": {
+      "name": "어쩌다함께한닭",
+      "cho": "ㅇㅉㄷㅎㄲㅎㄷ",
+      "text": "어쩌다함께한닭타워공격범위가n증가b:03a:07s:1ss:15sss:2"
+    }
+  },
+  {
+    "id": "merc-10",
+    "name": "역병의사",
+    "grade": "전설",
+    "recommend": "J",
+    "ability": "일반 몬스터의 아이템 드랍률 N% 증가",
+    "tierValues": {
+      "B": "0.02",
+      "A": "0.04",
+      "S": "0.06",
+      "SS": "0.1",
+      "SSS": "0.15"
+    },
+    "img": "assets/mercenaries/merc_역병의사.webp",
+    "search": {
+      "name": "역병의사",
+      "cho": "ㅇㅂㅇㅅ",
+      "text": "역병의사일반몬스터의아이템드랍률n%증가b:002a:004s:006ss:01sss:015"
+    }
+  },
+  {
+    "id": "merc-11",
+    "name": "네크로맨서",
+    "grade": "전설",
+    "recommend": "S",
+    "ability": "몬스터의 이동 속도가 N% 감소",
+    "tierValues": {
+      "B": "8",
+      "A": "16",
+      "S": "24",
+      "SS": "40",
+      "SSS": "50"
+    },
+    "img": "assets/mercenaries/merc_네크로맨서.webp",
+    "search": {
+      "name": "네크로맨서",
+      "cho": "ㄴㅋㄹㅁㅅ",
+      "text": "네크로맨서몬스터의이동속도가n%감소b:8a:16s:24ss:40sss:50"
+    }
+  },
+  {
+    "id": "merc-12",
+    "name": "용사가 되고 싶은 해골",
+    "grade": "희귀",
+    "recommend": "A",
+    "ability": "타워 목록에 곡괭이를 들고 있는 수만큼 전체 공격력이 N% 증가",
+    "tierValues": {
+      "B": "4",
+      "A": "6",
+      "S": "8",
+      "SS": "10",
+      "SSS": "12"
+    },
+    "img": "assets/mercenaries/merc_용사가되고싶은해골.webp",
+    "search": {
+      "name": "용사가되고싶은해골",
+      "cho": "ㅇㅅㄱㄷㄱㅅㅇㅎㄱ",
+      "text": "용사가되고싶은해골타워목록에곡괭이를들고있는수만큼전체공격력이n%증가b:4a:6s:8ss:10sss:12"
+    }
+  },
+  {
+    "id": "merc-13",
+    "name": "도굴꾼",
+    "grade": "전설",
+    "recommend": "J",
+    "ability": "게임 종료 후 획득하는 붉은 보석의 양이 N% 증가",
+    "tierValues": {
+      "B": "20",
+      "A": "40",
+      "S": "60",
+      "SS": "100",
+      "SSS": "150"
+    },
+    "img": "assets/mercenaries/merc_도굴꾼.webp",
+    "search": {
+      "name": "도굴꾼",
+      "cho": "ㄷㄱㄲ",
+      "text": "도굴꾼게임종료후획득하는붉은보석의양이n%증가b:20a:40s:60ss:100sss:150"
+    }
+  },
+  {
+    "id": "merc-14",
+    "name": "조커",
+    "grade": "전설",
+    "recommend": "S",
+    "ability": "보스에게 추가로 N% 피해",
+    "tierValues": {
+      "B": "20",
+      "A": "40",
+      "S": "60",
+      "SS": "80",
+      "SSS": "100"
+    },
+    "img": "assets/mercenaries/merc_조커.webp",
+    "search": {
+      "name": "조커",
+      "cho": "ㅈㅋ",
+      "text": "조커보스에게추가로n%피해b:20a:40s:60ss:80sss:100"
+    }
+  },
+  {
+    "id": "merc-15",
+    "name": "정체불명 갑옷",
+    "grade": "전설",
+    "recommend": "C",
+    "ability": "영웅의 치명타 피해가 N% 증가",
+    "tierValues": {
+      "B": "20",
+      "A": "40",
+      "S": "60",
+      "SS": "100",
+      "SSS": "150"
+    },
+    "img": "assets/mercenaries/merc_정체불명갑옷.webp",
+    "search": {
+      "name": "정체불명갑옷",
+      "cho": "ㅈㅊㅂㅁㄱㅇ",
+      "text": "정체불명갑옷영웅의치명타피해가n%증가b:20a:40s:60ss:100sss:150"
+    }
+  },
+  {
+    "id": "merc-16",
+    "name": "뚱땡이 상어",
+    "grade": "전설",
+    "recommend": "C",
+    "ability": "보스의 이동 속도가 N% 감소",
+    "tierValues": {
+      "B": "5",
+      "A": "10",
+      "S": "15",
+      "SS": "20",
+      "SSS": "25"
+    },
+    "img": "assets/mercenaries/merc_뚱땡이상어.webp",
+    "search": {
+      "name": "뚱땡이상어",
+      "cho": "ㄸㄸㅇㅅㅇ",
+      "text": "뚱땡이상어보스의이동속도가n%감소b:5a:10s:15ss:20sss:25"
+    }
+  },
+  {
+    "id": "merc-17",
+    "name": "살아있는 타워",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "타워의 치명타 피해가 N% 증가",
+    "tierValues": {
+      "B": "40",
+      "A": "80",
+      "S": "150",
+      "SS": "220",
+      "SSS": "300"
+    },
+    "img": "assets/mercenaries/merc_살아있는타워.webp",
+    "search": {
+      "name": "살아있는타워",
+      "cho": "ㅅㅇㅇㄴㅌㅇ",
+      "text": "살아있는타워타워의치명타피해가n%증가b:40a:80s:150ss:220sss:300"
+    }
+  },
+  {
+    "id": "merc-18",
+    "name": "저승사자",
+    "grade": "전설",
+    "recommend": "J",
+    "ability": "타워의 공격 속도가 N% 상승",
+    "tierValues": {
+      "B": "15",
+      "A": "25",
+      "S": "35",
+      "SS": "50",
+      "SSS": "65"
+    },
+    "img": "assets/mercenaries/merc_저승사자.webp",
+    "search": {
+      "name": "저승사자",
+      "cho": "ㅈㅅㅅㅈ",
+      "text": "저승사자타워의공격속도가n%상승b:15a:25s:35ss:50sss:65"
+    }
+  },
+  {
+    "id": "merc-19",
+    "name": "닌자",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "영웅의 이동 속도가 N 증가",
+    "tierValues": {
+      "B": "0.2",
+      "A": "0.4",
+      "S": "0.6",
+      "SS": "1",
+      "SSS": "1.5"
+    },
+    "img": "assets/mercenaries/merc_닌자.webp",
+    "search": {
+      "name": "닌자",
+      "cho": "ㄴㅈ",
+      "text": "닌자영웅의이동속도가n증가b:02a:04s:06ss:1sss:15"
+    }
+  },
+  {
+    "id": "merc-20",
+    "name": "어느나라 공주와 기사",
+    "grade": "전설",
+    "recommend": "A",
+    "ability": "몬스터의 체력이 N% 줄어듭니다.",
+    "tierValues": {
+      "B": "5",
+      "A": "10",
+      "S": "15",
+      "SS": "20",
+      "SSS": "25"
+    },
+    "img": "assets/mercenaries/merc_어느나라공주와기사.webp",
+    "search": {
+      "name": "어느나라공주와기사",
+      "cho": "ㅇㄴㄴㄹㄱㅈㅇㄱㅅ",
+      "text": "어느나라공주와기사몬스터의체력이n%줄어듭니다b:5a:10s:15ss:20sss:25"
+    }
+  },
+  {
+    "id": "merc-21",
+    "name": "오크와 멧돼지",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "영웅의 치명타 확률이 N% 증가",
+    "tierValues": {
+      "B": "4",
+      "A": "8",
+      "S": "12",
+      "SS": "20",
+      "SSS": "25"
+    },
+    "img": "assets/mercenaries/merc_오크와멧돼지.webp",
+    "search": {
+      "name": "오크와멧돼지",
+      "cho": "ㅇㅋㅇㅁㄷㅈ",
+      "text": "오크와멧돼지영웅의치명타확률이n%증가b:4a:8s:12ss:20sss:25"
+    }
+  },
+  {
+    "id": "merc-22",
+    "name": "부활절 토끼",
+    "grade": "전설",
+    "recommend": "SS",
+    "ability": "몬스터가 받는 피해를 N% 증가",
+    "tierValues": {
+      "B": "5",
+      "A": "8",
+      "S": "12",
+      "SS": "16",
+      "SSS": "20"
+    },
+    "img": "assets/mercenaries/merc_부활절토끼.webp",
+    "search": {
+      "name": "부활절토끼",
+      "cho": "ㅂㅎㅈㅌㄲ",
+      "text": "부활절토끼몬스터가받는피해를n%증가b:5a:8s:12ss:16sss:20"
+    }
+  },
+  {
+    "id": "merc-23",
+    "name": "람쥐 썬더",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "타워의 공격력이 N 증가",
+    "tierValues": {
+      "B": "4",
+      "A": "8",
+      "S": "12",
+      "SS": "20",
+      "SSS": "30"
+    },
+    "img": "assets/mercenaries/merc_람쥐썬더.webp",
+    "search": {
+      "name": "람쥐썬더",
+      "cho": "ㄹㅈㅆㄷ",
+      "text": "람쥐썬더타워의공격력이n증가b:4a:8s:12ss:20sss:30"
+    }
+  },
+  {
+    "id": "merc-24",
+    "name": "사무라이",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "타워 공격력이 1+N배로 증가",
+    "tierValues": {
+      "B": "1+0.5",
+      "A": "1+1",
+      "S": "1+1.5",
+      "SS": "1+2",
+      "SSS": "1+2.5"
+    },
+    "img": "assets/mercenaries/merc_사무라이.webp",
+    "search": {
+      "name": "사무라이",
+      "cho": "ㅅㅁㄹㅇ",
+      "text": "사무라이타워공격력이1+n배로증가b:1+05a:1+1s:1+15ss:1+2sss:1+25"
+    }
+  },
+  {
+    "id": "merc-25",
+    "name": "연어 먹는 곰",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "영웅의 체력이 N% 증가",
+    "tierValues": {
+      "B": "100",
+      "A": "200",
+      "S": "350",
+      "SS": "500",
+      "SSS": "700"
+    },
+    "img": "assets/mercenaries/merc_연어먹는곰.webp",
+    "search": {
+      "name": "연어먹는곰",
+      "cho": "ㅇㅇㅁㄴㄱ",
+      "text": "연어먹는곰영웅의체력이n%증가b:100a:200s:350ss:500sss:700"
+    }
+  },
+  {
+    "id": "merc-26",
+    "name": "미치광이 뱀파이어",
+    "grade": "전설",
+    "recommend": "C",
+    "ability": "영웅의 공력력이 N% 증가",
+    "tierValues": {
+      "B": "125",
+      "A": "250",
+      "S": "400",
+      "SS": "1000",
+      "SSS": "1500"
+    },
+    "img": "assets/mercenaries/merc_미치광이뱀파이어.webp",
+    "search": {
+      "name": "미치광이뱀파이어",
+      "cho": "ㅁㅊㄱㅇㅂㅍㅇㅇ",
+      "text": "미치광이뱀파이어영웅의공력력이n%증가b:125a:250s:400ss:1000sss:1500"
+    }
+  },
+  {
+    "id": "merc-27",
+    "name": "토르",
+    "grade": "전설",
+    "recommend": "J",
+    "ability": "영웅의 경험치 획득 범위가 N배 증가",
+    "tierValues": {
+      "B": "1.2",
+      "A": "1.4",
+      "S": "1.6",
+      "SS": "2",
+      "SSS": "2.5"
+    },
+    "img": "assets/mercenaries/merc_토르.webp",
+    "search": {
+      "name": "토르",
+      "cho": "ㅌㄹ",
+      "text": "토르영웅의경험치획득범위가n배증가b:12a:14s:16ss:2sss:25"
+    }
+  },
+  {
+    "id": "merc-28",
+    "name": "은근한 눈빛의 세이렌",
+    "grade": "전설",
+    "recommend": "A",
+    "ability": "공격할 때 N%의 확률로 일반 몬스터를 즉시 처형",
+    "tierValues": {
+      "B": "0.2",
+      "A": "0.5",
+      "S": "1",
+      "SS": "2",
+      "SSS": "3"
+    },
+    "img": "assets/mercenaries/merc_은근한눈빛의세이렌.webp",
+    "search": {
+      "name": "은근한눈빛의세이렌",
+      "cho": "ㅇㄱㅎㄴㅂㅇㅅㅇㄹ",
+      "text": "은근한눈빛의세이렌공격할때n%의확률로일반몬스터를즉시처형b:02a:05s:1ss:2sss:3"
+    }
+  },
+  {
+    "id": "merc-29",
+    "name": "유쾌한 해적",
+    "grade": "전설",
+    "recommend": "SS",
+    "ability": "타워 목록에 곡괭이를 들고 있는 수만큼 전체 공격력이 N% 증가",
+    "tierValues": {
+      "B": "8",
+      "A": "16",
+      "S": "32",
+      "SS": "50",
+      "SSS": "70"
+    },
+    "img": "assets/mercenaries/merc_유쾌한해적.webp",
+    "search": {
+      "name": "유쾌한해적",
+      "cho": "ㅇㅋㅎㅎㅈ",
+      "text": "유쾌한해적타워목록에곡괭이를들고있는수만큼전체공격력이n%증가b:8a:16s:32ss:50sss:70"
+    }
+  },
+  {
+    "id": "merc-30",
+    "name": "발키리",
+    "grade": "전설",
+    "recommend": "SS",
+    "ability": "게임 시작 시, N개의 버프를 획득",
+    "tierValues": {
+      "B": "1",
+      "A": "2",
+      "S": "4",
+      "SS": "6",
+      "SSS": "8"
+    },
+    "img": "assets/mercenaries/merc_발키리.webp",
+    "search": {
+      "name": "발키리",
+      "cho": "ㅂㅋㄹ",
+      "text": "발키리게임시작시n개의버프를획득b:1a:2s:4ss:6sss:8"
+    }
+  },
+  {
+    "id": "merc-31",
+    "name": "아누비스",
+    "grade": "전설",
+    "recommend": "A",
+    "ability": "영웅 공격 범위가 N 증가",
+    "tierValues": {
+      "B": "0.25",
+      "A": "0.5",
+      "S": "1",
+      "SS": "1.5",
+      "SSS": "2"
+    },
+    "img": "assets/mercenaries/merc_아누비스.webp",
+    "search": {
+      "name": "아누비스",
+      "cho": "ㅇㄴㅂㅅ",
+      "text": "아누비스영웅공격범위가n증가b:025a:05s:1ss:15sss:2"
+    }
+  },
+  {
+    "id": "merc-32",
+    "name": "서큐비스",
+    "grade": "전설",
+    "recommend": "SSS",
+    "ability": "보스에게 주는 최종 피해가 N배로 증가",
+    "tierValues": {
+      "B": "1.25",
+      "A": "1.75",
+      "S": "2.25",
+      "SS": "3",
+      "SSS": "4"
+    },
+    "img": "assets/mercenaries/merc_서큐비스.webp",
+    "search": {
+      "name": "서큐비스",
+      "cho": "ㅅㅋㅂㅅ",
+      "text": "서큐비스보스에게주는최종피해가n배로증가b:125a:175s:225ss:3sss:4"
+    }
+  },
+  {
+    "id": "merc-33",
+    "name": "용암 골렘",
+    "grade": "전설",
+    "recommend": "X",
+    "ability": "타워의 치명타 확률이 N% 증가",
+    "tierValues": {
+      "B": "4",
+      "A": "8",
+      "S": "12",
+      "SS": "20",
+      "SSS": "25"
+    },
+    "img": "assets/mercenaries/merc_용암골렘.webp",
+    "search": {
+      "name": "용암골렘",
+      "cho": "ㅇㅇㄱㄹ",
+      "text": "용암골렘타워의치명타확률이n%증가b:4a:8s:12ss:20sss:25"
+    }
+  },
+  {
+    "id": "merc-34",
+    "name": "구미호",
+    "grade": "전설",
+    "recommend": "SS",
+    "ability": "영웅의 공격 속도가 N% 증가",
+    "tierValues": {
+      "B": "20",
+      "A": "40",
+      "S": "60",
+      "SS": "80",
+      "SSS": "100"
+    },
+    "img": "assets/mercenaries/merc_구미호.webp",
+    "search": {
+      "name": "구미호",
+      "cho": "ㄱㅁㅎ",
+      "text": "구미호영웅의공격속도가n%증가b:20a:40s:60ss:80sss:100"
+    }
+  },
+  {
+    "id": "merc-35",
+    "name": "외계 비행선",
+    "grade": "전설",
+    "recommend": "S",
+    "ability": "영웅이 공격할 때 공격할 때 1%의 확률로 세 번 공격",
+    "tierValues": {
+      "B": "1",
+      "A": "2",
+      "S": "4",
+      "SS": "8",
+      "SSS": "12"
+    },
+    "img": "assets/mercenaries/merc_외계비행선.webp",
+    "search": {
+      "name": "외계비행선",
+      "cho": "ㅇㄱㅂㅎㅅ",
+      "text": "외계비행선영웅이공격할때공격할때1%의확률로세번공격b:1a:2s:4ss:8sss:12"
+    }
+  }
+]

@@ -1,0 +1,960 @@
+{
+  "mounts": [
+    {
+      "id": "mount-1",
+      "no": 1,
+      "name": "푸른 거대슬라임",
+      "ability": "영웅의 공격 속도 100% 증가",
+      "comment": "아기백룡 보급형 영덱 스타트",
+      "img": "assets/mounts/mount_01_푸른거대슬라임.webp",
+      "search": {
+        "name": "푸른거대슬라임",
+        "cho": "ㅍㄹㄱㄷㅅㄹㅇ",
+        "text": "푸른거대슬라임영웅의공격속도100%증가아기백룡보급형영덱스타트",
+        "comment": "아기백룡보급형영덱스타트"
+      }
+    },
+    {
+      "id": "mount-2",
+      "no": 2,
+      "name": "주황빛 거대슬라임",
+      "ability": "영웅 공격력 100% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_02_주황빛거대슬라임.webp",
+      "search": {
+        "name": "주황빛거대슬라임",
+        "cho": "ㅈㅎㅂㄱㄷㅅㄹㅇ",
+        "text": "주황빛거대슬라임영웅공격력100%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-3",
+      "no": 3,
+      "name": "붉은빛 거대슬라임",
+      "ability": "타워 공격력 100% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_03_붉은빛거대슬라임.webp",
+      "search": {
+        "name": "붉은빛거대슬라임",
+        "cho": "ㅂㅇㅂㄱㄷㅅㄹㅇ",
+        "text": "붉은빛거대슬라임타워공격력100%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-4",
+      "no": 4,
+      "name": "스톤",
+      "ability": "특정 타워를 지운 후, 15% 확률로 동일한 타워 카드가 카드덱에 추가 되어 이후에 다시 획득할 수 있다.",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_04_스톤.webp",
+      "search": {
+        "name": "스톤",
+        "cho": "ㅅㅌ",
+        "text": "스톤특정타워를지운후15%확률로동일한타워카드가카드덱에추가되어이후에다시획득할수있다사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-5",
+      "no": 5,
+      "name": "코르크",
+      "ability": "타워 공격속도 100% 상승",
+      "comment": "타워덱 사용",
+      "img": "assets/mounts/mount_05_코르크.webp",
+      "search": {
+        "name": "코르크",
+        "cho": "ㅋㄹㅋ",
+        "text": "코르크타워공격속도100%상승타워덱사용",
+        "comment": "타워덱사용"
+      }
+    },
+    {
+      "id": "mount-6",
+      "no": 6,
+      "name": "백색 코르크",
+      "ability": "공중 몬스터에게 300% 추가피해",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_06_백색코르크.webp",
+      "search": {
+        "name": "백색코르크",
+        "cho": "ㅂㅅㅋㄹㅋ",
+        "text": "백색코르크공중몬스터에게300%추가피해사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-7",
+      "no": 7,
+      "name": "흑색 코르크",
+      "ability": "타워 치명타 확률 60% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_07_흑색코르크.webp",
+      "search": {
+        "name": "흑색코르크",
+        "cho": "ㅎㅅㅋㄹㅋ",
+        "text": "흑색코르크타워치명타확률60%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-8",
+      "no": 8,
+      "name": "람",
+      "ability": "모든 타워와 영웅의 공격력 90% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_08_람.webp",
+      "search": {
+        "name": "람",
+        "cho": "ㄹ",
+        "text": "람모든타워와영웅의공격력90%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-9",
+      "no": 9,
+      "name": "백색 람",
+      "ability": "모든 타워와 영웅의 공격력 180% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_09_백색람.webp",
+      "search": {
+        "name": "백색람",
+        "cho": "ㅂㅅㄹ",
+        "text": "백색람모든타워와영웅의공격력180%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-10",
+      "no": 10,
+      "name": "갈색 풍뎅이",
+      "ability": "영웅의 치명타 피해 100% 증가",
+      "comment": "치피 올려줌으로 다른 탈것 없을시 영덱용으로 잠시 사용",
+      "img": "assets/mounts/mount_10_갈색풍뎅이.webp",
+      "search": {
+        "name": "갈색풍뎅이",
+        "cho": "ㄱㅅㅍㄷㅇ",
+        "text": "갈색풍뎅이영웅의치명타피해100%증가치피올려줌으로다른탈것없을시영덱용으로잠시사용",
+        "comment": "치피올려줌으로다른탈것없을시영덱용으로잠시사용"
+      }
+    },
+    {
+      "id": "mount-11",
+      "no": 11,
+      "name": "적색 풍뎅이",
+      "ability": "타워의 치명타 피해 250% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_11_적색풍뎅이.webp",
+      "search": {
+        "name": "적색풍뎅이",
+        "cho": "ㅈㅅㅍㄷㅇ",
+        "text": "적색풍뎅이타워의치명타피해250%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-12",
+      "no": 12,
+      "name": "아기 애벌레",
+      "ability": "영웅이 받는 피해 50% 감소",
+      "comment": "사슴양에서 종종사용",
+      "img": "assets/mounts/mount_12_아기애벌레.webp",
+      "search": {
+        "name": "아기애벌레",
+        "cho": "ㅇㄱㅇㅂㄹ",
+        "text": "아기애벌레영웅이받는피해50%감소사슴양에서종종사용",
+        "comment": "사슴양에서종종사용"
+      }
+    },
+    {
+      "id": "mount-13",
+      "no": 13,
+      "name": "노란눈 고양이",
+      "ability": "타워 건설시 25% 확률로 2레벨 타워로 완성",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_13_노란눈고양이.webp",
+      "search": {
+        "name": "노란눈고양이",
+        "cho": "ㄴㄹㄴㄱㅇㅇ",
+        "text": "노란눈고양이타워건설시25%확률로2레벨타워로완성사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-14",
+      "no": 14,
+      "name": "초록눈 고양이",
+      "ability": "몬스터가 받는 피해 50% 증가 (타워, 영웅 공통)",
+      "comment": "몬받피가 좋긴해서 초반 영덱 사용",
+      "img": "assets/mounts/mount_14_초록눈고양이.webp",
+      "search": {
+        "name": "초록눈고양이",
+        "cho": "ㅊㄹㄴㄱㅇㅇ",
+        "text": "초록눈고양이몬스터가받는피해50%증가타워영웅공통몬받피가좋긴해서초반영덱사용",
+        "comment": "몬받피가좋긴해서초반영덱사용"
+      }
+    },
+    {
+      "id": "mount-15",
+      "no": 15,
+      "name": "흰색 고양이",
+      "ability": "타워 공격력 280% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_15_흰색고양이.webp",
+      "search": {
+        "name": "흰색고양이",
+        "cho": "ㅎㅅㄱㅇㅇ",
+        "text": "흰색고양이타워공격력280%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-16",
+      "no": 16,
+      "name": "화난 묘목",
+      "ability": "영웅 체력 300% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_16_화난묘목.webp",
+      "search": {
+        "name": "화난묘목",
+        "cho": "ㅎㄴㅁㅁ",
+        "text": "화난묘목영웅체력300%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-17",
+      "no": 17,
+      "name": "주황빛 여우",
+      "ability": "영웅 공격력 15 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_17_주황빛여우.webp",
+      "search": {
+        "name": "주황빛여우",
+        "cho": "ㅈㅎㅂㅇㅇ",
+        "text": "주황빛여우영웅공격력15증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-18",
+      "no": 18,
+      "name": "푸른빛 여우",
+      "ability": "타워 공격력 6 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_18_푸른빛여우.webp",
+      "search": {
+        "name": "푸른빛여우",
+        "cho": "ㅍㄹㅂㅇㅇ",
+        "text": "푸른빛여우타워공격력6증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-19",
+      "no": 19,
+      "name": "아기 화룡",
+      "ability": "타워가 보스에게 주는 피해 130% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_19_아기화룡.webp",
+      "search": {
+        "name": "아기화룡",
+        "cho": "ㅇㄱㅎㄹ",
+        "text": "아기화룡타워가보스에게주는피해130%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-20",
+      "no": 20,
+      "name": "아기 수룡",
+      "ability": "영웅의 치명타 피해 250% 증가",
+      "comment": "치피 올려줌으로 다른 탈것 없을시 영덱용으로 잠시 사용",
+      "img": "assets/mounts/mount_20_아기수룡.webp",
+      "search": {
+        "name": "아기수룡",
+        "cho": "ㅇㄱㅅㄹ",
+        "text": "아기수룡영웅의치명타피해250%증가치피올려줌으로다른탈것없을시영덱용으로잠시사용",
+        "comment": "치피올려줌으로다른탈것없을시영덱용으로잠시사용"
+      }
+    },
+    {
+      "id": "mount-21",
+      "no": 21,
+      "name": "아기 흑룡",
+      "ability": "타워의 치명타 피해 350% 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_21_아기흑룡.webp",
+      "search": {
+        "name": "아기흑룡",
+        "cho": "ㅇㄱㅎㄹ",
+        "text": "아기흑룡타워의치명타피해350%증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-22",
+      "no": 22,
+      "name": "아기 백룡",
+      "ability": "영웅 공격속도 200% 증가",
+      "comment": "일반 탈것 중 영덱 종결 탈것",
+      "img": "assets/mounts/mount_22_아기백룡.webp",
+      "search": {
+        "name": "아기백룡",
+        "cho": "ㅇㄱㅂㄹ",
+        "text": "아기백룡영웅공격속도200%증가일반탈것중영덱종결탈것",
+        "comment": "일반탈것중영덱종결탈것"
+      }
+    },
+    {
+      "id": "mount-23",
+      "no": 23,
+      "name": "말썽쟁이 드래곤",
+      "ability": "영웅 공격력 20 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_23_말썽쟁이드래곤.webp",
+      "search": {
+        "name": "말썽쟁이드래곤",
+        "cho": "ㅁㅆㅈㅇㄷㄹㄱ",
+        "text": "말썽쟁이드래곤영웅공격력20증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-24",
+      "no": 24,
+      "name": "심술쟁이 드래곤",
+      "ability": "타워 공격력 9 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_24_심술쟁이드래곤.webp",
+      "search": {
+        "name": "심술쟁이드래곤",
+        "cho": "ㅅㅅㅈㅇㄷㄹㄱ",
+        "text": "심술쟁이드래곤타워공격력9증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-25",
+      "no": 25,
+      "name": "화가 많은 드래곤",
+      "ability": "타워 공격력 1+4배 증가",
+      "comment": "타워덱 사용",
+      "img": "assets/mounts/mount_25_화가많은드래곤.webp",
+      "search": {
+        "name": "화가많은드래곤",
+        "cho": "ㅎㄱㅁㅇㄷㄹㄱ",
+        "text": "화가많은드래곤타워공격력1+4배증가타워덱사용",
+        "comment": "타워덱사용"
+      }
+    },
+    {
+      "id": "mount-26",
+      "no": 26,
+      "name": "검은 돼지",
+      "ability": "매 웨이브 넘어갈때 40% 확률로 곡괭이 추가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_26_검은돼지.webp",
+      "search": {
+        "name": "검은돼지",
+        "cho": "ㄱㅇㄷㅈ",
+        "text": "검은돼지매웨이브넘어갈때40%확률로곡괭이추가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-27",
+      "no": 27,
+      "name": "흰색 돼지",
+      "ability": "일반 몬스터의 아이템 드랍 확률 0.1% 증가",
+      "comment": "파밍할떄 사용 하려나??",
+      "img": "assets/mounts/mount_27_흰색돼지.webp",
+      "search": {
+        "name": "흰색돼지",
+        "cho": "ㅎㅅㄷㅈ",
+        "text": "흰색돼지일반몬스터의아이템드랍확률01%증가파밍할떄사용하려나??",
+        "comment": "파밍할떄사용하려나??"
+      }
+    },
+    {
+      "id": "mount-28",
+      "no": 28,
+      "name": "스누캣",
+      "ability": "인게임 종료 시, 계정 경험치 200% 추가 획득",
+      "comment": "계정 레벨 노가다시 착용",
+      "img": "assets/mounts/mount_28_스누캣.webp",
+      "search": {
+        "name": "스누캣",
+        "cho": "ㅅㄴㅋ",
+        "text": "스누캣인게임종료시계정경험치200%추가획득계정레벨노가다시착용",
+        "comment": "계정레벨노가다시착용"
+      }
+    },
+    {
+      "id": "mount-29",
+      "no": 29,
+      "name": "펠로스",
+      "ability": "웨이브가 넘어갈 때 85% 확률로 저주 카드 1장 제거",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_29_펠로스.webp",
+      "search": {
+        "name": "펠로스",
+        "cho": "ㅍㄹㅅ",
+        "text": "펠로스웨이브가넘어갈때85%확률로저주카드1장제거사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-30",
+      "no": 30,
+      "name": "흰 양",
+      "ability": "7초마다 영웅 주변에서 도깨비불이 5초 동안 돌며, 닿은 몬스터에게 공격력의 300% 만큼 피해를 입힙니다",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_30_흰양.webp",
+      "search": {
+        "name": "흰양",
+        "cho": "ㅎㅇ",
+        "text": "흰양7초마다영웅주변에서도깨비불이5초동안돌며닿은몬스터에게공격력의300%만큼피해를입힙니다사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-31",
+      "no": 31,
+      "name": "검은 양",
+      "ability": "타워 업그레이드 시 30% 확률로 추가 타워 획득",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_31_검은양.webp",
+      "search": {
+        "name": "검은양",
+        "cho": "ㄱㅇㅇ",
+        "text": "검은양타워업그레이드시30%확률로추가타워획득사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-32",
+      "no": 32,
+      "name": "달빛 여우",
+      "ability": "영웅이 공격할 때 10% 확률로 두번 공격",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_32_달빛여우.webp",
+      "search": {
+        "name": "달빛여우",
+        "cho": "ㄷㅂㅇㅇ",
+        "text": "달빛여우영웅이공격할때10%확률로두번공격사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-33",
+      "no": 33,
+      "name": "예티",
+      "ability": "웨이브 넘길때 50% 확률로 얼음벽 획득, 얼음벽 주변 일반 몬스터는 40% 이동속도 감소",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_33_예티.webp",
+      "search": {
+        "name": "예티",
+        "cho": "ㅇㅌ",
+        "text": "예티웨이브넘길때50%확률로얼음벽획득얼음벽주변일반몬스터는40%이동속도감소사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-34",
+      "no": 34,
+      "name": "트랄랄라",
+      "ability": "영웅의 이동속도 1.75 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_34_트랄랄라.webp",
+      "search": {
+        "name": "트랄랄라",
+        "cho": "ㅌㄹㄹㄹ",
+        "text": "트랄랄라영웅의이동속도175증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-35",
+      "no": 35,
+      "name": "흰 머리 수리",
+      "ability": "영웅이 공격할 때 9% 확률로 세 번 공격",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_35_흰머리수리.webp",
+      "search": {
+        "name": "흰머리수리",
+        "cho": "ㅎㅁㄹㅅㄹ",
+        "text": "흰머리수리영웅이공격할때9%확률로세번공격사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-36",
+      "no": 36,
+      "name": "붉은빛 수리",
+      "ability": "몬스터 처치시 12% 확률로 체력 포션 드랍",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_36_붉은빛수리.webp",
+      "search": {
+        "name": "붉은빛수리",
+        "cho": "ㅂㅇㅂㅅㄹ",
+        "text": "붉은빛수리몬스터처치시12%확률로체력포션드랍사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-37",
+      "no": 37,
+      "name": "플레임 보어",
+      "ability": "보스 체력 25% 감소",
+      "comment": "보스 체력이 너무 높을때 사용",
+      "img": "assets/mounts/mount_37_플레임보어.webp",
+      "search": {
+        "name": "플레임보어",
+        "cho": "ㅍㄹㅇㅂㅇ",
+        "text": "플레임보어보스체력25%감소보스체력이너무높을때사용",
+        "comment": "보스체력이너무높을때사용"
+      }
+    },
+    {
+      "id": "mount-38",
+      "no": 38,
+      "name": "스피릿 보어",
+      "ability": "타워 목록에 곡괭이를 들고 있는 수만큼 전체 공격력 40% 증가",
+      "comment": "곡증 최대로 뽑아낼때 사용",
+      "img": "assets/mounts/mount_38_스피릿보어.webp",
+      "search": {
+        "name": "스피릿보어",
+        "cho": "ㅅㅍㄹㅂㅇ",
+        "text": "스피릿보어타워목록에곡괭이를들고있는수만큼전체공격력40%증가곡증최대로뽑아낼때사용",
+        "comment": "곡증최대로뽑아낼때사용"
+      }
+    },
+    {
+      "id": "mount-39",
+      "no": 39,
+      "name": "프픽투스",
+      "ability": "웨이브가 끝날 때마다 45% 확률로 버프 선택",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_39_프픽투스.webp",
+      "search": {
+        "name": "프픽투스",
+        "cho": "ㅍㅍㅌㅅ",
+        "text": "프픽투스웨이브가끝날때마다45%확률로버프선택사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-40",
+      "no": 40,
+      "name": "녹색 악어",
+      "ability": "일반 몬스터의 펫 드랍 확률 0.1% 증가",
+      "comment": "파밍할떄 사용 하려나??",
+      "img": "assets/mounts/mount_40_녹색악어.webp",
+      "search": {
+        "name": "녹색악어",
+        "cho": "ㄴㅅㅇㅇ",
+        "text": "녹색악어일반몬스터의펫드랍확률01%증가파밍할떄사용하려나??",
+        "comment": "파밍할떄사용하려나??"
+      }
+    },
+    {
+      "id": "mount-41",
+      "no": 41,
+      "name": "붉은 악어",
+      "ability": "투사체 크기 3배 증가",
+      "comment": "예능용",
+      "img": "assets/mounts/mount_41_붉은악어.webp",
+      "search": {
+        "name": "붉은악어",
+        "cho": "ㅂㅇㅇㅇ",
+        "text": "붉은악어투사체크기3배증가예능용",
+        "comment": "예능용"
+      }
+    },
+    {
+      "id": "mount-42",
+      "no": 42,
+      "name": "검은 악어",
+      "ability": "공격할 때 1.25% 확률로 일반 몬스터 즉시 처형",
+      "comment": "즉사 부족시 사용(보급형)",
+      "img": "assets/mounts/mount_42_검은악어.webp",
+      "search": {
+        "name": "검은악어",
+        "cho": "ㄱㅇㅇㅇ",
+        "text": "검은악어공격할때125%확률로일반몬스터즉시처형즉사부족시사용보급형",
+        "comment": "즉사부족시사용보급형"
+      }
+    },
+    {
+      "id": "mount-43",
+      "no": 43,
+      "name": "지글핍",
+      "ability": "장착 중인 무기의 투사체 수가 1개 증가",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_43_지글핍.webp",
+      "search": {
+        "name": "지글핍",
+        "cho": "ㅈㄱㅍ",
+        "text": "지글핍장착중인무기의투사체수가1개증가사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-44",
+      "no": 44,
+      "name": "그러블럽",
+      "ability": "타워 업그레이드 시 35% 확률로 추가 타워 획득",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_44_그러블럽.webp",
+      "search": {
+        "name": "그러블럽",
+        "cho": "ㄱㄹㅂㄹ",
+        "text": "그러블럽타워업그레이드시35%확률로추가타워획득사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-45",
+      "no": 45,
+      "name": "블러그모",
+      "ability": "타워가 공격할 때, 15% 확률로 두 번 공격",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_45_블러그모.webp",
+      "search": {
+        "name": "블러그모",
+        "cho": "ㅂㄹㄱㅁ",
+        "text": "블러그모타워가공격할때15%확률로두번공격사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-46",
+      "no": 46,
+      "name": "크랩",
+      "ability": "면역 상태인 몬스터에게 200% 추가 피해",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_46_크랩.webp",
+      "search": {
+        "name": "크랩",
+        "cho": "ㅋㄹ",
+        "text": "크랩면역상태인몬스터에게200%추가피해사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-47",
+      "no": 47,
+      "name": "킹 크랩",
+      "ability": "영웅이 레벨업할 때 버프를 직접 선택할 수 있으며, 자동 선택",
+      "comment": "자사용",
+      "img": "assets/mounts/mount_47_킹크랩.webp",
+      "search": {
+        "name": "킹크랩",
+        "cho": "ㅋㅋㄹ",
+        "text": "킹크랩영웅이레벨업할때버프를직접선택할수있으며자동선택자사용",
+        "comment": "자사용"
+      }
+    },
+    {
+      "id": "mount-48",
+      "no": 48,
+      "name": "케르베로스",
+      "ability": "보스에게 추가로 175% 피해",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_48_케르베로스.webp",
+      "search": {
+        "name": "케르베로스",
+        "cho": "ㅋㄹㅂㄹㅅ",
+        "text": "케르베로스보스에게추가로175%피해사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-49",
+      "no": 49,
+      "name": "화이트 케르베로스",
+      "ability": "보스에게 추가로 350% 피해 (타워, 영웅 공통)",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_49_화이트케르베로스.webp",
+      "search": {
+        "name": "화이트케르베로스",
+        "cho": "ㅎㅇㅌㅋㄹㅂㄹㅅ",
+        "text": "화이트케르베로스보스에게추가로350%피해타워영웅공통사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-50",
+      "no": 50,
+      "name": "록론",
+      "ability": "웨이브가 끝날 때마다 40% 확률로 타워 카드 획득",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_50_록론.webp",
+      "search": {
+        "name": "록론",
+        "cho": "ㄹㄹ",
+        "text": "록론웨이브가끝날때마다40%확률로타워카드획득사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-51",
+      "no": 51,
+      "name": "아이스론",
+      "ability": "게임 종료 후 획득하는 푸른 다이아의 양이 50% 증가",
+      "comment": "200푸다 달고 자사용",
+      "img": "assets/mounts/mount_51_아이스론.webp",
+      "search": {
+        "name": "아이스론",
+        "cho": "ㅇㅇㅅㄹ",
+        "text": "아이스론게임종료후획득하는푸른다이아의양이50%증가200푸다달고자사용",
+        "comment": "200푸다달고자사용"
+      }
+    },
+    {
+      "id": "mount-52",
+      "no": 52,
+      "name": "붉은 악마",
+      "ability": "공중 몬스터에게 추가로 500% 피해",
+      "comment": "사용안함.",
+      "img": "assets/mounts/mount_52_붉은악마.webp",
+      "search": {
+        "name": "붉은악마",
+        "cho": "ㅂㅇㅇㅁ",
+        "text": "붉은악마공중몬스터에게추가로500%피해사용안함",
+        "comment": "사용안함"
+      }
+    },
+    {
+      "id": "mount-53",
+      "no": 53,
+      "name": "검은 악마",
+      "ability": "영웅과 타워의 공격력이 4배로 증가",
+      "comment": "종결",
+      "img": "assets/mounts/mount_53_검은악마.webp",
+      "search": {
+        "name": "검은악마",
+        "cho": "ㄱㅇㅇㅁ",
+        "text": "검은악마영웅과타워의공격력이4배로증가종결",
+        "comment": "종결"
+      }
+    },
+    {
+      "id": "mount-54",
+      "no": 54,
+      "name": "고대 화룡",
+      "ability": "영웅이 타워 위를 돌아다닙니다",
+      "comment": "뚜벅이 영웅 전용",
+      "img": "assets/mounts/mount_54_고대화룡.webp",
+      "search": {
+        "name": "고대화룡",
+        "cho": "ㄱㄷㅎㄹ",
+        "text": "고대화룡영웅이타워위를돌아다닙니다뚜벅이영웅전용",
+        "comment": "뚜벅이영웅전용"
+      }
+    },
+    {
+      "id": "mount-55",
+      "no": 55,
+      "name": "고대 수룡",
+      "ability": "영웅의 이동 속도가 4 증가",
+      "comment": "예능용",
+      "img": "assets/mounts/mount_55_고대수룡.webp",
+      "search": {
+        "name": "고대수룡",
+        "cho": "ㄱㄷㅅㄹ",
+        "text": "고대수룡영웅의이동속도가4증가예능용",
+        "comment": "예능용"
+      }
+    },
+    {
+      "id": "mount-56",
+      "no": 56,
+      "name": "고대 흑룡",
+      "ability": "공격할 때 4% 확률로 일반 몬스터 즉시 처형",
+      "comment": "즉사 부족시 사용",
+      "img": "assets/mounts/mount_56_고대흑룡.webp",
+      "search": {
+        "name": "고대흑룡",
+        "cho": "ㄱㄷㅎㄹ",
+        "text": "고대흑룡공격할때4%확률로일반몬스터즉시처형즉사부족시사용",
+        "comment": "즉사부족시사용"
+      }
+    },
+    {
+      "id": "mount-57",
+      "no": 57,
+      "name": "고대 백룡",
+      "ability": "4배 모드 활성화",
+      "comment": "200푸다 달고 자사하면 최고",
+      "img": "assets/mounts/mount_57_고대백룡.webp",
+      "search": {
+        "name": "고대백룡",
+        "cho": "ㄱㄷㅂㄹ",
+        "text": "고대백룡4배모드활성화200푸다달고자사하면최고",
+        "comment": "200푸다달고자사하면최고"
+      }
+    }
+  ],
+  "subOptions": {
+    "tower": [
+      {
+        "no": 1,
+        "name": "타워 1+1 배수 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 2,
+        "name": "타워 공격력 150% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 3,
+        "name": "타워 치명타 확률 5% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 4,
+        "name": "타워 치명타 피해 40% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 5,
+        "name": "타워 공격속도 5 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 6,
+        "name": "타워가 보스에게 주는 피해 50% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 7,
+        "name": "타워가 공격할 때, 2% 확률로 두번 공격",
+        "range": "3~4"
+      },
+      {
+        "no": 8,
+        "name": "타워공격 범위 0.5 증가",
+        "range": "4"
+      }
+    ],
+    "hero": [
+      {
+        "no": 1,
+        "name": "영웅 공격 15 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 2,
+        "name": "영웅 공격력 150% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 3,
+        "name": "영웅 체력 100% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 4,
+        "name": "영웅 체력 50% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 5,
+        "name": "영웅 공격속도 40% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 6,
+        "name": "영웅 치명타 피해 40% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 7,
+        "name": "영웅 보스에게 추가로 50% 증가",
+        "range": "1~4"
+      },
+      {
+        "no": 8,
+        "name": "상태 이상 확률 50% 추가 피해",
+        "range": "2~4"
+      },
+      {
+        "no": 9,
+        "name": "영웅이 공격할 때 5% 확률로 두번 공격",
+        "range": "3~4"
+      },
+      {
+        "no": 10,
+        "name": "영웅이 공격할 때 3% 확률로 세번 공격",
+        "range": "3~4"
+      },
+      {
+        "no": 11,
+        "name": "영웅 체력이 1% 감소할떄마다 영웅의 공격력이 6% 증가 (중첩도 있음)",
+        "range": "3~4"
+      },
+      {
+        "no": 12,
+        "name": "공격할 때 2% 확률로 일반 몬스터 즉시 처형",
+        "range": "3~4"
+      },
+      {
+        "no": 13,
+        "name": "장착중인 무기의 투사체 수가 1개 증가",
+        "range": "4"
+      },
+      {
+        "no": 14,
+        "name": "영웅이 타워 위를 돌아다닙니다",
+        "range": "4"
+      },
+      {
+        "no": 15,
+        "name": "버프를 자동으로 선택",
+        "range": "4"
+      }
+    ],
+    "common": [
+      {
+        "no": 1,
+        "name": "보스에게 추가 40% 피해",
+        "range": "1~4"
+      },
+      {
+        "no": 2,
+        "name": "영웅과 타워의 공격력이 N배로 증가",
+        "range": "2~4"
+      },
+      {
+        "no": 3,
+        "name": "보스 체력 10% 감소",
+        "range": "2~4"
+      },
+      {
+        "no": 4,
+        "name": "몬스터가 받는 피해 40% 증가",
+        "range": "3~4"
+      },
+      {
+        "no": 5,
+        "name": "타워 목록에 곡괭이를 들고 있는 수만큼 전체 공격력 30% 증가",
+        "range": "3~4"
+      },
+      {
+        "no": 6,
+        "name": "몬스터 체력 10% 감소",
+        "range": "3~4"
+      },
+      {
+        "no": 7,
+        "name": "푸른다이아 획득 100% 증가 [푸른다이아 획득 200% 증가 (미스테리 이상, 2강)]",
+        "range": "4"
+      }
+    ]
+  }
+}

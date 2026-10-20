@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Underdark 백과사전 & 검색기 (아이템·영웅·용병·탈것)</title>
+  <meta name="description" content="디펜스 게임 Underdark의 모든 아이템, 영웅(영덱), 지원용병, 탈것(57종) 상세 정보와 수치 검색 기능">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <div class="logo-icon">⚔️</div>
+        <div class="logo-text">UNDERDARK</div>
+      </div>
+      <div class="header-actions">
+        <span
+          style="font-size: 0.8rem; color: var(--text-dim); display: none; @media(min-width: 600px){display: inline;}">
+          단축키: <kbd style="background: rgba(255,255,255,0.1); padding: 0.15rem 0.4rem; border-radius: 4px;">/</kbd> 검색
+        </span>
+        <a href="admin.html" class="btn-header admin-btn">
+          <span>⚙️ 관리자</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Category Navigation -->
+  <nav class="global-nav" id="globalNav">
+    <button class="g-tab active" data-tab="items">
+      <span>⚔️ 아이템 도감</span>
+    </button>
+    <button class="g-tab" data-tab="heroes">
+      <span>🦸 영웅 도감</span>
+    </button>
+    <button class="g-tab" data-tab="mercenaries">
+      <span>🛡️ 지원용병</span>
+    </button>
+    <button class="g-tab" data-tab="mounts">
+      <span>🐎 탈것 도감</span>
+    </button>
+    <button class="g-tab" data-tab="pets">
+      <span>🐾 펫 도감</span>
+    </button>
+  </nav>
+
+  <!-- Hero & Search -->
+  <section class="hero-section">
+    <h1 id="heroTitle" class="hero-title">아이템 도감 & 능력치 검색</h1>
+    <p id="heroSubtitle" class="hero-subtitle">이름, 초성, 능력 문장 뿐만 아니라 세부 수치 조건으로 자유롭게 검색하세요.</p>
+
+    <div class="search-box-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" class="main-search-input"
+        placeholder="검색어 입력 (예: 빛단, ㅅㅁㅍㅍ, 처형, 치피>=100, 투사체>2)" autocomplete="off" spellcheck="false">
+      <button id="searchClear" class="search-clear-btn" title="검색어 지우기">&times;</button>
+    </div>
+
+    <!-- Search Hints (dynamic per tab) -->
+    <div id="searchHints" class="search-hints">
+      <span>빠른 검색:</span>
+      <span class="search-hint-tag" data-q="치피>=100">치피>=100</span>
+      <span class="search-hint-tag" data-q="투사체>=3">투사체>=3</span>
+      <span class="search-hint-tag" data-q="이감>=20">이감>=20</span>
+      <span class="search-hint-tag" data-q="처형 원거리">처형 원거리</span>
+      <span class="search-hint-tag" data-q="빛단">빛단</span>
+      <span class="search-hint-tag" data-q="ㅅㅁㅍㅍ">ㅅㅁㅍㅍ</span>
+    </div>
+  </section>
+
+  <!-- ================= ITEM CONTROLS ================= -->
+  <section id="itemControlSection" class="control-container">
+    <div class="control-card">
+      <div id="categoryTabs" class="category-tabs"></div>
+
+      <!-- Awakening Level Selector -->
+      <div class="awakening-bar">
+        <div class="awakening-label">
+          <span>⚡ 각성 단계</span>
+        </div>
+        <div id="awakeningSteps" class="awakening-steps">
+          <button class="awakening-step-btn active" data-level="0">0 각성 (기본)</button>
+          <button class="awakening-step-btn" data-level="1">1 각성</button>
+          <button class="awakening-step-btn" data-level="2">2 각성</button>
+          <button class="awakening-step-btn" data-level="3">3 각성</button>
+          <button class="awakening-step-btn" data-level="4">4 각성</button>
+          <button class="awakening-step-btn" data-level="5">5 각성</button>
+        </div>
+      </div>
+
+      <!-- Secondary Filters & Tags -->
+      <div class="filter-row">
+        <div class="filter-group">
+          <select id="rangeFilter" class="filter-select">
+            <option value="all">공격 거리 (전체)</option>
+            <option value="근거리">근거리</option>
+            <option value="원거리">원거리</option>
+          </select>
+
+          <select id="tierFilter" class="filter-select">
+            <option value="all">등급 (전체)</option>
+            <option value="S">S 등급</option>
+            <option value="A">A 등급</option>
+            <option value="B">B 등급</option>
+            <option value="C">C 등급</option>
+            <option value="D">D 등급</option>
+            <option value="E">E 등급</option>
+            <option value="F">F 등급</option>
+          </select>
+
+          <select id="usageFilter" class="filter-select">
+            <option value="all">사용 추천 (전체)</option>
+            <option value="O">추천 (O)</option>
+            <option value="△">상황별 (△)</option>
+            <option value="X">비추천 (X)</option>
+          </select>
+
+          <select id="dropFilter" class="filter-select">
+            <option value="all">드랍처 (전체)</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <div id="tagChips" class="tag-chips"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HERO CONTROLS ================= -->
+  <section id="heroControlSection" class="control-container" style="display: none;">
+    <div class="control-card">
+      <div class="awakening-bar">
+        <div class="awakening-label">
+          <span>🎖️ 레벨별 추가능력</span>
+        </div>
+        <div id="heroLevelSteps" class="awakening-steps">
+          <button class="awakening-step-btn active" data-hlevel="base">기본 능력</button>
+          <button class="awakening-step-btn" data-hlevel="3">3 레벨</button>
+          <button class="awakening-step-btn" data-hlevel="6">6 레벨</button>
+          <button class="awakening-step-btn" data-hlevel="9">9 레벨</button>
+          <button class="awakening-step-btn" data-hlevel="12">12 레벨</button>
+          <button class="awakening-step-btn" data-hlevel="15">15+ 레벨</button>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <select id="heroTierFilter" class="filter-select">
+            <option value="all">티어 (전체)</option>
+            <option value="SSS">SSS 티어</option>
+            <option value="SS">SS 티어</option>
+            <option value="S">S 티어</option>
+            <option value="A">A 티어</option>
+            <option value="B">B 티어</option>
+            <option value="C">C 티어</option>
+            <option value="D">D 티어</option>
+            <option value="E">E 티어</option>
+            <option value="F">F 티어</option>
+          </select>
+
+          <select id="heroGradeFilter" class="filter-select">
+            <option value="all">등급 (전체)</option>
+            <option value="전설">전설 영웅</option>
+            <option value="희귀">희귀 영웅</option>
+            <option value="일반">일반 영웅</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MERCENARY CONTROLS ================= -->
+  <section id="mercControlSection" class="control-container" style="display: none;">
+    <div class="control-card">
+      <div class="awakening-bar">
+        <div class="awakening-label">
+          <span>⭐ 버프 등급 선택</span>
+        </div>
+        <div id="mercTierSteps" class="awakening-steps">
+          <button class="awakening-step-btn" data-mtier="B">B 등급 (5렙)</button>
+          <button class="awakening-step-btn" data-mtier="A">A 등급 (9렙)</button>
+          <button class="awakening-step-btn" data-mtier="S">S 등급 (13렙)</button>
+          <button class="awakening-step-btn" data-mtier="SS">SS 등급 (17렙)</button>
+          <button class="awakening-step-btn active" data-mtier="SSS">SSS 등급 (20렙)</button>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <select id="mercGradeFilter" class="filter-select">
+            <option value="all">기본 등급 (전체)</option>
+            <option value="전설">전설</option>
+            <option value="희귀">희귀</option>
+            <option value="일반">일반</option>
+          </select>
+
+          <select id="mercRecFilter" class="filter-select">
+            <option value="all">추천도 (전체)</option>
+            <option value="SSS">SSS - 극추천</option>
+            <option value="SS">SS - 필수급</option>
+            <option value="S">S - 최고!</option>
+            <option value="A">A - 자주 사용</option>
+            <option value="B">B - 그럭저럭</option>
+            <option value="J">J - 자동사냥용</option>
+            <option value="C">C - 종종 사용</option>
+            <option value="X">X - 사용안함</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOUNT CONTROLS ================= -->
+  <section id="mountControlSection" class="control-container" style="display: none;">
+    <div class="control-card"
+      style="flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">총 57종 탈것 목록 & 부옵션</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">신급 펫 합성으로 획득 가능한 모든 탈것과 성능 정보입니다.
+        </p>
+      </div>
+      <div>
+        <button id="mountGuideBtn" class="btn-primary"
+          style="background: linear-gradient(135deg, #00f5d4, #05b098); color: #000; font-weight: 800;">
+          📖 탈것 합성법 & 부옵션 목록 보기
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PET CONTROLS ================= -->
+  <section id="petControlSection" class="control-container" style="display: none;">
+    <div class="control-card">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; width: 100%;">
+        <div>
+          <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">총 26종 펫 목록 & 부옵/랜덤옵 시스템</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+            펫의 고유 기본 능력, 획득처 및 티어 등급 정보입니다.
+          </p>
+        </div>
+        <div>
+          <button id="petGuideBtn" class="btn-primary"
+            style="background: linear-gradient(135deg, #ffd166, #f39c12); color: #000; font-weight: 800;">
+            📖 펫 시스템 & 종결 추천 세팅
+          </button>
+        </div>
+      </div>
+      <div class="filter-row" style="margin-top: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem; width: 100%;">
+        <div class="select-group">
+          <label for="petTierFilter">티어 등급:</label>
+          <select id="petTierFilter" class="filter-select">
+            <option value="all">전체 티어</option>
+            <option value="S_group">S+ / S 티어 (종결)</option>
+            <option value="A_group">A+ / A / A- 티어 (우수)</option>
+            <option value="B_group">B+ / B 티어 (상황별)</option>
+            <option value="C_group">C 티어</option>
+            <option value="D_group">D+ / D / D- 티어</option>
+            <option value="E_group">E / E- 티어</option>
+            <option value="F_group">F+ / F / F- 티어</option>
+          </select>
+        </div>
+        <div class="select-group">
+          <label for="petDropFilter">획득/드랍처:</label>
+          <select id="petDropFilter" class="filter-select">
+            <option value="all">전체 획득처</option>
+            <option value="상점">상점 펫/오브젝트 뽑기</option>
+            <option value="스테이지">스테이지</option>
+            <option value="고블린">고블린 야영지</option>
+            <option value="사원">불결한 사원</option>
+            <option value="무덤">붉은 무덤</option>
+            <option value="제단">이도교 제단</option>
+            <option value="종말">전방위 / 종말 / 심연 등</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results Count & Sort -->
+  <div class="results-meta">
+    <div>
+      총 <span id="resultCount" class="count-highlight">0</span>개의 <span id="resultUnit">아이템</span>
+    </div>
+    <div id="sortWrapper" class="sort-wrapper">
+      <label for="sortSelect" style="font-size: 0.85rem;">정렬:</label>
+      <select id="sortSelect" class="filter-select">
+        <option value="default">기본 (추천 & 등급순)</option>
+        <option value="grade">티어 등급 높은 순</option>
+        <option value="name">이름 가나다순</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Items/Cards Grid Container -->
+  <main class="items-container">
+    <div id="itemsGrid" class="items-grid"></div>
+  </main>
+
+  <!-- Detail Modal -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div id="modalContent" class="modal-content"></div>
+  </div>
+
+  <!-- Data & Scripts -->
+  <script src="data/items.js"></script>
+  <script src="data/underdark_all.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
