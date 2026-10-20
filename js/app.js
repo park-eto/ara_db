@@ -1574,7 +1574,7 @@
             </h4>
             <span style="font-size: 0.75rem; color: var(--text-muted);">일반 ➔ 신 (순차 승급)</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.85rem 1rem; border-radius: 10px;">
+          <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.75rem 0.85rem; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             ${horizontalGradesHtml}
           </div>
         </div>
