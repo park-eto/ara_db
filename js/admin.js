@@ -242,7 +242,7 @@
           <tr>
             <td>${imgHtml}</td>
             <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-dim);">${item.id}</td>
-            <td style="font-weight: 700; color: #fff;">${item.name}</td>
+            <td style="font-weight: 700; color: var(--text-main);">${item.name}</td>
             <td><span class="badge-tag">${catMap[item.cat] || item.cat}</span></td>
             <td style="white-space: nowrap;">${item.range ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '-'}</td>
             <td>${item.tier ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '-'}</td>

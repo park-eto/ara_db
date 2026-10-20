@@ -22,7 +22,7 @@
       <div class="header-actions">
         <span
           style="font-size: 0.8rem; color: var(--text-dim); display: none; @media(min-width: 600px){display: inline;}">
-          단축키: <kbd style="background: rgba(255,255,255,0.1); padding: 0.15rem 0.4rem; border-radius: 4px;">/</kbd> 검색
+          단축키: <kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.15rem 0.4rem; border-radius: 4px;">/</kbd> 검색
         </span>
         <a href="admin.html" class="btn-header admin-btn">
           <span>⚙️ 관리자</span>
@@ -222,13 +222,12 @@
     <div class="control-card"
       style="flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap;">
       <div>
-        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">총 57종 탈것 목록 & 부옵션</h3>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">총 57종 탈것 목록 & 부옵션</h3>
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">신급 펫 합성으로 획득 가능한 모든 탈것과 성능 정보입니다.
         </p>
       </div>
       <div>
-        <button id="mountGuideBtn" class="btn-primary"
-          style="background: linear-gradient(135deg, #00f5d4, #05b098); color: #000; font-weight: 800;">
+        <button id="mountGuideBtn" class="btn-primary">
           📖 탈것 합성법 & 부옵션 목록 보기
         </button>
       </div>
@@ -240,19 +239,18 @@
     <div class="control-card">
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; width: 100%;">
         <div>
-          <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">총 26종 펫 목록 & 부옵/랜덤옵 시스템</h3>
+          <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">총 26종 펫 목록 & 부옵/랜덤옵 시스템</h3>
           <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
             펫의 고유 기본 능력, 획득처 및 티어 등급 정보입니다.
           </p>
         </div>
         <div>
-          <button id="petGuideBtn" class="btn-primary"
-            style="background: linear-gradient(135deg, #ffd166, #f39c12); color: #000; font-weight: 800;">
+          <button id="petGuideBtn" class="btn-primary">
             📖 펫 시스템 & 종결 추천 세팅
           </button>
         </div>
       </div>
-      <div class="filter-row" style="margin-top: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem; width: 100%;">
+      <div class="filter-row" style="margin-top: 0.75rem; border-top: 1px solid var(--border-glass); padding-top: 0.75rem; width: 100%;">
         <div class="select-group">
           <label for="petTierFilter">티어 등급:</label>
           <select id="petTierFilter" class="filter-select">

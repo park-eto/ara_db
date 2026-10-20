@@ -551,7 +551,7 @@
   }
 
   // -------------------------------------------------------------
-  // 1. RENDER ITEMS
+  // 1. RENDER ITEMS (DATA GRID TABLE)
   // -------------------------------------------------------------
   function renderItemsView() {
     if (!searchEngine) return;
@@ -560,7 +560,7 @@
 
     if (items.length === 0) {
       elItemsGrid.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state">
           <div class="empty-icon">🔍</div>
           <div class="empty-title">일치하는 아이템이 없습니다.</div>
           <p>검색어나 필터 조건을 변경해보세요.</p>
@@ -571,17 +571,17 @@
 
     const currentAwak = state.awakeningLevel;
 
-    elItemsGrid.innerHTML = items.map(item => {
+    const rowsHtml = items.map(item => {
       const imgHtml = item.img
-        ? `<img src="${item.img}" alt="${item.name}" class="card-img" loading="lazy">`
-        : `<div class="card-img-placeholder">⚔️</div>`;
+        ? `<img src="${item.img}" alt="${item.name}" class="table-thumb-img" loading="lazy">`
+        : `<div class="table-thumb-placeholder">⚔️</div>`;
 
       const rangeBadge = item.range
-        ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '';
+        ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '-';
       const tierBadge = item.tier
-        ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '';
+        ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '-';
       const usageBadge = item.usage
-        ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : '';
+        ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : '-';
 
       let displayAbilities = item.abilities || [];
       let isAwakenedVariant = false;
@@ -592,15 +592,15 @@
           displayAbilities = item.awakening[currentAwak];
           isAwakenedVariant = true;
         } else if (item.awakeningNote) {
-          noAwakeningNotice = `<div class="ability-line" style="border-left-color: var(--accent-gold); color: var(--accent-gold); font-size: 0.8rem; background: rgba(255, 209, 102, 0.08);">${item.awakeningNote}</div>`;
+          noAwakeningNotice = `<div style="color: var(--accent-gold); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem;">${item.awakeningNote}</div>`;
         } else {
-          noAwakeningNotice = `<div class="ability-line" style="border-left-color: var(--text-dim); color: var(--text-muted); font-size: 0.8rem; background: rgba(255, 255, 255, 0.02);"><span style="opacity: 0.8;">⚠️ ${currentAwak}각성 정보가 없습니다. (기본 능력 표시)</span></div>`;
+          noAwakeningNotice = `<div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.25rem;">⚠️ ${currentAwak}각성 미보유 (기본 능력)</div>`;
         }
       }
 
       const abilitiesHtml = displayAbilities.map(line => {
         const highlighted = line.replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-        return `<div class="ability-line ${isAwakenedVariant ? 'awakening-changed' : ''}">${highlighted}</div>`;
+        return `<div style="${isAwakenedVariant ? 'color: #1d4ed8; font-weight: 600;' : ''}">${highlighted}</div>`;
       }).join('');
 
       let statsChipsHtml = '';
@@ -618,43 +618,60 @@
             chips.push(`<span class="stat-chip">${def.label}: <b>+${v}${def.unit}</b></span>`);
           }
         });
-        if (chips.length > 0) statsChipsHtml = `<div class="card-stats-row">${chips.slice(0, 4).join('')}</div>`;
+        if (chips.length > 0) statsChipsHtml = chips.slice(0, 3).join('');
       }
 
       const dropsHtml = (item.drops || []).slice(0, 2).map(d => `<span class="drop-item">${d}</span>`).join('');
 
       return `
-        <div class="item-card" data-item-id="${item.id}">
-          <div class="card-header">
-            <div class="card-img-wrapper">${imgHtml}</div>
-            <div class="card-title-area">
-              <div class="card-name-row">
-                <span class="card-name" title="${item.name}">${item.name}</span>
-                ${tierBadge}
-                ${usageBadge}
-              </div>
-              <div class="card-subinfo">
-                ${rangeBadge}
-                ${item.aliases && item.aliases.length ? `<span class="card-aliases">(${item.aliases.join(', ')})</span>` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="card-abilities">
+        <tr class="data-row item-row" data-item-id="${item.id}">
+          <td style="width: 58px; text-align: center;">
+            <div class="table-thumb-wrapper">${imgHtml}</div>
+          </td>
+          <td>
+            <div class="table-item-name">${item.name}</div>
+            ${item.aliases && item.aliases.length ? `<div class="table-item-aliases">${item.aliases.join(', ')}</div>` : ''}
+          </td>
+          <td style="text-align: center;">${tierBadge}</td>
+          <td style="text-align: center;">${usageBadge}</td>
+          <td style="text-align: center;">${rangeBadge}</td>
+          <td class="table-ability-block">
             ${noAwakeningNotice}
             ${abilitiesHtml}
-          </div>
-          ${statsChipsHtml}
-          <div class="card-footer">
-            <div class="card-drops">${dropsHtml}</div>
-            <span style="font-size: 0.75rem; color: var(--accent-primary);">상세보기 ❯</span>
-          </div>
-        </div>
+          </td>
+          <td>${statsChipsHtml || '-'}</td>
+          <td>${dropsHtml || '-'}</td>
+        </tr>
       `;
     }).join('');
 
-    elItemsGrid.querySelectorAll('.item-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.getAttribute('data-item-id');
+    elItemsGrid.innerHTML = `
+      <div class="data-table-card">
+        <div class="data-table-wrapper">
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th style="width: 58px; text-align: center;">사진</th>
+                <th style="min-width: 140px;">아이템명</th>
+                <th style="width: 80px; text-align: center;">티어</th>
+                <th style="width: 80px; text-align: center;">용도</th>
+                <th style="width: 85px; text-align: center;">사거리</th>
+                <th style="min-width: 280px;">능력 및 ${currentAwak > 0 ? currentAwak + '각성 효과' : '기본 효과'}</th>
+                <th style="min-width: 160px;">주요 수치</th>
+                <th style="min-width: 130px;">드랍처</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    elItemsGrid.querySelectorAll('.item-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.getAttribute('data-item-id');
         const it = rawItemData.items.find(x => x.id === id);
         if (it) openItemModal(it);
       });
@@ -662,7 +679,7 @@
   }
 
   // -------------------------------------------------------------
-  // 2. RENDER HEROES
+  // 2. RENDER HEROES (DATA GRID TABLE)
   // -------------------------------------------------------------
   function renderHeroesView() {
     if (!expansionData || !expansionData.heroes) return;
@@ -680,7 +697,7 @@
 
     if (heroes.length === 0) {
       elItemsGrid.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state">
           <div class="empty-icon">🦸</div>
           <div class="empty-title">일치하는 영웅이 없습니다.</div>
           <p>검색어나 티어 필터를 변경해보세요.</p>
@@ -691,64 +708,77 @@
 
     const hl = state.heroLevel;
 
-    elItemsGrid.innerHTML = heroes.map(hero => {
+    const rowsHtml = heroes.map(hero => {
       const imgHtml = hero.img
-        ? `<img src="${hero.img}" alt="${hero.name}" class="card-img" loading="lazy">`
-        : `<div class="card-img-placeholder">🦸</div>`;
+        ? `<img src="${hero.img}" alt="${hero.name}" class="table-thumb-img" loading="lazy">`
+        : `<div class="table-thumb-placeholder">🦸</div>`;
 
       const tierBadge = hero.tier
-        ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : '';
+        ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : '-';
       const gradeBadge = hero.grade
-        ? `<span class="badge-tag">${hero.grade}</span>` : '';
+        ? `<span class="badge-tag">${hero.grade}</span>` : '-';
 
-      // Preview ability line
-      let extraHtml = '';
+      let extraHtml = '-';
       if (hl !== 'base') {
         const lvInfo = hero.levels ? hero.levels[hl] : null;
         if (lvInfo) {
           extraHtml = `
-            <div class="ability-line awakening-changed">
-              <b style="color: var(--accent-gold);">${hl}레벨 추가능력:</b> ${lvInfo.ability}
-              ${lvInfo.stars ? `<div class="star-rating">${lvInfo.stars}</div>` : ''}
+            <div style="color: #1d4ed8; font-weight: 600; line-height: 1.45;">
+              ${lvInfo.ability}
+              ${lvInfo.stars ? `<div style="color: #d97706; font-size: 0.8rem; margin-top: 0.15rem;">${lvInfo.stars}</div>` : ''}
             </div>
           `;
         } else {
-          extraHtml = `<div class="ability-line" style="color: var(--text-dim); font-size: 0.8rem;">해당 레벨의 추가 능력이 없습니다.</div>`;
+          extraHtml = `<span style="color: var(--text-dim); font-size: 0.8rem;">해당 레벨 능력 없음</span>`;
         }
       }
 
       return `
-        <div class="item-card" data-hero-id="${hero.id}">
-          <div class="card-header">
-            <div class="card-img-wrapper">${imgHtml}</div>
-            <div class="card-title-area">
-              <div class="card-name-row">
-                <span class="card-name">${hero.name}</span>
-                ${tierBadge}
-                ${gradeBadge}
-              </div>
-              <div class="card-subinfo">
-                ${hero.aliases && hero.aliases.length ? `<span class="card-aliases">(${hero.aliases.join(', ')})</span>` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="card-abilities">
-            <div class="ability-line">
-              <b style="color: var(--accent-secondary);">기본 고유 능력:</b><br>${hero.ability || '정보 없음'}
-            </div>
-            ${extraHtml}
-          </div>
-          <div class="card-footer">
-            <span style="font-size: 0.75rem; color: var(--text-muted);">${Object.keys(hero.levels || {}).length}개 레벨 능력 보유</span>
-            <span style="font-size: 0.75rem; color: var(--accent-primary);">전체 레벨 능력치 보기 ❯</span>
-          </div>
-        </div>
+        <tr class="data-row hero-row" data-hero-id="${hero.id}">
+          <td style="width: 58px; text-align: center;">
+            <div class="table-thumb-wrapper">${imgHtml}</div>
+          </td>
+          <td>
+            <div class="table-item-name">${hero.name}</div>
+            ${hero.aliases && hero.aliases.length ? `<div class="table-item-aliases">${hero.aliases.join(', ')}</div>` : ''}
+          </td>
+          <td style="text-align: center;">${tierBadge}</td>
+          <td style="text-align: center;">${gradeBadge}</td>
+          <td class="table-ability-block">${hero.ability || '정보 없음'}</td>
+          <td class="table-ability-block">${extraHtml}</td>
+          <td style="font-size: 0.82rem; color: #475569; max-width: 200px; line-height: 1.45;">
+            ${hero.comment || '-'}
+          </td>
+        </tr>
       `;
     }).join('');
 
-    elItemsGrid.querySelectorAll('.item-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.getAttribute('data-hero-id');
+    elItemsGrid.innerHTML = `
+      <div class="data-table-card">
+        <div class="data-table-wrapper">
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th style="width: 58px; text-align: center;">사진</th>
+                <th style="min-width: 130px;">영웅명</th>
+                <th style="width: 80px; text-align: center;">티어</th>
+                <th style="width: 80px; text-align: center;">등급</th>
+                <th style="min-width: 260px;">기본 고유 능력</th>
+                <th style="min-width: 260px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
+                <th style="min-width: 160px;">평가 & 코멘트</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    elItemsGrid.querySelectorAll('.hero-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.getAttribute('data-hero-id');
         const h = expansionData.heroes.find(x => x.id === id);
         if (h) openHeroModal(h);
       });
@@ -756,7 +786,7 @@
   }
 
   // -------------------------------------------------------------
-  // 3. RENDER MERCENARIES
+  // 3. RENDER MERCENARIES (DATA GRID TABLE)
   // -------------------------------------------------------------
   function renderMercenariesView() {
     if (!expansionData || !expansionData.mercenaries) return;
@@ -774,7 +804,7 @@
 
     if (mercs.length === 0) {
       elItemsGrid.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state">
           <div class="empty-icon">🛡️</div>
           <div class="empty-title">일치하는 지원용병이 없습니다.</div>
           <p>검색어나 추천 등급 필터를 변경해보세요.</p>
@@ -785,54 +815,71 @@
 
     const currentTier = state.mercTier;
 
-    elItemsGrid.innerHTML = mercs.map(merc => {
+    const rowsHtml = mercs.map(merc => {
       const imgHtml = merc.img
-        ? `<img src="${merc.img}" alt="${merc.name}" class="card-img" loading="lazy">`
-        : `<div class="card-img-placeholder">🛡️</div>`;
+        ? `<img src="${merc.img}" alt="${merc.name}" class="table-thumb-img" loading="lazy">`
+        : `<div class="table-thumb-placeholder">🛡️</div>`;
 
       const gradeBadge = `<span class="badge-tag">${merc.grade}</span>`;
       const recBadge = merc.recommend
-        ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '';
+        ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '-';
 
-      // Replace 'N' or 'N%' in ability with current tier value
       let abilityText = merc.ability || '';
       const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
 
       if (tierVal !== null && tierVal !== undefined) {
-        abilityText = abilityText.replace(/\bN\b|\bN%\b/g, `<b class="stat-number">${tierVal}%</b>`);
+        abilityText = abilityText.replace(/\bN\b|\bN%\b/g, `<b class="stat-number">+${tierVal}%</b>`);
       }
 
       return `
-        <div class="item-card" data-merc-id="${merc.id}">
-          <div class="card-header">
-            <div class="card-img-wrapper">${imgHtml}</div>
-            <div class="card-title-area">
-              <div class="card-name-row">
-                <span class="card-name">${merc.name}</span>
-                ${recBadge}
-                ${gradeBadge}
-              </div>
-              <div class="card-subinfo">
-                <span style="font-size: 0.75rem; color: var(--accent-gold); font-weight: 600;">선택: ${currentTier}등급</span>
-              </div>
-            </div>
-          </div>
-          <div class="card-abilities">
-            <div class="ability-line">
-              ${abilityText}
-            </div>
-          </div>
-          <div class="card-footer">
-            <div style="font-size: 0.75rem; color: var(--text-dim);">필요레벨: ${getMercLevelReq(currentTier)}</div>
-            <span style="font-size: 0.75rem; color: var(--accent-primary);">등급별 수치표 ❯</span>
-          </div>
-        </div>
+        <tr class="data-row merc-row" data-merc-id="${merc.id}">
+          <td style="width: 58px; text-align: center;">
+            <div class="table-thumb-wrapper">${imgHtml}</div>
+          </td>
+          <td>
+            <div class="table-item-name">${merc.name}</div>
+          </td>
+          <td style="text-align: center;">${gradeBadge}</td>
+          <td style="text-align: center;">${recBadge}</td>
+          <td style="text-align: center;">
+            <span style="font-weight: 800; color: #2563eb; font-size: 0.95rem;">
+              ${tierVal !== null && tierVal !== undefined ? `+${tierVal}%` : '-'}
+            </span>
+          </td>
+          <td class="table-ability-block">${abilityText}</td>
+          <td style="text-align: center; font-size: 0.8rem; color: #64748b;">
+            ${getMercLevelReq(currentTier)}
+          </td>
+        </tr>
       `;
     }).join('');
 
-    elItemsGrid.querySelectorAll('.item-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.getAttribute('data-merc-id');
+    elItemsGrid.innerHTML = `
+      <div class="data-table-card">
+        <div class="data-table-wrapper">
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th style="width: 58px; text-align: center;">사진</th>
+                <th style="min-width: 130px;">용병명</th>
+                <th style="width: 85px; text-align: center;">기본 등급</th>
+                <th style="width: 85px; text-align: center;">추천도</th>
+                <th style="width: 120px; text-align: center;">선택 (${currentTier}) 버프</th>
+                <th style="min-width: 280px;">고유 능력</th>
+                <th style="width: 90px; text-align: center;">필요 레벨</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    elItemsGrid.querySelectorAll('.merc-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.getAttribute('data-merc-id');
         const m = expansionData.mercenaries.find(x => x.id === id);
         if (m) openMercModal(m);
       });
@@ -845,7 +892,7 @@
   }
 
   // -------------------------------------------------------------
-  // 4. RENDER MOUNTS
+  // 4. RENDER MOUNTS (DATA GRID TABLE)
   // -------------------------------------------------------------
   function renderMountsView() {
     if (!expansionData || !expansionData.mounts) return;
@@ -859,7 +906,7 @@
 
     if (mounts.length === 0) {
       elItemsGrid.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state">
           <div class="empty-icon">🐎</div>
           <div class="empty-title">일치하는 탈것이 없습니다.</div>
         </div>
@@ -867,35 +914,54 @@
       return;
     }
 
-    elItemsGrid.innerHTML = mounts.map(mount => {
+    const rowsHtml = mounts.map(mount => {
       const imgHtml = mount.img
-        ? `<img src="${mount.img}" alt="${mount.name}" class="card-img" loading="lazy">`
-        : `<div class="card-img-placeholder">🐎</div>`;
+        ? `<img src="${mount.img}" alt="${mount.name}" class="table-thumb-img" loading="lazy">`
+        : `<div class="table-thumb-placeholder">🐎</div>`;
+
+      const abilHighlighted = (mount.ability || '')
+        .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
 
       return `
-        <div class="item-card">
-          <div class="card-header">
-            <div class="card-img-wrapper">${imgHtml}</div>
-            <div class="card-title-area">
-              <div class="card-name-row">
-                <span class="card-name">${mount.name}</span>
-                <span class="badge-tag" style="background: rgba(255,255,255,0.06); font-family: monospace;">No.${mount.no}</span>
-              </div>
-            </div>
-          </div>
-          <div class="card-abilities">
-            <div class="ability-line">
-              <b style="color: var(--accent-secondary);">고유 능력:</b><br>${mount.ability}
-            </div>
-            ${mount.comment ? `
-              <div class="ability-line" style="border-left-color: var(--accent-gold); background: rgba(255, 209, 102, 0.05); font-size: 0.8rem;">
-                <b style="color: var(--accent-gold);">유저 평가:</b> ${mount.comment}
-              </div>
-            ` : ''}
-          </div>
-        </div>
+        <tr class="data-row mount-row">
+          <td style="width: 58px; text-align: center;">
+            <div class="table-thumb-wrapper">${imgHtml}</div>
+          </td>
+          <td style="text-align: center;">
+            <span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(mount.no).padStart(2, '0')}</span>
+          </td>
+          <td>
+            <div class="table-item-name">${mount.name}</div>
+          </td>
+          <td class="table-ability-block">${abilHighlighted}</td>
+          <td style="font-size: 0.83rem; color: #475569; line-height: 1.45;">
+            ${mount.comment || '-'}
+          </td>
+        </tr>
       `;
     }).join('');
+
+    elItemsGrid.innerHTML = `
+      <div class="data-table-card">
+        <div class="data-table-wrapper">
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th style="width: 58px; text-align: center;">사진</th>
+                <th style="width: 75px; text-align: center;">번호</th>
+                <th style="min-width: 140px;">탈것 이름</th>
+                <th style="min-width: 280px;">고유 능력</th>
+                <th style="min-width: 220px;">유저 평가 & 코멘트</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
   }
 
   // -------------------------------------------------------------
@@ -943,7 +1009,7 @@
           ${imgHtml}
           <div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff;">${item.name}</h2>
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">${item.name}</h2>
               ${item.tier ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : ''}
               ${item.usage ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : ''}
             </div>
@@ -971,14 +1037,14 @@
         </div>
         ${item.comment ? `
           <div>
-            <h4 style="font-size: 0.9rem; font-weight: 700; color: #a2a8c3; margin-bottom: 0.3rem;">공략 코멘트</h4>
-            <div style="background: rgba(255,255,255,0.03); border-left: 3px solid var(--accent-primary); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.875rem;">
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem;">공략 코멘트</h4>
+            <div style="background: #f8fafc; border: 1px solid var(--border-glass); border-left: 3px solid var(--accent-primary); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.875rem; color: var(--text-main);">
               ${item.comment}
             </div>
           </div>
         ` : ''}
         <div>
-          <h4 style="font-size: 0.9rem; font-weight: 700; color: #a2a8c3; margin-bottom: 0.4rem;">획득처 / 드랍</h4>
+          <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem;">획득처 / 드랍</h4>
           <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">${dropsHtml || '획득처 정보 없음'}</div>
         </div>
       </div>
@@ -1012,7 +1078,7 @@
           ${imgHtml}
           <div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff;">${hero.name}</h2>
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">${hero.name}</h2>
               ${hero.tier ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : ''}
               <span class="badge-tag">${hero.grade}</span>
             </div>
@@ -1036,8 +1102,8 @@
         </div>
         ${hero.comment ? `
           <div>
-            <h4 style="font-size: 0.9rem; font-weight: 700; color: #a2a8c3; margin-bottom: 0.3rem;">영덱 공략 & 평가 코멘트</h4>
-            <div style="background: rgba(255,255,255,0.03); border-left: 3px solid var(--accent-primary); padding: 0.75rem 0.9rem; border-radius: 6px; font-size: 0.875rem; line-height: 1.6;">
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem;">영덱 공략 & 평가 코멘트</h4>
+            <div style="background: #f8fafc; border: 1px solid var(--border-glass); border-left: 3px solid var(--accent-primary); padding: 0.75rem 0.9rem; border-radius: 6px; font-size: 0.875rem; line-height: 1.6; color: var(--text-main);">
               ${hero.comment}
             </div>
           </div>
@@ -1075,7 +1141,7 @@
           ${imgHtml}
           <div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff;">${merc.name}</h2>
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">${merc.name}</h2>
               ${merc.recommend ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : ''}
               <span class="badge-tag">${merc.grade}</span>
             </div>
@@ -1123,11 +1189,11 @@
         return `<tr><td colspan="3" style="text-align: center; color: var(--text-dim); padding: 1rem;">등록된 옵션 정보가 없습니다.</td></tr>`;
       }
       return items.map(item => {
-        const highlightedName = item.name.replace(/(\d+(?:\.\d+)?%?)/g, '<b style="color: #fff;">$1</b>');
+        const highlightedName = item.name.replace(/(\d+(?:\.\d+)?%?)/g, '<b class="stat-number">$1</b>');
         return `
           <tr>
             <td style="width: 50px; text-align: center; font-weight: 700; color: var(--text-dim); font-size: 0.8rem;">#${item.no}</td>
-            <td style="font-size: 0.875rem; color: #e2e8f0; line-height: 1.45;">${highlightedName}</td>
+            <td style="font-size: 0.875rem; color: var(--text-main); line-height: 1.45;">${highlightedName}</td>
             <td style="width: 95px; text-align: center;">${renderBadge(item.range)}</td>
           </tr>
         `;
@@ -1143,7 +1209,7 @@
         <div style="display: flex; gap: 0.75rem; align-items: center;">
           <div style="font-size: 2rem;">🐎</div>
           <div>
-            <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff;">탈것 합성법 & 부옵션 가이드</h2>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">탈것 합성법 & 부옵션 가이드</h2>
             <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">총 30종 부옵션 (타워 / 영웅 / 공통) 및 강화 단계 정보</div>
           </div>
         </div>
@@ -1151,7 +1217,7 @@
       </div>
       <div class="modal-body" style="gap: 1.25rem;">
         <!-- Synthesis Card -->
-        <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1rem; border: 1px solid var(--border-glass);">
+        <div style="background: #f8fafc; border-radius: 12px; padding: 1rem; border: 1px solid var(--border-glass);">
           <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
             <span>▶</span> 탈것 합성 & 부옵션 활성화 규칙
           </h4>
@@ -1283,7 +1349,7 @@
   }
 
   // -------------------------------------------------------------
-  // 5. RENDER PETS
+  // 5. RENDER PETS (DATA GRID TABLE)
   // -------------------------------------------------------------
   function renderPetsView() {
     if (!expansionData || !expansionData.pets) return;
@@ -1299,7 +1365,7 @@
 
     if (pets.length === 0) {
       elItemsGrid.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="empty-state">
           <div class="empty-icon">🐾</div>
           <div class="empty-title">일치하는 펫이 없습니다.</div>
           <p>검색어나 티어, 드랍처 조건을 변경해보세요.</p>
@@ -1308,63 +1374,64 @@
       return;
     }
 
-    elItemsGrid.innerHTML = pets
-      .map(pet => {
-        const imgHtml = pet.img
-          ? `<img src="${pet.img}" alt="${pet.name}" class="card-img" loading="lazy">`
-          : `<div class="card-img-placeholder">🐾</div>`;
+    const rowsHtml = pets.map(pet => {
+      const imgHtml = pet.img
+        ? `<img src="${pet.img}" alt="${pet.name}" class="table-thumb-img" loading="lazy">`
+        : `<div class="table-thumb-placeholder">🐾</div>`;
 
-        const tierChar = (pet.tier || 'F').charAt(0);
-        const tierBadge = `<span class="tier-badge tier-${tierChar}">${pet.tier}</span>`;
-        const noBadge = `<span class="badge-tag" style="background: rgba(255,255,255,0.08); color: var(--accent-gold); font-size: 0.75rem; font-weight: 800;">#${String(pet.no).padStart(2, '0')}</span>`;
+      const tierChar = (pet.tier || 'F').charAt(0);
+      const tierBadge = `<span class="tier-badge tier-${tierChar}">${pet.tier}</span>`;
+      const noBadge = `<span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(pet.no).padStart(2, '0')}</span>`;
 
-        const abilHighlighted = (pet.ability || '')
-          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
+      const abilHighlighted = (pet.ability || '')
+        .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
 
-        const dropsHtml = (pet.drops || [])
-          .map(d => `<span class="drop-item">📍 ${d}</span>`)
-          .join('');
+      const dropsHtml = (pet.drops || [])
+        .map(d => `<span class="drop-item">📍 ${d}</span>`)
+        .join('');
 
-        return `
-          <div class="item-card pet-card" data-pet-id="${pet.id}">
-            <div class="card-header">
-              <div class="card-img-wrapper">${imgHtml}</div>
-              <div class="card-title-area">
-                <div class="card-name-row">
-                  <span class="card-name" title="${pet.name}">${pet.name}</span>
-                  ${tierBadge}
-                </div>
-                <div class="card-subinfo" style="gap: 0.35rem; align-items: center;">
-                  ${noBadge}
-                  <span style="font-size: 0.75rem; color: var(--text-muted);">도감 번호</span>
-                </div>
-              </div>
-            </div>
+      return `
+        <tr class="data-row pet-row" data-pet-id="${pet.id}">
+          <td style="width: 58px; text-align: center;">
+            <div class="table-thumb-wrapper">${imgHtml}</div>
+          </td>
+          <td style="text-align: center;">${noBadge}</td>
+          <td>
+            <div class="table-item-name">${pet.name}</div>
+          </td>
+          <td style="text-align: center;">${tierBadge}</td>
+          <td class="table-ability-block">${abilHighlighted}</td>
+          <td>${dropsHtml || '-'}</td>
+        </tr>
+      `;
+    }).join('');
 
-            <div class="card-body">
-              <div class="ability-line" style="border-left-color: #ffd166; background: rgba(255, 209, 102, 0.05); font-size: 0.85rem; line-height: 1.5;">
-                <span style="color: var(--accent-gold); font-weight: 700; display: block; margin-bottom: 0.2rem; font-size: 0.78rem;">기본 고유 능력</span>
-                ${abilHighlighted}
-              </div>
+    elItemsGrid.innerHTML = `
+      <div class="data-table-card">
+        <div class="data-table-wrapper">
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th style="width: 58px; text-align: center;">사진</th>
+                <th style="width: 75px; text-align: center;">도감 No</th>
+                <th style="min-width: 140px;">펫 이름</th>
+                <th style="width: 80px; text-align: center;">티어</th>
+                <th style="min-width: 280px;">기본 고유 능력</th>
+                <th style="min-width: 180px;">획득 / 드랍처</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
 
-              ${dropsHtml ? `
-                <div style="margin-top: 0.6rem;">
-                  <span style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 0.25rem;">획득 / 드랍처</span>
-                  <div class="drops-container" style="flex-wrap: wrap; gap: 0.3rem;">
-                    ${dropsHtml}
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        `;
-      })
-      .join('');
-
-    // Bind card click event
-    elItemsGrid.querySelectorAll('.pet-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const id = card.getAttribute('data-pet-id');
+    // Bind row click event
+    elItemsGrid.querySelectorAll('.pet-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.getAttribute('data-pet-id');
         const pet = expansionData.pets.find(p => p.id === id);
         if (pet) openPetModal(pet);
       });
@@ -1394,7 +1461,7 @@
           <div>
             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
               ${noBadge}
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0;">${pet.name}</h2>
+              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0;">${pet.name}</h2>
               ${tierBadge}
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted);">
@@ -1411,17 +1478,17 @@
           <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.5rem;">
             ⚡ 기본 고유 능력
           </h4>
-          <div style="background: rgba(255, 209, 102, 0.06); border-left: 3px solid var(--accent-gold); padding: 0.85rem 1rem; border-radius: 6px; font-size: 0.95rem; line-height: 1.6; color: #fff;">
+          <div style="background: #fef3c7; border: 1px solid #fde68a; border-left: 4px solid var(--accent-gold); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);">
             ${abilHighlighted}
           </div>
         </div>
 
         <!-- 획득처 -->
         <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: #00f5d4; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.5rem;">
             🗺️ 획득 및 드랍처
           </h4>
-          <div style="background: rgba(255,255,255,0.03); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+          <div style="background: #f8fafc; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-glass);">
             <div class="drops-container" style="flex-wrap: wrap; gap: 0.4rem;">
               ${dropsHtml || '<span style="color: var(--text-dim);">획득처 정보가 없습니다.</span>'}
             </div>
@@ -1429,17 +1496,17 @@
         </div>
 
         <!-- 펫 시스템 안내 -->
-        <div style="background: linear-gradient(135deg, rgba(157, 78, 221, 0.1), rgba(0, 245, 212, 0.05)); border: 1px solid rgba(157, 78, 221, 0.25); border-radius: 10px; padding: 1rem;">
+        <div style="background: #f8fafc; border: 1px solid var(--border-glass); border-radius: 10px; padding: 1rem;">
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-              <div style="font-weight: 700; color: #c77dff; font-size: 0.95rem; margin-bottom: 0.25rem;">
+              <div style="font-weight: 700; color: var(--accent-primary); font-size: 0.95rem; margin-bottom: 0.25rem;">
                 💡 펫 시스템 & 추천 세팅 정보
               </div>
               <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
                 펫의 <b>8개 등급 목록</b>, <b>부옵션(5종)</b>, <b>랜덤옵션(12종) 풀</b> 및 타워/영덱 종결 추천 조합을 확인하세요.
               </div>
             </div>
-            <button id="modalPetGuideBtn" class="btn-primary" style="background: linear-gradient(135deg, #ffd166, #f39c12); color: #000; font-weight: 800; font-size: 0.82rem; padding: 0.45rem 0.85rem;">
+            <button id="modalPetGuideBtn" class="btn-primary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">
               📖 펫 시스템 가이드 보기
             </button>
           </div>
@@ -1466,26 +1533,26 @@
     const buildHero = guide.buildHero || {};
 
     const towerRandRows = (buildTower.randomOptions || []).map(o => `
-      <li style="margin-bottom: 0.35rem; color: #e0e0e0;">${o}</li>
+      <li style="margin-bottom: 0.35rem; color: var(--text-main);">${o}</li>
     `).join('');
 
     const heroRandRows = (buildHero.randomOptions || []).map(o => `
-      <li style="margin-bottom: 0.35rem; color: #e0e0e0;">${o}</li>
+      <li style="margin-bottom: 0.35rem; color: var(--text-main);">${o}</li>
     `).join('');
 
     const gradeColorMap = {
-      '일반': { color: '#665d58', bg: 'rgba(102, 93, 88, 0.18)', border: 'rgba(102, 93, 88, 0.45)' },
-      '레어': { color: '#c37350', bg: 'rgba(195, 115, 80, 0.16)', border: 'rgba(195, 115, 80, 0.45)' },
-      '유니크': { color: '#567ba1', bg: 'rgba(86, 123, 161, 0.16)', border: 'rgba(86, 123, 161, 0.45)' },
-      '엘리트': { color: '#c37350', bg: 'rgba(195, 115, 80, 0.16)', border: 'rgba(195, 115, 80, 0.45)' },
-      '미스터리': { color: '#00f5c2', bg: 'rgba(0, 245, 194, 0.15)', border: 'rgba(0, 245, 194, 0.45)', glow: '0 0 10px rgba(0, 245, 194, 0.25)' },
-      '에픽': { color: '#ffbeff', bg: 'rgba(255, 190, 255, 0.15)', border: 'rgba(255, 190, 255, 0.45)', glow: '0 0 10px rgba(255, 190, 255, 0.2)' },
-      '전설': { color: '#fe686f', bg: 'rgba(254, 104, 111, 0.16)', border: 'rgba(254, 104, 111, 0.45)', glow: '0 0 10px rgba(254, 104, 111, 0.25)' },
-      '신': { color: '#f4ecdf', bg: 'linear-gradient(135deg, rgba(244, 236, 223, 0.2), rgba(255, 215, 0, 0.15))', border: 'rgba(244, 236, 223, 0.55)', glow: '0 0 12px rgba(244, 236, 223, 0.3)' }
+      '일반': { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
+      '레어': { color: '#c2410c', bg: '#ffedd5', border: '#fed7aa' },
+      '유니크': { color: '#1d4ed8', bg: '#dbeafe', border: '#bfdbfe' },
+      '엘리트': { color: '#c2410c', bg: '#ffedd5', border: '#fed7aa' },
+      '미스터리': { color: '#0f766e', bg: '#ccfbf1', border: '#99f6e4' },
+      '에픽': { color: '#7e22ce', bg: '#f3e8ff', border: '#e9d5ff' },
+      '전설': { color: '#b91c1c', bg: '#fee2e2', border: '#fecaca' },
+      '신': { color: '#b45309', bg: '#fef3c7', border: '#fde68a' }
     };
 
     const horizontalGradesHtml = grades.map((g, idx) => {
-      const style = gradeColorMap[g] || { color: '#fff', bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.2)' };
+      const style = gradeColorMap[g] || { color: '#334155', bg: '#f1f5f9', border: '#cbd5e1' };
       const arrow = idx < grades.length - 1 ? `<span style="color: var(--text-dim); font-size: 0.85rem; user-select: none;">➔</span>` : '';
       return `
         <div style="display: flex; align-items: center; gap: 0.45rem;">
@@ -1498,23 +1565,23 @@
     }).join('');
 
     const subListHtml = subOpts.map(s => `
-      <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 6px; background: rgba(0, 245, 212, 0.04); border-left: 3px solid #00f5d4; font-size: 0.83rem; line-height: 1.45;">
-        <span style="font-weight: 800; color: #00f5d4; min-width: 18px;">${s.no}.</span>
-        <span style="color: #fff;">${s.name}</span>
+      <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 6px; background: #f0fdfa; border-left: 3px solid #0d9488; font-size: 0.83rem; line-height: 1.45;">
+        <span style="font-weight: 800; color: #0d9488; min-width: 18px;">${s.no}.</span>
+        <span style="color: var(--text-main); font-weight: 600;">${s.name}</span>
       </div>
     `).join('');
 
     const randListHtml = randomOpts.map(r => `
-      <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.45rem 0.65rem; border-radius: 6px; background: ${r.category === '타워' ? 'rgba(0, 245, 212, 0.03)' : 'rgba(199, 125, 255, 0.04)'}; border-left: 3px solid ${r.category === '타워' ? '#00f5d4' : '#c77dff'}; font-size: 0.82rem; line-height: 1.45;">
-        <span style="font-weight: 800; color: ${r.category === '타워' ? '#00f5d4' : '#c77dff'}; min-width: 22px;">${r.no}.</span>
-        <span style="color: #e0e0e0;">${r.name}</span>
+      <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.45rem 0.65rem; border-radius: 6px; background: ${r.category === '타워' ? '#f0fdfa' : '#faf5ff'}; border-left: 3px solid ${r.category === '타워' ? '#0d9488' : '#7e22ce'}; font-size: 0.82rem; line-height: 1.45;">
+        <span style="font-weight: 800; color: ${r.category === '타워' ? '#0d9488' : '#7e22ce'}; min-width: 22px;">${r.no}.</span>
+        <span style="color: var(--text-main);">${r.name}</span>
       </div>
     `).join('');
 
     elModalContent.innerHTML = `
       <div class="modal-header">
         <div>
-          <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
             <span>🐾</span> 펫 시스템 & 종결 추천 세팅 정보
           </h2>
           <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
@@ -1534,13 +1601,13 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
             
             <!-- 타워 추천 세팅 -->
-            <div style="background: rgba(0, 245, 212, 0.04); border: 1px solid rgba(0, 245, 212, 0.3); border-radius: 10px; padding: 1rem;">
+            <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 1rem;">
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
                 <span style="font-size: 1.25rem;">🏹</span>
-                <span style="font-weight: 800; color: #00f5d4; font-size: 1.05rem;">타워 추천 세팅</span>
+                <span style="font-weight: 800; color: #0f766e; font-size: 1.05rem;">타워 추천 세팅</span>
               </div>
-              <div style="font-size: 0.85rem; margin-bottom: 0.75rem; background: rgba(0, 245, 212, 0.1); padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #00f5d4;">
-                <b style="color: #fff;">부옵:</b> <span style="color: #00f5d4; font-weight: 700;">${buildTower.subOption || '타워의 공격 속도가 n% 상승합니다.'}</span>
+              <div style="font-size: 0.85rem; margin-bottom: 0.75rem; background: #ccfbf1; padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #0d9488;">
+                <b style="color: var(--text-main);">부옵:</b> <span style="color: #0f766e; font-weight: 700;">${buildTower.subOption || '타워의 공격 속도가 n% 상승합니다.'}</span>
               </div>
               <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 700;">랜덤옵 4종:</div>
               <ul style="font-size: 0.85rem; margin: 0; padding-left: 1.2rem; line-height: 1.6;">
@@ -1549,13 +1616,13 @@
             </div>
 
             <!-- 영덱 추천 세팅 -->
-            <div style="background: rgba(199, 125, 255, 0.04); border: 1px solid rgba(199, 125, 255, 0.3); border-radius: 10px; padding: 1rem;">
+            <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px; padding: 1rem;">
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
                 <span style="font-size: 1.25rem;">🦸</span>
-                <span style="font-weight: 800; color: #c77dff; font-size: 1.05rem;">영덱 추천 세팅</span>
+                <span style="font-weight: 800; color: #7e22ce; font-size: 1.05rem;">영덱 추천 세팅</span>
               </div>
-              <div style="font-size: 0.85rem; margin-bottom: 0.75rem; background: rgba(199, 125, 255, 0.1); padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #c77dff;">
-                <b style="color: #fff;">부옵:</b> <span style="color: #c77dff; font-weight: 700;">${buildHero.subOption || '영웅의 공격 속도가 n% 증가합니다.'}</span>
+              <div style="font-size: 0.85rem; margin-bottom: 0.75rem; background: #f3e8ff; padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #7e22ce;">
+                <b style="color: var(--text-main);">부옵:</b> <span style="color: #7e22ce; font-weight: 700;">${buildHero.subOption || '영웅의 공격 속도가 n% 증가합니다.'}</span>
               </div>
               <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 700;">랜덤옵 4종:</div>
               <ul style="font-size: 0.85rem; margin: 0; padding-left: 1.2rem; line-height: 1.6;">
@@ -1569,28 +1636,28 @@
         <!-- 2. 등급 목록 (가로로 색깔 입혀서 글자로 표시) -->
         <div>
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
-            <h4 style="font-size: 1rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+            <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
               <span>🎖️</span> 펫 등급 단계 (${grades.length}단계)
             </h4>
             <span style="font-size: 0.75rem; color: var(--text-muted);">일반 ➔ 신 (순차 승급)</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); padding: 0.75rem 0.85rem; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+          <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; background: #f8fafc; border: 1px solid var(--border-glass); padding: 0.75rem 0.85rem; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             ${horizontalGradesHtml}
           </div>
         </div>
 
         <!-- 3. 부옵 (5종) & 랜덤옵 (12종) 풀 -->
         <div>
-          <h4 style="font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+          <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
             <span>📋</span> 부옵션 (5종) & 랜덤옵션 (12종) 풀
           </h4>
           
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
             
             <!-- 부옵 (5종) -->
-            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.9rem;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.5rem;">
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #00f5d4;">🎯 부옵 (${subOpts.length})</h5>
+            <div style="background: #ffffff; border: 1px solid var(--border-glass); border-radius: 10px; padding: 0.9rem; box-shadow: var(--shadow-sm);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #0f766e;">🎯 부옵 (${subOpts.length})</h5>
                 <span style="font-size: 0.72rem; color: var(--text-muted);">고정 5종 풀</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 0.45rem;">
@@ -1599,9 +1666,9 @@
             </div>
 
             <!-- 랜덤옵 (12종) -->
-            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.9rem;">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 0.5rem;">
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #c77dff;">🎲 랜덤옵 (${randomOpts.length})</h5>
+            <div style="background: #ffffff; border: 1px solid var(--border-glass); border-radius: 10px; padding: 0.9rem; box-shadow: var(--shadow-sm);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
+                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #7e22ce;">🎲 랜덤옵 (${randomOpts.length})</h5>
                 <span style="font-size: 0.72rem; color: var(--text-muted);">랜덤 12종 풀</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 0.45rem;">
@@ -1615,8 +1682,8 @@
         <!-- 3. 참고사항 -->
         <div class="mount-tip-box" style="margin: 0;">
           <h4 style="color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 0.4rem;">📌 중요 참고사항</h4>
-          <ul style="font-size: 0.85rem; line-height: 1.6; margin: 0; padding-left: 1.2rem; color: #d0d0d0;">
-            <li><b style="color: #ffd166;">탈것 조합 시 모든 종류 나오는 펫 (동일 확률)</b></li>
+          <ul style="font-size: 0.85rem; line-height: 1.6; margin: 0; padding-left: 1.2rem; color: var(--text-muted);">
+            <li><b style="color: var(--accent-gold);">탈것 조합 시 모든 종류 나오는 펫 (동일 확률)</b></li>
             <li>협동 던전 1·2, 일일 던전(일반/협동), 길드 던전 1·2(일반/협동)의 펫 획득 정보는 시트에 미표기되어 있습니다.</li>
           </ul>
         </div>
