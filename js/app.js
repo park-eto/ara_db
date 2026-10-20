@@ -92,6 +92,11 @@
   let elModalOverlay;
   let elModalContent;
 
+  // View Mode: 'table' or 'card' (Default on mobile < 768px is 'card', PC >= 768px is 'table')
+  let userExplicitViewMode = localStorage.getItem('ara_view_mode');
+  let currentViewMode = userExplicitViewMode || (window.innerWidth < 768 ? 'card' : 'table');
+  let elViewModeToggle;
+
   document.addEventListener('DOMContentLoaded', init);
 
   async function init() {
@@ -101,6 +106,7 @@
     renderInitialFilters();
     bindEvents();
     readUrlParams();
+    updateViewToggleButtons();
     switchTab(currentTab);
   }
 
@@ -153,6 +159,7 @@
     elResultUnit = document.getElementById('resultUnit');
     elModalOverlay = document.getElementById('modalOverlay');
     elModalContent = document.getElementById('modalContent');
+    elViewModeToggle = document.getElementById('viewModeToggle');
   }
 
   async function loadAllData() {
@@ -401,6 +408,41 @@
         e.preventDefault();
       }
     }, { passive: false });
+
+    // View Mode Toggle (Table vs Card)
+    if (elViewModeToggle) {
+      elViewModeToggle.addEventListener('click', e => {
+        const btn = e.target.closest('.view-btn');
+        if (!btn) return;
+        const mode = btn.getAttribute('data-mode');
+        if (mode && mode !== currentViewMode) {
+          currentViewMode = mode;
+          userExplicitViewMode = mode;
+          localStorage.setItem('ara_view_mode', mode);
+          updateViewToggleButtons();
+          renderActiveView();
+        }
+      });
+    }
+
+    // Auto-adapt on resize if user hasn't explicitly chosen
+    window.addEventListener('resize', () => {
+      if (!userExplicitViewMode) {
+        const autoMode = window.innerWidth < 768 ? 'card' : 'table';
+        if (autoMode !== currentViewMode) {
+          currentViewMode = autoMode;
+          updateViewToggleButtons();
+          renderActiveView();
+        }
+      }
+    });
+  }
+
+  function updateViewToggleButtons() {
+    if (!elViewModeToggle) return;
+    elViewModeToggle.querySelectorAll('.view-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-mode') === currentViewMode);
+    });
   }
 
   // Switch Tab
@@ -571,107 +613,192 @@
 
     const currentAwak = state.awakeningLevel;
 
-    const rowsHtml = items.map(item => {
-      const imgHtml = item.img
-        ? `<img src="${item.img}" alt="${item.name}" class="table-thumb-img" loading="lazy">`
-        : `<div class="table-thumb-placeholder">⚔️</div>`;
+    if (currentViewMode === 'card') {
+      const cardsHtml = items.map(item => {
+        const imgHtml = item.img
+          ? `<img src="${item.img}" alt="${item.name}" class="card-img" loading="lazy">`
+          : `<div class="card-img-placeholder">⚔️</div>`;
 
-      const rangeBadge = item.range
-        ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '-';
-      const tierBadge = item.tier
-        ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '-';
-      const usageBadge = item.usage
-        ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : '-';
+        const rangeBadge = item.range
+          ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '';
+        const tierBadge = item.tier
+          ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '';
+        const usageBadge = item.usage
+          ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : '';
 
-      let displayAbilities = item.abilities || [];
-      let isAwakenedVariant = false;
-      let noAwakeningNotice = '';
+        let displayAbilities = item.abilities || [];
+        let isAwakenedVariant = false;
+        let noAwakeningNotice = '';
 
-      if (currentAwak > 0) {
-        if (item.awakening && item.awakening[currentAwak]) {
-          displayAbilities = item.awakening[currentAwak];
-          isAwakenedVariant = true;
-        } else if (item.awakeningNote) {
-          noAwakeningNotice = `<div style="color: var(--accent-gold); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem;">${item.awakeningNote}</div>`;
-        } else {
-          noAwakeningNotice = `<div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.25rem;">⚠️ ${currentAwak}각성 미보유 (기본 능력)</div>`;
+        if (currentAwak > 0) {
+          if (item.awakening && item.awakening[currentAwak]) {
+            displayAbilities = item.awakening[currentAwak];
+            isAwakenedVariant = true;
+          } else if (item.awakeningNote) {
+            noAwakeningNotice = `<div class="ability-line" style="border-left-color: var(--accent-gold); color: var(--accent-gold); font-size: 0.8rem; background: #fef3c7;">${item.awakeningNote}</div>`;
+          } else {
+            noAwakeningNotice = `<div class="ability-line" style="border-left-color: var(--text-dim); color: var(--text-muted); font-size: 0.8rem;"><span style="opacity: 0.8;">⚠️ ${currentAwak}각성 정보없음 (기본 능력)</span></div>`;
+          }
         }
-      }
 
-      const abilitiesHtml = displayAbilities.map(line => {
-        const highlighted = line.replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-        return `<div style="${isAwakenedVariant ? 'color: #1d4ed8; font-weight: 600;' : ''}">${highlighted}</div>`;
+        const abilitiesHtml = displayAbilities.map(line => {
+          const highlighted = line.replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
+          return `<div class="ability-line ${isAwakenedVariant ? 'awakening-changed' : ''}">${highlighted}</div>`;
+        }).join('');
+
+        let statsChipsHtml = '';
+        if (item.stats) {
+          const chips = [];
+          Object.entries(item.stats).forEach(([k, vals]) => {
+            let v = vals[currentAwak];
+            if (v === null || v === undefined) {
+              for (let lv = currentAwak; lv >= 0; lv--) {
+                if (vals[lv] !== null && vals[lv] !== undefined) { v = vals[lv]; break; }
+              }
+            }
+            if (v !== null && v !== undefined && rawItemData.statDefs[k]) {
+              const def = rawItemData.statDefs[k];
+              chips.push(`<span class="stat-chip">${def.label}: <b>+${v}${def.unit}</b></span>`);
+            }
+          });
+          if (chips.length > 0) statsChipsHtml = `<div class="card-stats-row">${chips.slice(0, 3).join('')}</div>`;
+        }
+
+        const dropsHtml = (item.drops || []).slice(0, 2).map(d => `<span class="drop-item">${d}</span>`).join('');
+
+        return `
+          <div class="item-card" data-item-id="${item.id}">
+            <div class="card-header">
+              <div class="card-img-wrapper">${imgHtml}</div>
+              <div class="card-title-area">
+                <div class="card-name-row">
+                  <span class="card-name" title="${item.name}">${item.name}</span>
+                  ${tierBadge}
+                  ${usageBadge}
+                </div>
+                <div class="card-subinfo">
+                  ${rangeBadge}
+                  ${item.aliases && item.aliases.length ? `<span class="card-aliases">(${item.aliases.join(', ')})</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="card-abilities">
+              ${noAwakeningNotice}
+              ${abilitiesHtml}
+            </div>
+            ${statsChipsHtml}
+            <div class="card-footer">
+              <div class="card-drops">${dropsHtml || '-'}</div>
+              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
+            </div>
+          </div>
+        `;
       }).join('');
 
-      let statsChipsHtml = '';
-      if (item.stats) {
-        const chips = [];
-        Object.entries(item.stats).forEach(([k, vals]) => {
-          let v = vals[currentAwak];
-          if (v === null || v === undefined) {
-            for (let lv = currentAwak; lv >= 0; lv--) {
-              if (vals[lv] !== null && vals[lv] !== undefined) { v = vals[lv]; break; }
+      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
+    } else {
+      const rowsHtml = items.map(item => {
+        const imgHtml = item.img
+          ? `<img src="${item.img}" alt="${item.name}" class="table-thumb-img" loading="lazy">`
+          : `<div class="table-thumb-placeholder">⚔️</div>`;
+
+        const rangeBadge = item.range
+          ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '-';
+        const tierBadge = item.tier
+          ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '-';
+        const usageBadge = item.usage
+          ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : '-';
+
+        let displayAbilities = item.abilities || [];
+        let isAwakenedVariant = false;
+        let noAwakeningNotice = '';
+
+        if (currentAwak > 0) {
+          if (item.awakening && item.awakening[currentAwak]) {
+            displayAbilities = item.awakening[currentAwak];
+            isAwakenedVariant = true;
+          } else if (item.awakeningNote) {
+            noAwakeningNotice = `<div style="color: var(--accent-gold); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem;">${item.awakeningNote}</div>`;
+          } else {
+            noAwakeningNotice = `<div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.25rem;">⚠️ ${currentAwak}각성 정보없음 (기본 능력)</div>`;
+          }
+        }
+
+        const abilitiesHtml = displayAbilities.map(line => {
+          const highlighted = line.replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
+          return `<div style="${isAwakenedVariant ? 'color: #1d4ed8; font-weight: 600;' : ''}">${highlighted}</div>`;
+        }).join('');
+
+        let statsChipsHtml = '';
+        if (item.stats) {
+          const chips = [];
+          Object.entries(item.stats).forEach(([k, vals]) => {
+            let v = vals[currentAwak];
+            if (v === null || v === undefined) {
+              for (let lv = currentAwak; lv >= 0; lv--) {
+                if (vals[lv] !== null && vals[lv] !== undefined) { v = vals[lv]; break; }
+              }
             }
-          }
-          if (v !== null && v !== undefined && rawItemData.statDefs[k]) {
-            const def = rawItemData.statDefs[k];
-            chips.push(`<span class="stat-chip">${def.label}: <b>+${v}${def.unit}</b></span>`);
-          }
-        });
-        if (chips.length > 0) statsChipsHtml = chips.slice(0, 3).join('');
-      }
+            if (v !== null && v !== undefined && rawItemData.statDefs[k]) {
+              const def = rawItemData.statDefs[k];
+              chips.push(`<span class="stat-chip">${def.label}: <b>+${v}${def.unit}</b></span>`);
+            }
+          });
+          if (chips.length > 0) statsChipsHtml = chips.slice(0, 3).join('');
+        }
 
-      const dropsHtml = (item.drops || []).slice(0, 2).map(d => `<span class="drop-item">${d}</span>`).join('');
+        const dropsHtml = (item.drops || []).slice(0, 2).map(d => `<span class="drop-item">${d}</span>`).join('');
 
-      return `
-        <tr class="data-row item-row" data-item-id="${item.id}">
-          <td style="width: 58px; text-align: center;">
-            <div class="table-thumb-wrapper">${imgHtml}</div>
-          </td>
-          <td>
-            <div class="table-item-name">${item.name}</div>
-            ${item.aliases && item.aliases.length ? `<div class="table-item-aliases">${item.aliases.join(', ')}</div>` : ''}
-          </td>
-          <td style="text-align: center;">${tierBadge}</td>
-          <td style="text-align: center;">${usageBadge}</td>
-          <td style="text-align: center;">${rangeBadge}</td>
-          <td class="table-ability-block">
-            ${noAwakeningNotice}
-            ${abilitiesHtml}
-          </td>
-          <td>${statsChipsHtml || '-'}</td>
-          <td>${dropsHtml || '-'}</td>
-        </tr>
-      `;
-    }).join('');
+        return `
+          <tr class="data-row item-row" data-item-id="${item.id}">
+            <td style="width: 58px; text-align: center;">
+              <div class="table-thumb-wrapper">${imgHtml}</div>
+            </td>
+            <td>
+              <div class="table-item-name">${item.name}</div>
+              ${item.aliases && item.aliases.length ? `<div class="table-item-aliases">${item.aliases.join(', ')}</div>` : ''}
+            </td>
+            <td style="text-align: center;">${tierBadge}</td>
+            <td style="text-align: center;">${usageBadge}</td>
+            <td style="text-align: center;">${rangeBadge}</td>
+            <td class="table-ability-block">
+              ${noAwakeningNotice}
+              ${abilitiesHtml}
+            </td>
+            <td>${statsChipsHtml || '-'}</td>
+            <td>${dropsHtml || '-'}</td>
+          </tr>
+        `;
+      }).join('');
 
-    elItemsGrid.innerHTML = `
-      <div class="data-table-card">
-        <div class="data-table-wrapper">
-          <table class="data-grid-table">
-            <thead>
-              <tr>
-                <th style="width: 58px; text-align: center;">사진</th>
-                <th style="min-width: 140px;">아이템명</th>
-                <th style="width: 80px; text-align: center;">티어</th>
-                <th style="width: 80px; text-align: center;">용도</th>
-                <th style="width: 85px; text-align: center;">사거리</th>
-                <th style="min-width: 280px;">능력 및 ${currentAwak > 0 ? currentAwak + '각성 효과' : '기본 효과'}</th>
-                <th style="min-width: 160px;">주요 수치</th>
-                <th style="min-width: 130px;">드랍처</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+      elItemsGrid.innerHTML = `
+        <div class="data-table-card">
+          <div class="data-table-wrapper">
+            <table class="data-grid-table">
+              <thead>
+                <tr>
+                  <th style="width: 58px; text-align: center;">사진</th>
+                  <th style="min-width: 140px;">아이템명</th>
+                  <th style="width: 80px; text-align: center;">티어</th>
+                  <th style="width: 80px; text-align: center;">용도</th>
+                  <th style="width: 85px; text-align: center;">사거리</th>
+                  <th style="min-width: 280px;">능력 및 ${currentAwak > 0 ? currentAwak + '각성 효과' : '기본 효과'}</th>
+                  <th style="min-width: 160px;">주요 수치</th>
+                  <th style="min-width: 130px;">드랍처</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
 
-    elItemsGrid.querySelectorAll('.item-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.getAttribute('data-item-id');
+    elItemsGrid.querySelectorAll('.item-row, .item-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-item-id');
         const it = rawItemData.items.find(x => x.id === id);
         if (it) openItemModal(it);
       });
@@ -708,77 +835,136 @@
 
     const hl = state.heroLevel;
 
-    const rowsHtml = heroes.map(hero => {
-      const imgHtml = hero.img
-        ? `<img src="${hero.img}" alt="${hero.name}" class="table-thumb-img" loading="lazy">`
-        : `<div class="table-thumb-placeholder">🦸</div>`;
+    if (currentViewMode === 'card') {
+      const cardsHtml = heroes.map(hero => {
+        const imgHtml = hero.img
+          ? `<img src="${hero.img}" alt="${hero.name}" class="card-img" loading="lazy">`
+          : `<div class="card-img-placeholder">🦸</div>`;
 
-      const tierBadge = hero.tier
-        ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : '-';
-      const gradeBadge = hero.grade
-        ? `<span class="badge-tag">${hero.grade}</span>` : '-';
+        const tierBadge = hero.tier
+          ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : '';
+        const gradeBadge = hero.grade
+          ? `<span class="badge-tag">${hero.grade}</span>` : '';
 
-      let extraHtml = '-';
-      if (hl !== 'base') {
-        const lvInfo = hero.levels ? hero.levels[hl] : null;
-        if (lvInfo) {
-          extraHtml = `
-            <div style="color: #1d4ed8; font-weight: 600; line-height: 1.45;">
-              ${lvInfo.ability}
-              ${lvInfo.stars ? `<div style="color: #d97706; font-size: 0.8rem; margin-top: 0.15rem;">${lvInfo.stars}</div>` : ''}
-            </div>
-          `;
-        } else {
-          extraHtml = `<span style="color: var(--text-dim); font-size: 0.8rem;">해당 레벨 능력 없음</span>`;
+        let extraHtml = '';
+        if (hl !== 'base') {
+          const lvInfo = hero.levels ? hero.levels[hl] : null;
+          if (lvInfo) {
+            extraHtml = `
+              <div class="ability-line awakening-changed">
+                <b>${hl}레벨 능력:</b> ${lvInfo.ability}
+                ${lvInfo.stars ? `<div style="color: #d97706; font-size: 0.78rem; margin-top: 0.15rem;">${lvInfo.stars}</div>` : ''}
+              </div>
+            `;
+          }
         }
-      }
 
-      return `
-        <tr class="data-row hero-row" data-hero-id="${hero.id}">
-          <td style="width: 58px; text-align: center;">
-            <div class="table-thumb-wrapper">${imgHtml}</div>
-          </td>
-          <td>
-            <div class="table-item-name">${hero.name}</div>
-            ${hero.aliases && hero.aliases.length ? `<div class="table-item-aliases">${hero.aliases.join(', ')}</div>` : ''}
-          </td>
-          <td style="text-align: center;">${tierBadge}</td>
-          <td style="text-align: center;">${gradeBadge}</td>
-          <td class="table-ability-block">${hero.ability || '정보 없음'}</td>
-          <td class="table-ability-block">${extraHtml}</td>
-          <td style="font-size: 0.82rem; color: #475569; max-width: 200px; line-height: 1.45;">
-            ${hero.comment || '-'}
-          </td>
-        </tr>
-      `;
-    }).join('');
+        return `
+          <div class="item-card hero-card" data-hero-id="${hero.id}">
+            <div class="card-header">
+              <div class="card-img-wrapper">${imgHtml}</div>
+              <div class="card-title-area">
+                <div class="card-name-row">
+                  <span class="card-name">${hero.name}</span>
+                  ${tierBadge}
+                  ${gradeBadge}
+                </div>
+                ${hero.aliases && hero.aliases.length ? `<div class="card-aliases">별칭: ${hero.aliases.join(', ')}</div>` : ''}
+              </div>
+            </div>
+            <div class="card-abilities">
+              <div class="ability-line">
+                <b style="color: var(--accent-secondary);">기본 능력:</b> ${hero.ability || '정보 없음'}
+              </div>
+              ${extraHtml}
+            </div>
+            ${hero.comment ? `
+              <div style="font-size: 0.82rem; color: var(--text-muted); background: #f8fafc; padding: 0.5rem 0.65rem; border-radius: 6px; border-left: 3px solid var(--accent-primary); line-height: 1.45;">
+                ${hero.comment}
+              </div>
+            ` : ''}
+            <div class="card-footer">
+              <span style="font-size: 0.78rem; color: var(--text-dim);">${hero.grade} 등급 영웅</span>
+              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-    elItemsGrid.innerHTML = `
-      <div class="data-table-card">
-        <div class="data-table-wrapper">
-          <table class="data-grid-table">
-            <thead>
-              <tr>
-                <th style="width: 58px; text-align: center;">사진</th>
-                <th style="min-width: 130px;">영웅명</th>
-                <th style="width: 80px; text-align: center;">티어</th>
-                <th style="width: 80px; text-align: center;">등급</th>
-                <th style="min-width: 260px;">기본 고유 능력</th>
-                <th style="min-width: 260px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
-                <th style="min-width: 160px;">평가 & 코멘트</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
+    } else {
+      const rowsHtml = heroes.map(hero => {
+        const imgHtml = hero.img
+          ? `<img src="${hero.img}" alt="${hero.name}" class="table-thumb-img" loading="lazy">`
+          : `<div class="table-thumb-placeholder">🦸</div>`;
+
+        const tierBadge = hero.tier
+          ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : '-';
+        const gradeBadge = hero.grade
+          ? `<span class="badge-tag">${hero.grade}</span>` : '-';
+
+        let extraHtml = '-';
+        if (hl !== 'base') {
+          const lvInfo = hero.levels ? hero.levels[hl] : null;
+          if (lvInfo) {
+            extraHtml = `
+              <div style="color: #1d4ed8; font-weight: 600; line-height: 1.45;">
+                ${lvInfo.ability}
+                ${lvInfo.stars ? `<div style="color: #d97706; font-size: 0.8rem; margin-top: 0.15rem;">${lvInfo.stars}</div>` : ''}
+              </div>
+            `;
+          } else {
+            extraHtml = `<span style="color: var(--text-dim); font-size: 0.8rem;">해당 레벨 능력 없음</span>`;
+          }
+        }
+
+        return `
+          <tr class="data-row hero-row" data-hero-id="${hero.id}">
+            <td style="width: 58px; text-align: center;">
+              <div class="table-thumb-wrapper">${imgHtml}</div>
+            </td>
+            <td>
+              <div class="table-item-name">${hero.name}</div>
+              ${hero.aliases && hero.aliases.length ? `<div class="table-item-aliases">${hero.aliases.join(', ')}</div>` : ''}
+            </td>
+            <td style="text-align: center;">${tierBadge}</td>
+            <td style="text-align: center;">${gradeBadge}</td>
+            <td class="table-ability-block">${hero.ability || '정보 없음'}</td>
+            <td class="table-ability-block">${extraHtml}</td>
+            <td style="font-size: 0.82rem; color: #475569; max-width: 200px; line-height: 1.45;">
+              ${hero.comment || '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      elItemsGrid.innerHTML = `
+        <div class="data-table-card">
+          <div class="data-table-wrapper">
+            <table class="data-grid-table">
+              <thead>
+                <tr>
+                  <th style="width: 58px; text-align: center;">사진</th>
+                  <th style="min-width: 130px;">영웅명</th>
+                  <th style="width: 80px; text-align: center;">티어</th>
+                  <th style="width: 80px; text-align: center;">등급</th>
+                  <th style="min-width: 260px;">기본 고유 능력</th>
+                  <th style="min-width: 260px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
+                  <th style="min-width: 160px;">평가 & 코멘트</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
 
-    elItemsGrid.querySelectorAll('.hero-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.getAttribute('data-hero-id');
+    elItemsGrid.querySelectorAll('.hero-row, .hero-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-hero-id');
         const h = expansionData.heroes.find(x => x.id === id);
         if (h) openHeroModal(h);
       });
@@ -815,71 +1001,120 @@
 
     const currentTier = state.mercTier;
 
-    const rowsHtml = mercs.map(merc => {
-      const imgHtml = merc.img
-        ? `<img src="${merc.img}" alt="${merc.name}" class="table-thumb-img" loading="lazy">`
-        : `<div class="table-thumb-placeholder">🛡️</div>`;
+    if (currentViewMode === 'card') {
+      const cardsHtml = mercs.map(merc => {
+        const imgHtml = merc.img
+          ? `<img src="${merc.img}" alt="${merc.name}" class="card-img" loading="lazy">`
+          : `<div class="card-img-placeholder">🛡️</div>`;
 
-      const gradeBadge = `<span class="badge-tag">${merc.grade}</span>`;
-      const recBadge = merc.recommend
-        ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '-';
+        const gradeBadge = `<span class="badge-tag">${merc.grade}</span>`;
+        const recBadge = merc.recommend
+          ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '';
 
-      let abilityText = merc.ability || '';
-      const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
+        let abilityText = merc.ability || '';
+        const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
 
-      if (tierVal !== null && tierVal !== undefined) {
-        abilityText = abilityText.replace(/\bN\b|\bN%\b/g, `<b class="stat-number">+${tierVal}%</b>`);
-      }
+        if (tierVal !== null && tierVal !== undefined) {
+          abilityText = abilityText.replace(/\bN\b|\bN%\b/g, `<b class="stat-number">+${tierVal}%</b>`);
+        }
 
-      return `
-        <tr class="data-row merc-row" data-merc-id="${merc.id}">
-          <td style="width: 58px; text-align: center;">
-            <div class="table-thumb-wrapper">${imgHtml}</div>
-          </td>
-          <td>
-            <div class="table-item-name">${merc.name}</div>
-          </td>
-          <td style="text-align: center;">${gradeBadge}</td>
-          <td style="text-align: center;">${recBadge}</td>
-          <td style="text-align: center;">
-            <span style="font-weight: 800; color: #2563eb; font-size: 0.95rem;">
-              ${tierVal !== null && tierVal !== undefined ? `+${tierVal}%` : '-'}
-            </span>
-          </td>
-          <td class="table-ability-block">${abilityText}</td>
-          <td style="text-align: center; font-size: 0.8rem; color: #64748b;">
-            ${getMercLevelReq(currentTier)}
-          </td>
-        </tr>
-      `;
-    }).join('');
+        return `
+          <div class="item-card merc-card" data-merc-id="${merc.id}">
+            <div class="card-header">
+              <div class="card-img-wrapper">${imgHtml}</div>
+              <div class="card-title-area">
+                <div class="card-name-row">
+                  <span class="card-name">${merc.name}</span>
+                  ${recBadge}
+                  ${gradeBadge}
+                </div>
+                <div class="card-subinfo">
+                  <span>버프 수치: <b style="color: #2563eb;">${tierVal !== null && tierVal !== undefined ? `+${tierVal}%` : '-'}</b></span>
+                  <span style="margin-left: 0.5rem; color: var(--text-dim);">(${getMercLevelReq(currentTier)})</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-abilities">
+              <div class="ability-line">
+                ${abilityText}
+              </div>
+            </div>
+            <div class="card-footer">
+              <span style="font-size: 0.78rem; color: var(--text-dim);">${currentTier} 등급</span>
+              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-    elItemsGrid.innerHTML = `
-      <div class="data-table-card">
-        <div class="data-table-wrapper">
-          <table class="data-grid-table">
-            <thead>
-              <tr>
-                <th style="width: 58px; text-align: center;">사진</th>
-                <th style="min-width: 130px;">용병명</th>
-                <th style="width: 85px; text-align: center;">기본 등급</th>
-                <th style="width: 85px; text-align: center;">추천도</th>
-                <th style="width: 120px; text-align: center;">선택 (${currentTier}) 버프</th>
-                <th style="min-width: 280px;">고유 능력</th>
-                <th style="width: 90px; text-align: center;">필요 레벨</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
+    } else {
+      const rowsHtml = mercs.map(merc => {
+        const imgHtml = merc.img
+          ? `<img src="${merc.img}" alt="${merc.name}" class="table-thumb-img" loading="lazy">`
+          : `<div class="table-thumb-placeholder">🛡️</div>`;
+
+        const gradeBadge = `<span class="badge-tag">${merc.grade}</span>`;
+        const recBadge = merc.recommend
+          ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '-';
+
+        let abilityText = merc.ability || '';
+        const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
+
+        if (tierVal !== null && tierVal !== undefined) {
+          abilityText = abilityText.replace(/\bN\b|\bN%\b/g, `<b class="stat-number">+${tierVal}%</b>`);
+        }
+
+        return `
+          <tr class="data-row merc-row" data-merc-id="${merc.id}">
+            <td style="width: 58px; text-align: center;">
+              <div class="table-thumb-wrapper">${imgHtml}</div>
+            </td>
+            <td>
+              <div class="table-item-name">${merc.name}</div>
+            </td>
+            <td style="text-align: center;">${gradeBadge}</td>
+            <td style="text-align: center;">${recBadge}</td>
+            <td style="text-align: center;">
+              <span style="font-weight: 800; color: #2563eb; font-size: 0.95rem;">
+                ${tierVal !== null && tierVal !== undefined ? `+${tierVal}%` : '-'}
+              </span>
+            </td>
+            <td class="table-ability-block">${abilityText}</td>
+            <td style="text-align: center; font-size: 0.8rem; color: #64748b;">
+              ${getMercLevelReq(currentTier)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      elItemsGrid.innerHTML = `
+        <div class="data-table-card">
+          <div class="data-table-wrapper">
+            <table class="data-grid-table">
+              <thead>
+                <tr>
+                  <th style="width: 58px; text-align: center;">사진</th>
+                  <th style="min-width: 130px;">용병명</th>
+                  <th style="width: 85px; text-align: center;">기본 등급</th>
+                  <th style="width: 85px; text-align: center;">추천도</th>
+                  <th style="width: 120px; text-align: center;">선택 (${currentTier}) 버프</th>
+                  <th style="min-width: 280px;">고유 능력</th>
+                  <th style="width: 90px; text-align: center;">필요 레벨</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
 
-    elItemsGrid.querySelectorAll('.merc-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.getAttribute('data-merc-id');
+    elItemsGrid.querySelectorAll('.merc-row, .merc-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-merc-id');
         const m = expansionData.mercenaries.find(x => x.id === id);
         if (m) openMercModal(m);
       });
@@ -914,53 +1149,90 @@
       return;
     }
 
-    const rowsHtml = mounts.map(mount => {
-      const imgHtml = mount.img
-        ? `<img src="${mount.img}" alt="${mount.name}" class="table-thumb-img" loading="lazy">`
-        : `<div class="table-thumb-placeholder">🐎</div>`;
+    if (currentViewMode === 'card') {
+      const cardsHtml = mounts.map(mount => {
+        const imgHtml = mount.img
+          ? `<img src="${mount.img}" alt="${mount.name}" class="card-img" loading="lazy">`
+          : `<div class="card-img-placeholder">🐎</div>`;
 
-      const abilHighlighted = (mount.ability || '')
-        .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
+        const abilHighlighted = (mount.ability || '')
+          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
 
-      return `
-        <tr class="data-row mount-row">
-          <td style="width: 58px; text-align: center;">
-            <div class="table-thumb-wrapper">${imgHtml}</div>
-          </td>
-          <td style="text-align: center;">
-            <span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(mount.no).padStart(2, '0')}</span>
-          </td>
-          <td>
-            <div class="table-item-name">${mount.name}</div>
-          </td>
-          <td class="table-ability-block">${abilHighlighted}</td>
-          <td style="font-size: 0.83rem; color: #475569; line-height: 1.45;">
-            ${mount.comment || '-'}
-          </td>
-        </tr>
-      `;
-    }).join('');
+        return `
+          <div class="item-card mount-card">
+            <div class="card-header">
+              <div class="card-img-wrapper">${imgHtml}</div>
+              <div class="card-title-area">
+                <div class="card-name-row">
+                  <span class="card-name">${mount.name}</span>
+                  <span class="badge-tag" style="font-family: monospace;">#${String(mount.no).padStart(2, '0')}</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-abilities">
+              <div class="ability-line">
+                <b style="color: var(--accent-secondary);">고유 능력:</b><br>${abilHighlighted}
+              </div>
+            </div>
+            ${mount.comment ? `
+              <div style="font-size: 0.82rem; color: var(--text-muted); background: #f8fafc; padding: 0.5rem 0.65rem; border-radius: 6px; border-left: 3px solid var(--accent-gold); line-height: 1.45;">
+                ${mount.comment}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
 
-    elItemsGrid.innerHTML = `
-      <div class="data-table-card">
-        <div class="data-table-wrapper">
-          <table class="data-grid-table">
-            <thead>
-              <tr>
-                <th style="width: 58px; text-align: center;">사진</th>
-                <th style="width: 75px; text-align: center;">번호</th>
-                <th style="min-width: 140px;">탈것 이름</th>
-                <th style="min-width: 280px;">고유 능력</th>
-                <th style="min-width: 220px;">유저 평가 & 코멘트</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
+    } else {
+      const rowsHtml = mounts.map(mount => {
+        const imgHtml = mount.img
+          ? `<img src="${mount.img}" alt="${mount.name}" class="table-thumb-img" loading="lazy">`
+          : `<div class="table-thumb-placeholder">🐎</div>`;
+
+        const abilHighlighted = (mount.ability || '')
+          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
+
+        return `
+          <tr class="data-row mount-row">
+            <td style="width: 58px; text-align: center;">
+              <div class="table-thumb-wrapper">${imgHtml}</div>
+            </td>
+            <td style="text-align: center;">
+              <span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(mount.no).padStart(2, '0')}</span>
+            </td>
+            <td>
+              <div class="table-item-name">${mount.name}</div>
+            </td>
+            <td class="table-ability-block">${abilHighlighted}</td>
+            <td style="font-size: 0.83rem; color: #475569; line-height: 1.45;">
+              ${mount.comment || '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      elItemsGrid.innerHTML = `
+        <div class="data-table-card">
+          <div class="data-table-wrapper">
+            <table class="data-grid-table">
+              <thead>
+                <tr>
+                  <th style="width: 58px; text-align: center;">사진</th>
+                  <th style="width: 75px; text-align: center;">번호</th>
+                  <th style="min-width: 140px;">탈것 이름</th>
+                  <th style="min-width: 280px;">고유 능력</th>
+                  <th style="min-width: 220px;">유저 평가 & 코멘트</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   }
 
   // -------------------------------------------------------------
@@ -1373,64 +1645,109 @@
       return;
     }
 
-    const rowsHtml = pets.map(pet => {
-      const imgHtml = pet.img
-        ? `<img src="${pet.img}" alt="${pet.name}" class="table-thumb-img" loading="lazy">`
-        : `<div class="table-thumb-placeholder">🐾</div>`;
+    if (currentViewMode === 'card') {
+      const cardsHtml = pets.map(pet => {
+        const imgHtml = pet.img
+          ? `<img src="${pet.img}" alt="${pet.name}" class="card-img" loading="lazy">`
+          : `<div class="card-img-placeholder">🐾</div>`;
 
-      const tierChar = (pet.tier || 'F').charAt(0);
-      const tierBadge = `<span class="tier-badge tier-${tierChar}">${pet.tier}</span>`;
-      const noBadge = `<span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(pet.no).padStart(2, '0')}</span>`;
+        const tierChar = (pet.tier || 'F').charAt(0);
+        const tierBadge = `<span class="tier-badge tier-${tierChar}">${pet.tier}</span>`;
+        const noBadge = `<span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(pet.no).padStart(2, '0')}</span>`;
 
-      const abilHighlighted = (pet.ability || '')
-        .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
+        const abilHighlighted = (pet.ability || '')
+          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
 
-      const dropsHtml = (pet.drops || [])
-        .map(d => `<span class="drop-item">📍 ${d}</span>`)
-        .join('');
+        const dropsHtml = (pet.drops || [])
+          .map(d => `<span class="drop-item">📍 ${d}</span>`)
+          .join('');
 
-      return `
-        <tr class="data-row pet-row" data-pet-id="${pet.id}">
-          <td style="width: 58px; text-align: center;">
-            <div class="table-thumb-wrapper">${imgHtml}</div>
-          </td>
-          <td style="text-align: center;">${noBadge}</td>
-          <td>
-            <div class="table-item-name">${pet.name}</div>
-          </td>
-          <td style="text-align: center;">${tierBadge}</td>
-          <td class="table-ability-block">${abilHighlighted}</td>
-          <td>${dropsHtml || '-'}</td>
-        </tr>
-      `;
-    }).join('');
+        return `
+          <div class="item-card pet-card" data-pet-id="${pet.id}">
+            <div class="card-header">
+              <div class="card-img-wrapper">${imgHtml}</div>
+              <div class="card-title-area">
+                <div class="card-name-row">
+                  <span class="card-name">${pet.name}</span>
+                  ${tierBadge}
+                  ${noBadge}
+                </div>
+              </div>
+            </div>
+            <div class="card-abilities">
+              <div class="ability-line">
+                ${abilHighlighted}
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="card-drops">${dropsHtml || '-'}</div>
+              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-    elItemsGrid.innerHTML = `
-      <div class="data-table-card">
-        <div class="data-table-wrapper">
-          <table class="data-grid-table">
-            <thead>
-              <tr>
-                <th style="width: 58px; text-align: center;">사진</th>
-                <th style="width: 75px; text-align: center;">도감 No</th>
-                <th style="min-width: 140px;">펫 이름</th>
-                <th style="width: 80px; text-align: center;">티어</th>
-                <th style="min-width: 280px;">기본 고유 능력</th>
-                <th style="min-width: 180px;">획득 / 드랍처</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
+      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
+    } else {
+      const rowsHtml = pets.map(pet => {
+        const imgHtml = pet.img
+          ? `<img src="${pet.img}" alt="${pet.name}" class="table-thumb-img" loading="lazy">`
+          : `<div class="table-thumb-placeholder">🐾</div>`;
+
+        const tierChar = (pet.tier || 'F').charAt(0);
+        const tierBadge = `<span class="tier-badge tier-${tierChar}">${pet.tier}</span>`;
+        const noBadge = `<span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(pet.no).padStart(2, '0')}</span>`;
+
+        const abilHighlighted = (pet.ability || '')
+          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
+
+        const dropsHtml = (pet.drops || [])
+          .map(d => `<span class="drop-item">📍 ${d}</span>`)
+          .join('');
+
+        return `
+          <tr class="data-row pet-row" data-pet-id="${pet.id}">
+            <td style="width: 58px; text-align: center;">
+              <div class="table-thumb-wrapper">${imgHtml}</div>
+            </td>
+            <td style="text-align: center;">${noBadge}</td>
+            <td>
+              <div class="table-item-name">${pet.name}</div>
+            </td>
+            <td style="text-align: center;">${tierBadge}</td>
+            <td class="table-ability-block">${abilHighlighted}</td>
+            <td>${dropsHtml || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      elItemsGrid.innerHTML = `
+        <div class="data-table-card">
+          <div class="data-table-wrapper">
+            <table class="data-grid-table">
+              <thead>
+                <tr>
+                  <th style="width: 58px; text-align: center;">사진</th>
+                  <th style="width: 75px; text-align: center;">도감 No</th>
+                  <th style="min-width: 140px;">펫 이름</th>
+                  <th style="width: 80px; text-align: center;">티어</th>
+                  <th style="min-width: 280px;">기본 고유 능력</th>
+                  <th style="min-width: 180px;">획득 / 드랍처</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
 
-    // Bind row click event
-    elItemsGrid.querySelectorAll('.pet-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.getAttribute('data-pet-id');
+    // Bind click event for both table row and card
+    elItemsGrid.querySelectorAll('.pet-row, .pet-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-pet-id');
         const pet = expansionData.pets.find(p => p.id === id);
         if (pet) openPetModal(pet);
       });

@@ -281,24 +281,30 @@
     </div>
   </section>
 
-  <!-- Results Count & Sort -->
+  <!-- Results Count & Sort & View Toggle -->
   <div class="results-meta">
     <div>
       총 <span id="resultCount" class="count-highlight">0</span>개의 <span id="resultUnit">아이템</span>
     </div>
-    <div id="sortWrapper" class="sort-wrapper">
-      <label for="sortSelect" style="font-size: 0.85rem;">정렬:</label>
-      <select id="sortSelect" class="filter-select">
-        <option value="default">기본 (추천 & 등급순)</option>
-        <option value="grade">티어 등급 높은 순</option>
-        <option value="name">이름 가나다순</option>
-      </select>
+    <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+      <div id="viewModeToggle" class="view-mode-toggle">
+        <button type="button" class="view-btn" data-mode="table" title="표(그리드) 형식으로 보기">▤ 표</button>
+        <button type="button" class="view-btn" data-mode="card" title="카드 형식으로 보기">▦ 카드</button>
+      </div>
+      <div id="sortWrapper" class="sort-wrapper">
+        <label for="sortSelect" style="font-size: 0.85rem;">정렬:</label>
+        <select id="sortSelect" class="filter-select">
+          <option value="default">기본 (추천 & 등급순)</option>
+          <option value="grade">티어 등급 높은 순</option>
+          <option value="name">이름 가나다순</option>
+        </select>
+      </div>
     </div>
   </div>
 
   <!-- Items/Cards Grid Container -->
   <main class="items-container">
-    <div id="itemsGrid" class="items-grid"></div>
+    <div id="itemsGrid"></div>
   </main>
 
   <!-- Detail Modal -->
