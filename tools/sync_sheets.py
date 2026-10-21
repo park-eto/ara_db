@@ -154,6 +154,9 @@ def sync_mercenaries(existing_mercs_map: dict[str, dict]) -> list[dict]:
         grade = get('기본 등급') or '일반'
         rec = get('추천 등급') or None
         ability = get('고유 능력')
+        ability = ability.replace('영웅이 공격할 때 공격할 때', '영웅이 공격할 때')
+        ability = ability.replace('1%의 확률로 세 번', 'N%의 확률로 세 번')
+        ability = ability.replace('공격할 때 1%의 확률로', '공격할 때 N%의 확률로')
 
         tier_values = {}
         for t in ('B', 'A', 'S', 'SS', 'SSS'):

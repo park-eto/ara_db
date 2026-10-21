@@ -1117,12 +1117,9 @@
         const recBadge = merc.recommend
           ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '';
 
-        let abilityText = merc.ability || '';
         const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
-
-        if (tierVal !== null && tierVal !== undefined) {
-          abilityText = abilityText.replace(/\bN\b|\bN%\b/g, `<b class="stat-number">+${tierVal}%</b>`);
-        }
+        const abilityText = formatMercAbility(merc.ability, tierVal);
+        const buffValText = formatMercBuffValue(merc.ability, tierVal);
 
         return `
           <div class="item-card merc-card" data-merc-id="${merc.id}">
@@ -1135,7 +1132,7 @@
                   ${gradeBadge}
                 </div>
                 <div class="card-subinfo">
-                  <span>버프 수치: <b style="color: #2563eb;">${tierVal !== null && tierVal !== undefined ? `+${tierVal}%` : '-'}</b></span>
+                  <span>버프 수치: <b style="color: #2563eb;">${buffValText}</b></span>
                   <span style="margin-left: 0.5rem; color: var(--text-dim);">(${getMercLevelReq(currentTier)})</span>
                 </div>
               </div>
@@ -1164,12 +1161,9 @@
         const recBadge = merc.recommend
           ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '-';
 
-        let abilityText = merc.ability || '';
         const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
-
-        if (tierVal !== null && tierVal !== undefined) {
-          abilityText = abilityText.replace(/\bN\b|\bN%\b/g, `<b class="stat-number">+${tierVal}%</b>`);
-        }
+        const abilityText = formatMercAbility(merc.ability, tierVal);
+        const buffValText = formatMercBuffValue(merc.ability, tierVal);
 
         return `
           <tr class="data-row merc-row" data-merc-id="${merc.id}">
@@ -1183,7 +1177,7 @@
             <td style="text-align: center;">${recBadge}</td>
             <td style="text-align: center;">
               <span style="font-weight: 800; color: #2563eb; font-size: 0.95rem;">
-                ${tierVal !== null && tierVal !== undefined ? `+${tierVal}%` : '-'}
+                ${buffValText}
               </span>
             </td>
             <td class="table-ability-block">${abilityText}</td>
@@ -1230,6 +1224,50 @@
   function getMercLevelReq(tier) {
     const map = { B: '5렙', A: '9렙', S: '13렙', SS: '17렙', SSS: '20렙' };
     return map[tier] || '';
+  }
+
+  function formatMercAbility(ability, tierVal) {
+    if (!ability) return '';
+    let text = ability;
+
+    text = text.replace(/영웅이 공격할 때 공격할 때/g, '영웅이 공격할 때')
+               .replace(/1%의 확률로 세 번/g, 'N%의 확률로 세 번')
+               .replace(/공격할 때 1%의 확률로/g, '공격할 때 N%의 확률로');
+
+    if (tierVal === null || tierVal === undefined) {
+      return text.replace(/\bN%\b/g, 'N%').replace(/\bN\b/g, 'N');
+    }
+
+    if (text.includes('1+N배')) {
+      return text.replace('1+N배', `<b class="stat-number">${tierVal}배</b>`);
+    }
+    if (text.includes('N배')) {
+      return text.replace('N배', `<b class="stat-number">${tierVal}배</b>`);
+    }
+    if (text.includes('N개')) {
+      return text.replace('N개', `<b class="stat-number">${tierVal}개</b>`);
+    }
+    if (text.includes('N 증가') || text.includes('N 상승')) {
+      return text.replace(/N(?=\s*(증가|상승))/, `<b class="stat-number">+${tierVal}</b>`);
+    }
+    if (text.includes('N%')) {
+      if (/N%(의\s*확률|\s*확률)/.test(text)) {
+        return text.replace(/N%(?=(\s*의)?\s*확률)/, `<b class="stat-number">${tierVal}%</b>`);
+      }
+      return text.replace('N%', `<b class="stat-number">+${tierVal}%</b>`);
+    }
+
+    return text.replace(/\bN\b/g, `<b class="stat-number">+${tierVal}%</b>`);
+  }
+
+  function formatMercBuffValue(ability, tierVal) {
+    if (tierVal === null || tierVal === undefined || tierVal === '-') return '-';
+    const text = ability || '';
+    if (text.includes('1+N배') || text.includes('N배')) return `${tierVal}배`;
+    if (text.includes('N개')) return `${tierVal}개`;
+    if (text.includes('N 증가') || text.includes('N 상승')) return `+${tierVal}`;
+    if (/N%(의\s*확률|\s*확률)/.test(text) || text.includes('세 번 공격')) return `${tierVal}%`;
+    return `+${tierVal}%`;
   }
 
   // -------------------------------------------------------------
@@ -1509,11 +1547,12 @@
 
     tiers.forEach((t, i) => {
       const val = merc.tierValues ? merc.tierValues[t] : '-';
+      const buffVal = formatMercBuffValue(merc.ability, val);
       rows += `
         <tr>
           <th>${t} 등급<br><span style="font-size: 0.7rem; color: var(--text-dim); font-weight: 400;">(${reqs[i]})</span></th>
           <td style="font-weight: 700; color: var(--accent-secondary); font-size: 1rem;">
-            ${val !== '-' ? `+${val}%` : '-'}
+            ${buffVal}
           </td>
         </tr>
       `;
@@ -1536,7 +1575,7 @@
       <div class="modal-body">
         <div>
           <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.4rem;">버프 능력</h4>
-          <div class="ability-line">${merc.ability}</div>
+          <div class="ability-line">${formatMercAbility(merc.ability, null)}</div>
         </div>
         <div>
           <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.4rem;">등급별 수치 상세 (필요 레벨)</h4>

@@ -191,8 +191,10 @@
       if (!name) continue;
 
       const grade = get('기본 등급') || '일반';
-      const rec = get('추천 등급') || null;
-      const ability = get('고유 능력');
+      let ability = get('고유 능력');
+      ability = ability.replace(/영웅이 공격할 때 공격할 때/g, '영웅이 공격할 때')
+                       .replace(/1%의 확률로 세 번/g, 'N%의 확률로 세 번')
+                       .replace(/공격할 때 1%의 확률로/g, '공격할 때 N%의 확률로');
 
       const tierValues = {};
       ['B', 'A', 'S', 'SS', 'SSS'].forEach(t => {
