@@ -377,6 +377,17 @@ def main():
         'mounts': mounts,
         'mountSubOptions': mount_sub_options
     }
+
+    # Preserve pets & petGuide if present in pets.json
+    pets_file = DATA_DIR / 'pets.json'
+    if pets_file.exists():
+        try:
+            pj = json.loads(pets_file.read_text(encoding='utf-8'))
+            bundle['pets'] = pj.get('pets', [])
+            bundle['petGuide'] = pj.get('guide', {})
+        except Exception as e:
+            print("Warning reading pets.json:", e)
+
     (DATA_DIR / 'underdark_all.js').write_text(
         'window.UNDERDARK_EXPANSION=' + json.dumps(bundle, ensure_ascii=False, separators=(',', ':')) + ';',
         encoding='utf-8'

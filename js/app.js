@@ -195,6 +195,18 @@
     // 2. Expansion Data (Heroes, Mercs, Mounts, Pets)
     if (window.UNDERDARK_EXPANSION) {
       expansionData = window.UNDERDARK_EXPANSION;
+      if (!expansionData.pets || expansionData.pets.length === 0) {
+        try {
+          const pRes = await fetch('data/pets.json');
+          if (pRes.ok) {
+            const petJson = await pRes.json();
+            expansionData.pets = petJson.pets || [];
+            expansionData.petGuide = petJson.guide || {};
+          }
+        } catch (e) {
+          console.warn('Could not load pets.json fallback', e);
+        }
+      }
     } else {
       try {
         const [hRes, mRes, mtRes, pRes] = await Promise.all([
