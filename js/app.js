@@ -940,7 +940,7 @@
 
         let extraHtml = '';
         if (hl !== 'base') {
-          const lvInfo = hero.levels ? hero.levels[hl] : null;
+          const lvInfo = hero.levels ? (hero.levels[hl] || (hl === '15' ? (hero.levels['16'] || hero.levels['17'] || hero.levels['18']) : null)) : null;
           if (lvInfo) {
             const filledStars = (lvInfo.stars || '').replace(/[^★]/g, '');
             const starsBadge = filledStars
@@ -950,7 +950,7 @@
             extraHtml = `
               <div class="ability-line awakening-changed">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
-                  <b>${hl}레벨 능력</b>
+                  <b>${lvInfo.level}레벨 능력</b>
                   ${starsBadge}
                 </div>
                 <div>${lvInfo.ability}</div>
@@ -1007,7 +1007,7 @@
         let starsHtml = '-';
 
         if (hl !== 'base') {
-          const lvInfo = hero.levels ? hero.levels[hl] : null;
+          const lvInfo = hero.levels ? (hero.levels[hl] || (hl === '15' ? (hero.levels['16'] || hero.levels['17'] || hero.levels['18']) : null)) : null;
           if (lvInfo) {
             extraHtml = `<div style="color: #1d4ed8; font-weight: 600; line-height: 1.45;">${lvInfo.ability}</div>`;
             const filledStars = (lvInfo.stars || '').replace(/[^★]/g, '');

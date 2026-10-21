@@ -281,7 +281,13 @@
       const tokens = query.trim().split(/\s+/).filter(Boolean);
 
       return heroes.filter(h => {
-        if (tier !== 'all' && h.tier !== tier) return false;
+        if (tier !== 'all') {
+          if (tier === 'SSS') {
+            if (!h.tier || !h.tier.startsWith('SSS')) return false;
+          } else if (h.tier !== tier) {
+            return false;
+          }
+        }
         if (grade !== 'all' && h.grade !== grade) return false;
 
         if (tokens.length === 0) return true;

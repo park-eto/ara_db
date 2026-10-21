@@ -81,8 +81,8 @@ def parse_heroes(wb: Workbook):
 
     heroes = []
 
-    def extract_column(col_no_letter, col_grade, col_tier, col_name, col_abil, col_lv, col_add, col_star, col_comment, pics_list):
-        r = 12
+    def extract_column(col_no_letter, col_grade, col_tier, col_name, col_abil, col_lv, col_add, col_star, col_comment, pics_list, start_row=12):
+        r = start_row
         while r <= sh.max_row:
             lv_val = clean(sh.get(r, col_lv))
             if lv_val == '3':
@@ -91,8 +91,18 @@ def parse_heroes(wb: Workbook):
                 abil_raw = clean(sh.get(r, col_abil))
                 comment = clean(sh.get(r, col_comment))
 
-                name_raw = ''
+                # Number (순번) from grade column in r..r+4
+                no_val = None
                 for rr in range(r, min(r + 4, sh.max_row + 1)):
+                    g = clean(sh.get(rr, col_grade))
+                    if g.isdigit():
+                        no_val = int(g)
+                        break
+
+                name_raw = ''
+                for rr in range(r, min(r + 6, sh.max_row + 1)):
+                    if rr > r and clean(sh.get(rr, col_lv)) == '3':
+                        break
                     n = sh.get(rr, col_name)
                     if n and clean(n) not in ('영웅', '이름', '티어'):
                         name_raw = clean(n)
@@ -109,17 +119,21 @@ def parse_heroes(wb: Workbook):
                     clean_name = name
 
                 if not comment:
-                    for rr in range(r, min(r + 4, sh.max_row + 1)):
+                    for rr in range(r, min(r + 6, sh.max_row + 1)):
+                        if rr > r and clean(sh.get(rr, col_lv)) == '3':
+                            break
                         c = clean(sh.get(rr, col_comment))
                         if c and c not in ('코멘트',):
                             comment = c
                             break
 
                 levels = {}
-                for rr in range(r, min(r + 6, sh.max_row + 1)):
+                for rr in range(r, min(r + 10, sh.max_row + 1)):
                     lv_str = clean(sh.get(rr, col_lv))
                     add_str = clean(sh.get(rr, col_add))
                     star_str = clean(sh.get(rr, col_star))
+                    if rr > r and lv_str == '3':
+                        break
                     if lv_str and lv_str.isdigit() and add_str:
                         levels[lv_str] = {
                             'level': int(lv_str),
@@ -137,7 +151,8 @@ def parse_heroes(wb: Workbook):
                 all_text = f"{clean_name} {' '.join(aliases)} {abil_raw} " + ' '.join(l['ability'] for l in levels.values())
 
                 heroes.append({
-                    'id': f"hero-{len(heroes) + 1}",
+                    'id': f"hero-{no_val if no_val is not None else len(heroes) + 1}",
+                    'no': no_val,
                     'name': clean_name,
                     'aliases': [a.strip() for a in aliases if a.strip()],
                     'grade': grade_raw or '전설',
@@ -154,14 +169,17 @@ def parse_heroes(wb: Workbook):
                         'comment': norm_key(comment or ''),
                     }
                 })
-                r += 4
+                r += 3
             else:
                 r += 1
 
-    # Left side (B~I)
-    extract_column('B', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', pics_left)
-    # Right side (K~R)
-    extract_column('K', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', pics_right)
+    # Left side (B~I) starts at row 12
+    extract_column('B', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', pics_left, start_row=12)
+    # Right side (K~R) starts at row 3 (contains hero #7 Agni)
+    extract_column('K', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', pics_right, start_row=3)
+
+    # Sort heroes by author's original numbering 1..35
+    heroes.sort(key=lambda x: x['no'] if x['no'] is not None else 999)
 
     print(f"Extracted {len(heroes)} heroes.")
     return heroes
