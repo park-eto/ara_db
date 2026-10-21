@@ -102,6 +102,7 @@
   let userExplicitViewMode = localStorage.getItem('ara_view_mode');
   let currentViewMode = userExplicitViewMode || (window.innerWidth < 768 ? 'card' : 'table');
   let elViewModeToggle;
+  let elAdminBtn;
 
   document.addEventListener('DOMContentLoaded', init);
 
@@ -172,6 +173,7 @@
     elModalOverlay = document.getElementById('modalOverlay');
     elModalContent = document.getElementById('modalContent');
     elViewModeToggle = document.getElementById('viewModeToggle');
+    elAdminBtn = document.getElementById('adminBtn');
   }
 
   async function loadAllData() {
@@ -436,6 +438,9 @@
     }
     if (elPetGuideBtn) {
       elPetGuideBtn.addEventListener('click', openPetGuideModal);
+    }
+    if (elAdminBtn) {
+      elAdminBtn.addEventListener('click', openAdminModal);
     }
 
     // Keyboard & Modal
@@ -2174,5 +2179,144 @@
     if (params.has('tags')) state.tags = params.get('tags').split(',').filter(Boolean);
     if (params.has('awak')) state.awakeningLevel = parseInt(params.get('awak'), 10) || 0;
     if (params.has('sort')) state.sortBy = params.get('sort');
+  }
+
+  // ==========================================
+  // Admin & Google Sheets Integration Modal
+  // ==========================================
+  const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1rT0VUnOxTHSo_k8xa4MIyzWtQdxSuhTi/edit?usp=sharing';
+  const DEFAULT_ADMIN_ID = 'admin';
+  const DEFAULT_ADMIN_PW = 'underdark1234';
+
+  function openAdminModal() {
+    const isAuthed = sessionStorage.getItem('underdark_admin_auth') === 'true';
+    if (isAuthed) {
+      renderAdminDashboardModal();
+    } else {
+      renderAdminLoginModal();
+    }
+  }
+
+  function renderAdminLoginModal(errorMsg = '') {
+    const html = `
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.3rem;">🔐</span>
+          <h2 style="font-size: 1.15rem; font-weight: 800; margin: 0; color: #0f172a;">관리자 로그인</h2>
+        </div>
+        <button type="button" class="modal-close-btn" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; max-width: 440px; margin: 0 auto; width: 100%;">
+        <p style="font-size: 0.88rem; color: #475569; margin-bottom: 1.25rem; line-height: 1.5;">
+          관리자로 로그인하시면 데이터 수정용 <strong>구글 스프레드시트</strong>가 새 창으로 열립니다.
+        </p>
+        <form id="adminLoginForm">
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: #334155;" for="modalAdminId">아이디</label>
+            <input type="text" id="modalAdminId" class="filter-select" style="width: 100%; border-radius: 8px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc;" placeholder="admin" required autocomplete="username">
+          </div>
+          <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: #334155;" for="modalAdminPw">비밀번호</label>
+            <input type="password" id="modalAdminPw" class="filter-select" style="width: 100%; border-radius: 8px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc;" placeholder="비밀번호 입력" required autocomplete="current-password">
+          </div>
+          ${errorMsg ? `
+            <div style="color: #ef4444; font-size: 0.84rem; margin-bottom: 1rem; text-align: center; font-weight: 600; padding: 0.5rem; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;">
+              ${errorMsg}
+            </div>
+          ` : ''}
+          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; font-weight: 700; padding: 0.8rem; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+            <span>🔓 로그인 및 구글 시트 열기</span>
+          </button>
+        </form>
+      </div>
+    `;
+
+    elModalContent.innerHTML = html;
+    showModal();
+
+    const form = document.getElementById('adminLoginForm');
+    const idInput = document.getElementById('modalAdminId');
+    const pwInput = document.getElementById('modalAdminPw');
+
+    setTimeout(() => {
+      if (idInput && !idInput.value) idInput.focus();
+      else if (pwInput) pwInput.focus();
+    }, 100);
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const id = (idInput.value || '').trim();
+      const pw = (pwInput.value || '').trim();
+      const validPw = localStorage.getItem('underdark_admin_pw') || DEFAULT_ADMIN_PW;
+
+      if (id === DEFAULT_ADMIN_ID && pw === validPw) {
+        sessionStorage.setItem('underdark_admin_auth', 'true');
+        window.open(GOOGLE_SHEET_URL, '_blank');
+        renderAdminDashboardModal(true);
+      } else {
+        renderAdminLoginModal('아이디 또는 비밀번호가 올바르지 않습니다.');
+      }
+    });
+  }
+
+  function renderAdminDashboardModal(justOpened = false) {
+    const html = `
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.3rem;">⚙️</span>
+          <h2 style="font-size: 1.15rem; font-weight: 800; margin: 0; color: #0f172a;">관리자 모드</h2>
+        </div>
+        <button type="button" class="modal-close-btn" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; max-width: 480px; margin: 0 auto; width: 100%;">
+        ${justOpened ? `
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 0.65rem;">
+            <span style="font-size: 1.25rem; line-height: 1;">🚀</span>
+            <div>
+              <div style="font-weight: 700; color: #166534; font-size: 0.9rem;">구글 스프레드시트가 새 창으로 열렸습니다!</div>
+              <div style="font-size: 0.8rem; color: #15803d; margin-top: 0.2rem; line-height: 1.4;">
+                시트에서 내용을 수정하시면 실시간 자동 저장됩니다.
+              </div>
+            </div>
+          </div>
+        ` : `
+          <p style="font-size: 0.88rem; color: #475569; margin-bottom: 1.25rem;">
+            현재 <strong>관리자(admin)</strong>로 인증되어 있습니다.
+          </p>
+        `}
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem; margin-bottom: 1.25rem;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
+            <span>💡</span> 데이터 수정 및 반영 방법
+          </div>
+          <ol style="font-size: 0.82rem; color: #64748b; line-height: 1.6; padding-left: 1.15rem; margin: 0;">
+            <li>구글 스프레드시트에서 영웅/용병/탈것/펫 데이터를 수정합니다.</li>
+            <li>수정 완료 후 프로젝트 폴더의 <code style="background: #e2e8f0; padding: 2px 5px; border-radius: 4px; color: #1e293b; font-weight: 600;">sync_sheets.bat</code> 파일을 실행합니다.</li>
+            <li>1초 만에 웹사이트에 최신 데이터가 반영됩니다!</li>
+          </ol>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+          <a href="${GOOGLE_SHEET_URL}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 0.85rem; font-weight: 700; font-size: 0.95rem; justify-content: center; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border-radius: 10px; display: flex; align-items: center; gap: 0.4rem; text-decoration: none; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+            <span>📊 구글 스프레드시트 새창 열기</span>
+            <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+          <button type="button" id="adminLogoutBtn" class="btn-outline" style="padding: 0.7rem; font-size: 0.85rem; justify-content: center; color: #dc2626; border-color: #fecaca; background: #fff;">
+            <span>🚪 로그아웃</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    elModalContent.innerHTML = html;
+    showModal();
+
+    const logoutBtn = document.getElementById('adminLogoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('underdark_admin_auth');
+        renderAdminLoginModal();
+      });
+    }
   }
 })();

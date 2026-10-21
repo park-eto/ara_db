@@ -4,26 +4,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ara Item DB</title>
+  <title>Ara DB - 관리자 콘솔</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
 </head>
 
-<body>
+<body style="min-height: 100vh; display: flex; flex-direction: column;">
   <!-- Header -->
   <header class="site-header">
     <div class="header-inner">
       <div class="logo-area">
-        <div class="logo-icon" style="background: linear-gradient(135deg, #ff5470, #9d4edd);">⚙️</div>
-        <div class="logo-text">Ara ADMIN</div>
+        <a href="index.html" class="logo-link" style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="logo-icon" style="background: linear-gradient(135deg, #2563eb, #4f46e5); color: #fff; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">⚙️</div>
+          <div class="brand-name" style="font-size: 1.15rem; font-weight: 800;">Ara <b>ADMIN</b></div>
+        </a>
       </div>
       <div class="header-actions">
         <a href="index.html" class="btn-header">
           <span>🏠 도감 메인으로</span>
         </a>
         <button id="logoutBtn" class="btn-header" style="display: none;">
-          <span>로그아웃</span>
+          <span>🚪 로그아웃</span>
         </button>
       </div>
     </div>
@@ -31,201 +33,82 @@
 
   <!-- Login Section (shown if not authenticated) -->
   <div id="loginSection" class="modal-overlay active"
-    style="position: relative; min-height: 80vh; background: transparent; opacity: 1; pointer-events: auto;">
+    style="position: relative; min-height: 75vh; background: transparent; opacity: 1; pointer-events: auto;">
     <div class="modal-content"
-      style="max-width: 420px; margin: auto; padding: 2rem; border-color: var(--border-glass);">
+      style="max-width: 440px; margin: auto; padding: 2rem; border-color: var(--border-subtle); box-shadow: var(--shadow-lg);">
       <div style="text-align: center; margin-bottom: 1.5rem;">
-        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐</div>
-        <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main);">관리자 인증</h2>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">아이템 정보 수정을 위해 로그인해주세요.</p>
+        <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🔐</div>
+        <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">관리자 인증</h2>
+        <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.35rem; line-height: 1.45;">
+          로그인하시면 데이터 수정용 <strong>구글 스프레드시트</strong>가 새 창으로 열립니다.
+        </p>
       </div>
 
       <form id="loginForm">
-        <div class="form-group">
-          <label class="form-label" for="adminId">아이디</label>
-          <input type="text" id="adminId" class="form-input" placeholder="admin" required autocomplete="username">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: #334155;" for="adminId">아이디</label>
+          <input type="text" id="adminId" class="filter-select" style="width: 100%; border-radius: 8px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc;" placeholder="admin" required autocomplete="username">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="adminPw">비밀번호</label>
-          <input type="password" id="adminPw" class="form-input" placeholder="비밀번호 입력" required
-            autocomplete="current-password">
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: #334155;" for="adminPw">비밀번호</label>
+          <input type="password" id="adminPw" class="filter-select" style="width: 100%; border-radius: 8px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc;" placeholder="비밀번호 입력" required autocomplete="current-password">
         </div>
         <div id="loginError"
-          style="display: none; color: var(--accent-danger); font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
-          아이디 또는 비밀번호가 일치하지 않습니다.
+          style="display: none; color: #ef4444; font-size: 0.84rem; margin-bottom: 1rem; text-align: center; font-weight: 600; padding: 0.5rem; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;">
+          아이디 또는 비밀번호가 올바르지 않습니다.
         </div>
-        <button type="submit" class="btn-primary" style="width: 100%; padding: 0.75rem; margin-top: 0.5rem;">
-          로그인
+        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; font-weight: 700; padding: 0.8rem; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+          <span>🔓 로그인 및 구글 시트 열기</span>
         </button>
-        <p style="font-size: 0.75rem; color: var(--text-dim); text-align: center; margin-top: 1rem;">
-          <!-- 기본 계정: <code>admin</code> / <code>underdark1234</code> -->
-        </p>
       </form>
     </div>
   </div>
 
   <!-- Dashboard Section (shown after login) -->
-  <main id="dashboardSection" class="admin-container" style="display: none;">
-    <div class="admin-header">
-      <div>
-        <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main);">아이템 데이터 관리</h1>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
-          아이템 추가, 수정, 삭제 및 저장 내보내기를 할 수 있습니다.
+  <main id="dashboardSection" class="items-container" style="display: none; max-width: 680px; margin: 3rem auto; padding: 0 1.5rem;">
+    <div class="modal-content" style="padding: 2.2rem; border-color: var(--border-subtle); box-shadow: var(--shadow-lg);">
+      <div style="text-align: center; margin-bottom: 1.75rem;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊</div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: #0f172a;">언더다크 DB 데이터 관리</h1>
+        <p style="font-size: 0.88rem; color: #64748b; margin-top: 0.35rem;">
+          모든 게임 데이터는 연동된 구글 스프레드시트에서 실시간으로 안전하게 관리됩니다.
         </p>
       </div>
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <button id="addItemBtn" class="btn-primary" style="display: flex; align-items: center; gap: 0.3rem;">
-          <span>➕ 새 아이템 추가</span>
-        </button>
-        <button id="saveChangesBtn" class="btn-primary"
-          style="background: linear-gradient(135deg, #00f5d4, #05b098); color: #000; font-weight: 800;">
-          <span>💾 변경사항 저장 (서버/로컬)</span>
-        </button>
-        <button id="downloadJsonBtn" class="btn-secondary" title="GitHub 업로드용 JSON 다운로드">
-          <span>📥 JSON 다운로드</span>
-        </button>
-        <button id="resetDataBtn" class="btn-danger" title="엑셀 기본 데이터로 원복">
-          <span>초기화</span>
-        </button>
+
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+        <span style="font-size: 1.4rem; line-height: 1;">🚀</span>
+        <div>
+          <div style="font-weight: 700; color: #166534; font-size: 0.95rem;">구글 스프레드시트 바로가기</div>
+          <div style="font-size: 0.82rem; color: #15803d; margin-top: 0.25rem; line-height: 1.45;">
+            새 창에서 시트를 열고 영웅, 지원용병, 탈것, 펫 정보를 자유롭게 수정하세요.
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Search & Filter within Admin Table -->
-    <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
-      <input type="text" id="adminSearchInput" class="form-input" placeholder="아이템 이름 또는 ID 검색..."
-        style="max-width: 300px;">
-      <select id="adminCatFilter" class="form-select" style="max-width: 160px;">
-        <option value="all">전체 카테고리</option>
-        <option value="weapon">주 무기</option>
-        <option value="sub">보조 무기</option>
-        <option value="helmet">투구</option>
-        <option value="ring">반지</option>
-        <option value="etc">기타</option>
-      </select>
-      <span
-        style="display: flex; align-items: center; color: var(--text-muted); font-size: 0.85rem; margin-left: auto;">
-        등록된 아이템: <b id="adminItemCount" style="color: var(--accent-secondary); margin-left: 0.3rem;">0</b>개
-      </span>
-    </div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span>💡</span> 데이터 수정 및 웹사이트 반영 절차
+        </div>
+        <ol style="font-size: 0.85rem; color: #64748b; line-height: 1.65; padding-left: 1.25rem; margin: 0;">
+          <li>아래 <strong>[구글 스프레드시트 열기]</strong> 버튼을 눌러 시트에서 데이터를 수정합니다.</li>
+          <li>수정 내용은 구글 클라우드에 <strong>실시간 자동 저장</strong>됩니다.</li>
+          <li>웹사이트 반영 시 프로젝트 폴더의 <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #1e293b; font-weight: 600;">sync_sheets.bat</code> 파일을 더블클릭합니다.</li>
+          <li>1초 만에 웹사이트의 모든 데이터가 최신 상태로 갱신됩니다!</li>
+        </ol>
+      </div>
 
-    <!-- Admin Items Table -->
-    <div
-      style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px; overflow-x: auto;">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th style="width: 50px;">이미지</th>
-            <th style="width: 70px; white-space: nowrap;">ID</th>
-            <th style="width: 150px;">이름</th>
-            <th style="min-width: 95px; width: 95px; white-space: nowrap;">분류</th>
-            <th style="min-width: 95px; width: 95px; white-space: nowrap;">공격 거리</th>
-            <th style="width: 70px; white-space: nowrap;">등급</th>
-            <th style="width: 70px; white-space: nowrap;">추천</th>
-            <th>기본 능력 요약</th>
-            <th style="width: 130px; text-align: center; white-space: nowrap;">관리</th>
-          </tr>
-        </thead>
-        <tbody id="adminTableBody">
-          <!-- Rows rendered by admin.js -->
-        </tbody>
-      </table>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <a id="openSheetBtn" href="https://docs.google.com/spreadsheets/d/1rT0VUnOxTHSo_k8xa4MIyzWtQdxSuhTi/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 0.9rem; font-weight: 700; font-size: 1rem; justify-content: center; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border-radius: 10px; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);">
+          <span>📊 구글 스프레드시트 새창 열기</span>
+          <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="index.html" class="btn-outline" style="padding: 0.75rem; font-size: 0.9rem; justify-content: center; color: #334155; border-color: #cbd5e1; background: #fff; text-decoration: none; display: flex; align-items: center; gap: 0.4rem;">
+          <span>🏠 도감 메인 화면으로 돌아가기</span>
+        </a>
+      </div>
     </div>
   </main>
 
-  <!-- Edit / Add Modal -->
-  <div id="editModalOverlay" class="modal-overlay">
-    <div class="modal-content" style="max-width: 720px;">
-      <div class="modal-header">
-        <h3 id="editModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);">아이템 정보 편집</h3>
-        <button id="editModalClose" class="modal-close-btn">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="itemEditForm">
-          <input type="hidden" id="editItemId">
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label class="form-label" for="editName">아이템 이름 *</label>
-              <input type="text" id="editName" class="form-input" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="editAliases">별칭 (쉼표로 구분)</label>
-              <input type="text" id="editAliases" class="form-input" placeholder="예: 빛단, 광검">
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem;">
-            <div class="form-group">
-              <label class="form-label" for="editCat">카테고리 *</label>
-              <select id="editCat" class="form-select" required>
-                <option value="weapon">주 무기</option>
-                <option value="sub">보조 무기</option>
-                <option value="helmet">투구</option>
-                <option value="ring">반지</option>
-                <option value="etc">기타</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="editRange">거리</label>
-              <select id="editRange" class="form-select">
-                <option value="">없음</option>
-                <option value="근거리">근거리</option>
-                <option value="원거리">원거리</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="editGrade">등급 (S+ ~ F-)</label>
-              <input type="text" id="editGrade" class="form-input" placeholder="S+">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="editUsage">추천 (O/△/X)</label>
-              <select id="editUsage" class="form-select">
-                <option value="">미지정</option>
-                <option value="O">추천 (O)</option>
-                <option value="△">상황별 (△)</option>
-                <option value="X">비추천 (X)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editAbilities">기본 고유 능력 (줄바꿈으로 구분)</label>
-            <textarea id="editAbilities" class="form-textarea"
-              placeholder="관통하는 검기를 발사하여 공격합니다.&#10;영웅의 치명타 피해가 300% 증가합니다."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">각성 단계별 능력 변화 (1~5각성)</label>
-            <div
-              style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 8px;">
-              <input type="text" id="editAwak1" class="form-input" placeholder="1각성 변화 능력...">
-              <input type="text" id="editAwak2" class="form-input" placeholder="2각성 변화 능력...">
-              <input type="text" id="editAwak3" class="form-input" placeholder="3각성 변화 능력...">
-              <input type="text" id="editAwak4" class="form-input" placeholder="4각성 변화 능력...">
-              <input type="text" id="editAwak5" class="form-input" placeholder="5각성 변화 능력...">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editDrops">드랍처 (쉼표로 구분)</label>
-            <input type="text" id="editDrops" class="form-input" placeholder="상점 아이템 상자 뽑기, 스테이지, 펭귄">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="editComment">공략 코멘트</label>
-            <textarea id="editComment" class="form-textarea" placeholder="이 아이템에 대한 유저 팁이나 코멘트"></textarea>
-          </div>
-
-          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
-            <button type="button" id="editCancelBtn" class="btn-secondary">취소</button>
-            <button type="submit" class="btn-primary">저장하기</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <script src="data/items.js"></script>
   <script src="js/admin.js"></script>
 </body>
 
