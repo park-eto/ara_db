@@ -82,69 +82,81 @@ def parse_heroes(wb: Workbook):
     heroes = []
 
     def extract_column(col_no_letter, col_grade, col_tier, col_name, col_abil, col_lv, col_add, col_star, col_comment, pics_list):
-        for r in range(12, sh.max_row + 1):
-            name_raw = sh.get(r, col_name)
-            tier_raw = sh.get(r, col_tier)
-            grade_raw = sh.get(r, col_grade)
-            abil_raw = sh.get(r, col_abil)
+        r = 12
+        while r <= sh.max_row:
+            lv_val = clean(sh.get(r, col_lv))
+            if lv_val == '3':
+                tier_raw = clean(sh.get(r, col_tier))
+                grade_raw = clean(sh.get(r, col_grade))
+                abil_raw = clean(sh.get(r, col_abil))
+                comment = clean(sh.get(r, col_comment))
 
-            if not clean(name_raw) or clean(name_raw) in ('영웅', '이름', '티어'):
-                continue
-
-            name = clean(name_raw)
-            aliases = re.findall(r'\(([^)]+)\)', name_raw)
-            clean_name = clean(re.sub(r'\([^)]*\)', '', name_raw))
-            if not clean_name:
-                clean_name = name
-
-            # Abilities by level (scanning down until next hero)
-            levels = {}
-            for rr in range(r, min(r + 6, sh.max_row + 1)):
-                lv_str = clean(sh.get(rr, col_lv))
-                add_str = clean(sh.get(rr, col_add))
-                star_str = clean(sh.get(rr, col_star))
-                if lv_str and lv_str.isdigit() and add_str:
-                    levels[lv_str] = {
-                        'level': int(lv_str),
-                        'ability': add_str,
-                        'stars': star_str
-                    }
-
-            # Hero image
-            img = None
-            pic = find_hero_pic(r, pics_list)
-            if pic:
-                img_name = f"hero_{norm_key(clean_name)}.webp"
-                img = save_image(wb, pic.media_path, IMG_HEROES / img_name)
-
-            comment = clean(sh.get(r, col_comment))
-            if not comment:
-                for rr in range(r, r + 4):
-                    c = clean(sh.get(rr, col_comment))
-                    if c:
-                        comment = c
+                name_raw = ''
+                for rr in range(r, min(r + 4, sh.max_row + 1)):
+                    n = sh.get(rr, col_name)
+                    if n and clean(n) not in ('영웅', '이름', '티어'):
+                        name_raw = clean(n)
                         break
 
-            all_text = f"{clean_name} {' '.join(aliases)} {abil_raw} " + ' '.join(l['ability'] for l in levels.values())
+                if not name_raw:
+                    r += 1
+                    continue
 
-            heroes.append({
-                'id': f"hero-{len(heroes) + 1}",
-                'name': clean_name,
-                'aliases': [a.strip() for a in aliases if a.strip()],
-                'grade': clean(grade_raw) or '전설',
-                'tier': clean(tier_raw) or None,
-                'ability': clean(abil_raw),
-                'levels': levels,
-                'comment': comment or None,
-                'img': img,
-                'search': {
-                    'name': norm_key(clean_name),
-                    'cho': chosung(norm_key(clean_name)),
-                    'alias': [norm_key(a) for a in aliases],
-                    'text': norm_key(all_text),
-                    'comment': norm_key(comment or ''),
-                }
-            })
+                name = clean(name_raw)
+                aliases = re.findall(r'\(([^)]+)\)', name_raw)
+                clean_name = clean(re.sub(r'\([^)]*\)', '', name_raw))
+                if not clean_name:
+                    clean_name = name
+
+                if not comment:
+                    for rr in range(r, min(r + 4, sh.max_row + 1)):
+                        c = clean(sh.get(rr, col_comment))
+                        if c and c not in ('코멘트',):
+                            comment = c
+                            break
+
+                levels = {}
+                for rr in range(r, min(r + 6, sh.max_row + 1)):
+                    lv_str = clean(sh.get(rr, col_lv))
+                    add_str = clean(sh.get(rr, col_add))
+                    star_str = clean(sh.get(rr, col_star))
+                    if lv_str and lv_str.isdigit() and add_str:
+                        levels[lv_str] = {
+                            'level': int(lv_str),
+                            'ability': add_str,
+                            'stars': star_str
+                        }
+
+                # Hero image
+                img = None
+                pic = find_hero_pic(r, pics_list)
+                if pic:
+                    img_name = f"hero_{norm_key(clean_name)}.webp"
+                    img = save_image(wb, pic.media_path, IMG_HEROES / img_name)
+
+                all_text = f"{clean_name} {' '.join(aliases)} {abil_raw} " + ' '.join(l['ability'] for l in levels.values())
+
+                heroes.append({
+                    'id': f"hero-{len(heroes) + 1}",
+                    'name': clean_name,
+                    'aliases': [a.strip() for a in aliases if a.strip()],
+                    'grade': grade_raw or '전설',
+                    'tier': tier_raw or None,
+                    'ability': clean(abil_raw),
+                    'levels': levels,
+                    'comment': comment or None,
+                    'img': img,
+                    'search': {
+                        'name': norm_key(clean_name),
+                        'cho': chosung(norm_key(clean_name)),
+                        'alias': [norm_key(a) for a in aliases],
+                        'text': norm_key(all_text),
+                        'comment': norm_key(comment or ''),
+                    }
+                })
+                r += 4
+            else:
+                r += 1
 
     # Left side (B~I)
     extract_column('B', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', pics_left)

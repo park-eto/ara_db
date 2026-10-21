@@ -922,7 +922,7 @@
           : `<div class="card-img-placeholder">🦸</div>`;
 
         const tierBadge = hero.tier
-          ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : '';
+          ? `<span class="tier-badge tier-${hero.tier}">${hero.tier}</span>` : '';
         const gradeBadge = hero.grade
           ? `<span class="badge-tag">${hero.grade}</span>` : '';
 
@@ -987,7 +987,7 @@
           : `<div class="table-thumb-placeholder">🦸</div>`;
 
         const tierBadge = hero.tier
-          ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : '-';
+          ? `<span class="tier-badge tier-${hero.tier}">${hero.tier}</span>` : '-';
         const gradeBadge = hero.grade
           ? `<span class="badge-tag">${hero.grade}</span>` : '-';
 
@@ -1017,10 +1017,10 @@
               ${hero.aliases && hero.aliases.length ? `<div class="table-item-aliases">${hero.aliases.join(', ')}</div>` : ''}
             </td>
             <td style="text-align: center;">${tierBadge}</td>
+            <td style="text-align: center; white-space: nowrap;">${starsHtml}</td>
             <td style="text-align: center;">${gradeBadge}</td>
             <td class="table-ability-block">${hero.ability || '정보 없음'}</td>
             <td class="table-ability-block">${extraHtml}</td>
-            <td style="text-align: center; white-space: nowrap;">${starsHtml}</td>
             <td style="font-size: 0.82rem; color: #475569; max-width: 200px; line-height: 1.45;">
               ${hero.comment || '-'}
             </td>
@@ -1037,10 +1037,10 @@
                   <th style="width: 58px; text-align: center;">사진</th>
                   <th style="min-width: 130px;">영웅명</th>
                   <th style="width: 80px; text-align: center;">티어</th>
+                  <th style="width: 90px; text-align: center;">추천</th>
                   <th style="width: 80px; text-align: center;">등급</th>
                   <th style="min-width: 250px;">기본 고유 능력</th>
                   <th style="min-width: 250px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
-                  <th style="width: 110px; text-align: center;">추천도</th>
                   <th style="min-width: 160px;">평가 & 코멘트</th>
                 </tr>
               </thead>
@@ -1448,7 +1448,7 @@
           <div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
               <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">${hero.name}</h2>
-              ${hero.tier ? `<span class="tier-badge tier-${hero.tier.charAt(0)}">${hero.tier}</span>` : ''}
+              ${hero.tier ? `<span class="tier-badge tier-${hero.tier}">${hero.tier}</span>` : ''}
               <span class="badge-tag">${hero.grade}</span>
             </div>
             ${hero.aliases && hero.aliases.length ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem;">별칭: ${hero.aliases.join(', ')}</div>` : ''}
