@@ -195,20 +195,11 @@
     }
 
     // 2. Expansion Data (Heroes, Mercs, Mounts, Pets)
-    if (window.UNDERDARK_EXPANSION) {
+    const cachedLive = window.SheetsSync ? window.SheetsSync.getCachedData() : null;
+    if (cachedLive && cachedLive.heroes && cachedLive.heroes.length) {
+      expansionData = cachedLive;
+    } else if (window.UNDERDARK_EXPANSION) {
       expansionData = window.UNDERDARK_EXPANSION;
-      if (!expansionData.pets || expansionData.pets.length === 0) {
-        try {
-          const pRes = await fetch('data/pets.json');
-          if (pRes.ok) {
-            const petJson = await pRes.json();
-            expansionData.pets = petJson.pets || [];
-            expansionData.petGuide = petJson.guide || {};
-          }
-        } catch (e) {
-          console.warn('Could not load pets.json fallback', e);
-        }
-      }
     } else {
       try {
         const [hRes, mRes, mtRes, pRes] = await Promise.all([
@@ -229,6 +220,13 @@
       } catch (e) {
         console.warn('Could not load expansion data json', e);
       }
+    }
+
+    // Trigger silent background revalidation with Google Sheets
+    if (window.SheetsSync) {
+      setTimeout(() => {
+        triggerBackgroundSheetSync(false);
+      }, 300);
     }
   }
 
@@ -2285,15 +2283,13 @@
           </p>
         `}
 
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem; margin-bottom: 1.25rem;">
-          <div style="font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
-            <span>💡</span> 데이터 수정 및 반영 방법
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.1rem; margin-bottom: 1.25rem;">
+          <div style="font-size: 0.9rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
+            <span>⚡</span> 실시간 자동 동기화 활성화됨
           </div>
-          <ol style="font-size: 0.82rem; color: #64748b; line-height: 1.6; padding-left: 1.15rem; margin: 0;">
-            <li>구글 스프레드시트에서 영웅/용병/탈것/펫 데이터를 수정합니다.</li>
-            <li>수정 완료 후 프로젝트 폴더의 <code style="background: #e2e8f0; padding: 2px 5px; border-radius: 4px; color: #1e293b; font-weight: 600;">sync_sheets.bat</code> 파일을 실행합니다.</li>
-            <li>1초 만에 웹사이트에 최신 데이터가 반영됩니다!</li>
-          </ol>
+          <p style="font-size: 0.82rem; color: #15803d; line-height: 1.55; margin: 0;">
+            구글 시트에서 수정하신 내용은 <strong>웹사이트 접속 및 새로고침 시 실시간으로 즉시 반영</strong>됩니다. 별도의 터미널이나 파일 실행이 전혀 필요 없습니다!
+          </p>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 0.65rem;">
@@ -2301,6 +2297,9 @@
             <span>📊 구글 스프레드시트 새창 열기</span>
             <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           </a>
+          <button type="button" id="adminForceSyncBtn" class="btn-secondary" style="padding: 0.75rem; font-size: 0.85rem; font-weight: 600; justify-content: center; color: #1e293b; border-color: #cbd5e1; background: #f8fafc; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; border-radius: 8px;">
+            <span>🔄 지금 즉시 구글 시트 동기화</span>
+          </button>
           <button type="button" id="adminLogoutBtn" class="btn-outline" style="padding: 0.7rem; font-size: 0.85rem; justify-content: center; color: #dc2626; border-color: #fecaca; background: #fff;">
             <span>🚪 로그아웃</span>
           </button>
@@ -2311,6 +2310,20 @@
     elModalContent.innerHTML = html;
     showModal();
 
+    const forceSyncBtn = document.getElementById('adminForceSyncBtn');
+    if (forceSyncBtn) {
+      forceSyncBtn.addEventListener('click', async () => {
+        forceSyncBtn.disabled = true;
+        forceSyncBtn.innerHTML = '<span>⏳ 구글 시트 동기화 중...</span>';
+        await triggerBackgroundSheetSync(true);
+        forceSyncBtn.disabled = false;
+        forceSyncBtn.innerHTML = '<span>✅ 동기화 완료!</span>';
+        setTimeout(() => {
+          forceSyncBtn.innerHTML = '<span>🔄 지금 즉시 구글 시트 동기화</span>';
+        }, 2000);
+      });
+    }
+
     const logoutBtn = document.getElementById('adminLogoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
@@ -2318,5 +2331,58 @@
         renderAdminLoginModal();
       });
     }
+  }
+
+  // ==========================================
+  // Background Real-Time Sheet Revalidation
+  // ==========================================
+  let isSyncingSheets = false;
+  async function triggerBackgroundSheetSync(isManual = false) {
+    if (isSyncingSheets || !window.SheetsSync) return;
+    isSyncingSheets = true;
+    try {
+      const fresh = await window.SheetsSync.fetchLiveExpansionData(isManual);
+      if (fresh) {
+        const oldHash = JSON.stringify(expansionData || {});
+        const newHash = JSON.stringify(fresh);
+        if (oldHash !== newHash) {
+          expansionData = fresh;
+          window.UNDERDARK_EXPANSION = fresh;
+          renderActiveView();
+          if (isManual) {
+            showToast('✅ 구글 시트 최신 데이터가 반영되었습니다.');
+          } else {
+            console.log('⚡ Live Google Sheets data updated and rendered.');
+          }
+        } else if (isManual) {
+          showToast('✅ 이미 최신 데이터 상태입니다.');
+        }
+      }
+    } catch (e) {
+      console.warn('Live Google Sheets background sync failed:', e);
+      if (isManual) {
+        showToast('⚠️ 구글 시트 연결 실패. 잠시 후 다시 시도해주세요.');
+      }
+    } finally {
+      isSyncingSheets = false;
+    }
+  }
+
+  function showToast(msg) {
+    let toast = document.getElementById('appToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'appToast';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(15,23,42,0.92);color:#fff;padding:10px 20px;border-radius:30px;font-size:0.85rem;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.25);z-index:9999;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);pointer-events:none;opacity:0;display:flex;align-items:center;gap:6px;';
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = msg;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(100px)';
+    }, 2800);
   }
 })();
