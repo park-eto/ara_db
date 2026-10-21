@@ -41,6 +41,352 @@
     petDrop: 'all',
   };
 
+  // -------------------------------------------------------------
+  // Data Grid Table Sorting State & Ranking Definitions
+  // -------------------------------------------------------------
+  const tabSortState = {
+    items: { col: null, dir: 'desc' },
+    heroes: { col: null, dir: 'desc' },
+    mercenaries: { col: null, dir: 'desc' },
+    mounts: { col: 'no', dir: 'asc' },
+    pets: { col: 'no', dir: 'asc' },
+  };
+
+  const GRADE_RANKS = {
+    '신화': 60,
+    '전설': 50,
+    '영웅': 40,
+    '희귀': 30,
+    '고급': 20,
+    '일반': 10
+  };
+
+  function parseTierRank(tier) {
+    if (!tier) return 0;
+    const baseMap = { SSS: 100, SS: 85, S: 70, A: 55, B: 40, C: 30, D: 20, E: 10, F: 0 };
+    for (const [key, base] of Object.entries(baseMap)) {
+      if (tier.startsWith(key)) {
+        if (tier.endsWith('+')) return base + 4;
+        if (tier.endsWith('-')) return base - 4;
+        return base;
+      }
+    }
+    return 0;
+  }
+
+  const REC_RANKS = {
+    'SSS': 100,
+    'SS': 90,
+    'S': 80,
+    'A': 70,
+    'B': 60,
+    'J': 55,
+    'C': 50,
+    'X': 10
+  };
+
+  const USAGE_RANKS = {
+    'O': 40,
+    '△': 30,
+    'X': 20,
+    'XX': 10
+  };
+
+  function renderTh(colKey, label, style = '', isCenter = false) {
+    const cur = tabSortState[currentTab] || {};
+    const isActive = cur.col === colKey;
+    const dir = cur.dir || 'desc';
+    const alignClass = isCenter ? 'text-center' : '';
+    const sortedClass = isActive ? `is-sorted sort-${dir}` : '';
+    const arrow = isActive ? (dir === 'asc' ? '▲' : '▼') : '↕';
+    const sortTitle = isActive
+      ? (dir === 'asc' ? `${label} (현재 오름차순, 클릭 시 내림차순)` : `${label} (현재 내림차순, 클릭 시 오름차순)`)
+      : `${label} (클릭하여 정렬)`;
+
+    return `
+      <th class="sortable-th ${alignClass} ${sortedClass}" data-sort-col="${colKey}" style="${style}" title="${sortTitle}" role="button" tabindex="0">
+        <div class="th-inner">
+          <span class="th-label">${label}</span>
+          <span class="sort-indicator" aria-hidden="true">${arrow}</span>
+        </div>
+      </th>
+    `;
+  }
+
+  function handleTableSortClick(colKey) {
+    const cur = tabSortState[currentTab];
+    if (!cur) return;
+
+    if (cur.col === colKey) {
+      cur.dir = cur.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      cur.col = colKey;
+      if (['tier', 'grade', 'stars', 'recommend', 'usage', 'buff'].includes(colKey)) {
+        cur.dir = 'desc';
+      } else {
+        cur.dir = 'asc';
+      }
+    }
+
+    syncSortSelectValue();
+    renderActiveView();
+  }
+
+  function getHeroStarsCount(hero, hl) {
+    if (hl && hl !== 'base') {
+      const lvInfo = hero.levels ? (hero.levels[hl] || (hl === '15' ? (hero.levels['16'] || hero.levels['17'] || hero.levels['18']) : null)) : null;
+      if (lvInfo && lvInfo.stars) {
+        return (lvInfo.stars.match(/★/g) || []).length;
+      }
+      return 0;
+    }
+    let total = 0;
+    if (hero.levels) {
+      Object.values(hero.levels).forEach(lv => {
+        if (lv && lv.stars) total += (lv.stars.match(/★/g) || []).length;
+      });
+    }
+    return total;
+  }
+
+  function sortItemsList(items, col, dir) {
+    if (!col || col === 'default') return items;
+    const sorted = [...items];
+    const mult = dir === 'asc' ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      let res = 0;
+      if (col === 'name') {
+        res = a.name.localeCompare(b.name, 'ko');
+      } else if (col === 'tier') {
+        const scoreA = 100 - (a.gradeRank !== null && a.gradeRank !== undefined ? a.gradeRank : 999);
+        const scoreB = 100 - (b.gradeRank !== null && b.gradeRank !== undefined ? b.gradeRank : 999);
+        res = scoreA - scoreB;
+      } else if (col === 'usage') {
+        const ua = USAGE_RANKS[a.usage] || 0;
+        const ub = USAGE_RANKS[b.usage] || 0;
+        res = ua - ub;
+      } else if (col === 'range') {
+        res = (a.range || '').localeCompare(b.range || '', 'ko');
+      } else if (col === 'drops') {
+        const da = (a.drops && a.drops[0]) || '';
+        const db = (b.drops && b.drops[0]) || '';
+        res = da.localeCompare(db, 'ko');
+      }
+      if (res !== 0) return res * mult;
+      return (a.no || 0) - (b.no || 0);
+    });
+
+    return sorted;
+  }
+
+  function sortHeroesList(heroes, col, dir, hl) {
+    if (!col || col === 'default') return heroes;
+    const sorted = [...heroes];
+    const mult = dir === 'asc' ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      let res = 0;
+      if (col === 'name') {
+        res = a.name.localeCompare(b.name, 'ko');
+      } else if (col === 'tier') {
+        const ta = parseTierRank(a.tier);
+        const tb = parseTierRank(b.tier);
+        res = ta - tb;
+      } else if (col === 'stars') {
+        const sa = getHeroStarsCount(a, hl);
+        const sb = getHeroStarsCount(b, hl);
+        res = sa - sb;
+      } else if (col === 'grade') {
+        const ga = GRADE_RANKS[a.grade] || 0;
+        const gb = GRADE_RANKS[b.grade] || 0;
+        res = ga - gb;
+      }
+
+      if (res !== 0) return res * mult;
+      return (a.no || 0) - (b.no || 0) || a.name.localeCompare(b.name, 'ko');
+    });
+
+    return sorted;
+  }
+
+  function sortMercenariesList(mercs, col, dir, currentTier) {
+    if (!col || col === 'default') return mercs;
+    const sorted = [...mercs];
+    const mult = dir === 'asc' ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      let res = 0;
+      if (col === 'name') {
+        res = a.name.localeCompare(b.name, 'ko');
+      } else if (col === 'grade') {
+        const ga = GRADE_RANKS[a.grade] || 0;
+        const gb = GRADE_RANKS[b.grade] || 0;
+        res = ga - gb;
+      } else if (col === 'recommend') {
+        const ra = REC_RANKS[a.recommend] || 0;
+        const rb = REC_RANKS[b.recommend] || 0;
+        res = ra - rb;
+      } else if (col === 'buff') {
+        const getNum = m => {
+          const v = m.tierValues ? m.tierValues[currentTier] : null;
+          if (!v) return -999999;
+          const parsed = parseFloat(v);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        res = getNum(a) - getNum(b);
+      } else if (col === 'level') {
+        res = (a.no || 0) - (b.no || 0);
+      }
+
+      if (res !== 0) return res * mult;
+      return a.name.localeCompare(b.name, 'ko');
+    });
+
+    return sorted;
+  }
+
+  function sortMountsList(mounts, col, dir) {
+    if (!col || col === 'default') col = 'no';
+    const sorted = [...mounts];
+    const mult = dir === 'asc' ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      let res = 0;
+      if (col === 'no') {
+        res = (a.no || 0) - (b.no || 0);
+      } else if (col === 'name') {
+        res = a.name.localeCompare(b.name, 'ko');
+      }
+
+      if (res !== 0) return res * mult;
+      return (a.no || 0) - (b.no || 0);
+    });
+
+    return sorted;
+  }
+
+  function sortPetsList(pets, col, dir) {
+    if (!col || col === 'default') col = 'no';
+    const sorted = [...pets];
+    const mult = dir === 'asc' ? 1 : -1;
+
+    sorted.sort((a, b) => {
+      let res = 0;
+      if (col === 'no') {
+        res = (a.no || 0) - (b.no || 0);
+      } else if (col === 'name') {
+        res = a.name.localeCompare(b.name, 'ko');
+      } else if (col === 'tier') {
+        const ta = parseTierRank(a.tier);
+        const tb = parseTierRank(b.tier);
+        res = ta - tb;
+      } else if (col === 'drops') {
+        const da = (a.drops && a.drops[0]) || a.dropRaw || '';
+        const db = (b.drops && b.drops[0]) || b.dropRaw || '';
+        res = da.localeCompare(db, 'ko');
+      }
+
+      if (res !== 0) return res * mult;
+      return (a.no || 0) - (b.no || 0);
+    });
+
+    return sorted;
+  }
+
+  function updateSortSelectForTab(tab) {
+    if (!elSortSelect || !elSortWrapper) return;
+    elSortWrapper.style.display = 'flex';
+
+    let html = '';
+    if (tab === 'items') {
+      html = `
+        <option value="default">기본 추천순</option>
+        <option value="tier_desc">티어 높은순 (S+ ❯ F-)</option>
+        <option value="tier_asc">티어 낮은순 (F- ❯ S+)</option>
+        <option value="usage_desc">용도 추천순 (O ❯ XX)</option>
+        <option value="name_asc">아이템 이름순 (ㄱ~ㅎ)</option>
+        <option value="name_desc">아이템 이름 역순 (ㅎ~ㄱ)</option>
+        <option value="range_asc">사거리순 (근거리 ❯ 원거리)</option>
+        <option value="drops_asc">드랍처순 (가나다)</option>
+      `;
+      if (rawItemData && rawItemData.statDefs) {
+        const popularStats = [
+          'hero_crit_dmg', 'tower_atk_mult', 'all_atk', 'projectile',
+          'hero_atk_speed', 'double_attack', 'status_bonus', 'immune_bonus', 'hero_hp'
+        ];
+        const statOptions = popularStats
+          .map(k => {
+            const s = rawItemData.statDefs[k];
+            return s ? `<option value="stat_${k}">${s.label} (${s.unit})</option>` : '';
+          })
+          .filter(Boolean)
+          .join('');
+        if (statOptions) {
+          html += `<optgroup label="주요 능력치 수치순">${statOptions}</optgroup>`;
+        }
+      }
+    } else if (tab === 'heroes') {
+      html = `
+        <option value="default">기본 순서</option>
+        <option value="tier_desc">티어 높은순 (SSS ❯ F)</option>
+        <option value="tier_asc">티어 낮은순 (F ❯ SSS)</option>
+        <option value="stars_desc">추천 별점 높은순 (★★★★★)</option>
+        <option value="grade_desc">등급 높은순 (신화 ❯ 일반)</option>
+        <option value="name_asc">영웅 이름순 (ㄱ~ㅎ)</option>
+        <option value="name_desc">영웅 이름 역순 (ㅎ~ㄱ)</option>
+      `;
+    } else if (tab === 'mercenaries') {
+      html = `
+        <option value="default">기본 순서</option>
+        <option value="recommend_desc">추천도 높은순 (SSS ❯ X)</option>
+        <option value="recommend_asc">추천도 낮은순 (X ❯ SSS)</option>
+        <option value="grade_desc">등급 높은순 (신화 ❯ 일반)</option>
+        <option value="buff_desc">선택 버프 수치 높은순</option>
+        <option value="buff_asc">선택 버프 수치 낮은순</option>
+        <option value="name_asc">용병 이름순 (ㄱ~ㅎ)</option>
+        <option value="name_desc">용병 이름 역순 (ㅎ~ㄱ)</option>
+      `;
+    } else if (tab === 'mounts') {
+      html = `
+        <option value="no_asc">도감 번호순 (1 ❯ 57)</option>
+        <option value="no_desc">도감 번호 역순 (57 ❯ 1)</option>
+        <option value="name_asc">탈것 이름순 (ㄱ~ㅎ)</option>
+        <option value="name_desc">탈것 이름 역순 (ㅎ~ㄱ)</option>
+      `;
+    } else if (tab === 'pets') {
+      html = `
+        <option value="no_asc">도감 번호순 (1 ❯ 26)</option>
+        <option value="no_desc">도감 번호 역순 (26 ❯ 1)</option>
+        <option value="tier_desc">티어 높은순 (S+ ❯ F-)</option>
+        <option value="tier_asc">티어 낮은순 (F- ❯ S+)</option>
+        <option value="name_asc">펫 이름순 (ㄱ~ㅎ)</option>
+        <option value="name_desc">펫 이름 역순 (ㅎ~ㄱ)</option>
+        <option value="drops_asc">획득처순 (가나다)</option>
+      `;
+    }
+
+    elSortSelect.innerHTML = html;
+    syncSortSelectValue();
+  }
+
+  function syncSortSelectValue() {
+    if (!elSortSelect) return;
+    const cur = tabSortState[currentTab];
+    if (!cur || !cur.col || cur.col === 'default') {
+      elSortSelect.value = 'default';
+      return;
+    }
+    if (cur.col.startsWith('stat_')) {
+      elSortSelect.value = cur.col;
+      return;
+    }
+    const val = `${cur.col}_${cur.dir}`;
+    if (elSortSelect.querySelector(`option[value="${val}"]`)) {
+      elSortSelect.value = val;
+    }
+  }
+
   // DOM Elements
   let elGlobalNav;
   let elHeroTitle;
@@ -260,23 +606,8 @@
       .map(t => `<button class="tag-chip ${state.tags.includes(t) ? 'active' : ''}" data-tag="${t}">${t}</button>`)
       .join('');
 
-    // Sort Stat Options
-    const statGroup = document.createElement('optgroup');
-    statGroup.label = '주요 능력치 수치 순';
-    const popularStats = [
-      'hero_crit_dmg', 'tower_atk_mult', 'all_atk', 'projectile',
-      'hero_atk_speed', 'double_attack', 'status_bonus', 'immune_bonus', 'hero_hp'
-    ];
-    popularStats.forEach(key => {
-      const s = rawItemData.statDefs[key];
-      if (s) {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = `${s.label} (${s.unit})`;
-        statGroup.appendChild(opt);
-      }
-    });
-    elSortSelect.appendChild(statGroup);
+    // Initial Sort Select Options
+    updateSortSelectForTab(currentTab);
   }
 
   function initFilterPanelState() {
@@ -387,9 +718,47 @@
     });
 
     elSortSelect.addEventListener('change', e => {
-      state.sortBy = e.target.value;
-      updateUrl();
+      const val = e.target.value;
+      const cur = tabSortState[currentTab];
+      if (!cur) return;
+
+      if (val === 'default') {
+        cur.col = null;
+        cur.dir = 'desc';
+      } else if (val.startsWith('stat_')) {
+        cur.col = val;
+        cur.dir = 'desc';
+      } else {
+        const lastUnder = val.lastIndexOf('_');
+        if (lastUnder !== -1) {
+          cur.col = val.substring(0, lastUnder);
+          cur.dir = val.substring(lastUnder + 1);
+        }
+      }
       renderActiveView();
+    });
+
+    // Data Grid Table Column Sorting Event Delegation
+    elItemsGrid.addEventListener('click', e => {
+      const th = e.target.closest('.sortable-th');
+      if (th) {
+        e.preventDefault();
+        e.stopPropagation();
+        const colKey = th.getAttribute('data-sort-col');
+        if (colKey) handleTableSortClick(colKey);
+      }
+    });
+
+    elItemsGrid.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const th = e.target.closest('.sortable-th');
+        if (th) {
+          e.preventDefault();
+          e.stopPropagation();
+          const colKey = th.getAttribute('data-sort-col');
+          if (colKey) handleTableSortClick(colKey);
+        }
+      }
     });
 
     // Hero Events
@@ -520,7 +889,6 @@
     elMercControls.style.display = 'none';
     elMountControls.style.display = 'none';
     if (elPetControls) elPetControls.style.display = 'none';
-    elSortWrapper.style.display = 'none';
 
     // Show selected controls & customize hero banner
     if (tab === 'items') {
@@ -528,7 +896,6 @@
       elHeroSubtitle.textContent = '이름, 초성, 능력 문장 뿐만 아니라 세부 수치 조건으로 자유롭게 검색하세요.';
       elSearchInput.placeholder = '검색어 입력 (예: 빛단, ㅅㅁㅍㅍ, 처형, 치피>=100, 투사체>2)';
       elItemControls.style.display = 'block';
-      elSortWrapper.style.display = 'flex';
       elResultUnit.textContent = '아이템';
       renderItemSearchHints();
     } else if (tab === 'heroes') {
@@ -561,6 +928,7 @@
       renderPetSearchHints();
     }
 
+    updateSortSelectForTab(tab);
     updateUrl();
     renderActiveView();
   }
@@ -692,7 +1060,16 @@
   // -------------------------------------------------------------
   function renderItemsView() {
     if (!searchEngine) return;
-    const items = searchEngine.search(state);
+    const curSort = tabSortState.items;
+    if (curSort.col && curSort.col.startsWith('stat_')) {
+      state.sortBy = curSort.col.replace('stat_', '');
+    } else {
+      state.sortBy = 'default';
+    }
+    let items = searchEngine.search(state);
+    if (curSort.col && !curSort.col.startsWith('stat_')) {
+      items = sortItemsList(items, curSort.col, curSort.dir);
+    }
     elResultCount.textContent = items.length;
 
     if (items.length === 0) {
@@ -873,13 +1250,13 @@
               <thead>
                 <tr>
                   <th style="width: 58px; text-align: center;">사진</th>
-                  <th style="min-width: 140px;">아이템명</th>
-                  <th style="width: 80px; text-align: center;">티어</th>
-                  <th style="width: 80px; text-align: center;">용도</th>
-                  <th style="width: 85px; text-align: center;">사거리</th>
+                  ${renderTh('name', '아이템명', 'min-width: 140px;')}
+                  ${renderTh('tier', '티어', 'width: 80px; text-align: center;', true)}
+                  ${renderTh('usage', '용도', 'width: 80px; text-align: center;', true)}
+                  ${renderTh('range', '사거리', 'width: 85px; text-align: center;', true)}
                   <th style="min-width: 280px;">능력 및 ${currentAwak > 0 ? currentAwak + '각성 효과' : '기본 효과'}</th>
                   <th style="min-width: 160px;">주요 수치</th>
-                  <th style="min-width: 130px;">드랍처</th>
+                  ${renderTh('drops', '드랍처', 'min-width: 130px;')}
                 </tr>
               </thead>
               <tbody>
@@ -915,6 +1292,10 @@
       });
     }
 
+    const hl = state.heroLevel;
+    const curSort = tabSortState.heroes;
+    heroes = sortHeroesList(heroes, curSort.col, curSort.dir, hl);
+
     elResultCount.textContent = heroes.length;
 
     if (heroes.length === 0) {
@@ -927,8 +1308,6 @@
       `;
       return;
     }
-
-    const hl = state.heroLevel;
 
     if (currentViewMode === 'card') {
       const cardsHtml = heroes.map(hero => {
@@ -1050,10 +1429,10 @@
               <thead>
                 <tr>
                   <th style="width: 58px; text-align: center;">사진</th>
-                  <th style="min-width: 130px;">영웅명</th>
-                  <th style="width: 80px; text-align: center;">티어</th>
-                  <th style="width: 90px; text-align: center;">추천</th>
-                  <th style="width: 80px; text-align: center;">등급</th>
+                  ${renderTh('name', '영웅명', 'min-width: 130px;')}
+                  ${renderTh('tier', '티어', 'width: 80px; text-align: center;', true)}
+                  ${renderTh('stars', '추천', 'width: 90px; text-align: center;', true)}
+                  ${renderTh('grade', '등급', 'width: 80px; text-align: center;', true)}
                   <th style="min-width: 250px;">기본 고유 능력</th>
                   <th style="min-width: 250px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
                   <th style="min-width: 160px;">평가 & 코멘트</th>
@@ -1092,6 +1471,10 @@
       });
     }
 
+    const currentTier = state.mercTier;
+    const curSort = tabSortState.mercenaries;
+    mercs = sortMercenariesList(mercs, curSort.col, curSort.dir, currentTier);
+
     elResultCount.textContent = mercs.length;
 
     if (mercs.length === 0) {
@@ -1104,8 +1487,6 @@
       `;
       return;
     }
-
-    const currentTier = state.mercTier;
 
     if (currentViewMode === 'card') {
       const cardsHtml = mercs.map(merc => {
@@ -1195,12 +1576,12 @@
               <thead>
                 <tr>
                   <th style="width: 58px; text-align: center;">사진</th>
-                  <th style="min-width: 130px;">용병명</th>
-                  <th style="width: 85px; text-align: center;">기본 등급</th>
-                  <th style="width: 85px; text-align: center;">추천도</th>
-                  <th style="width: 120px; text-align: center;">선택 (${currentTier}) 버프</th>
+                  ${renderTh('name', '용병명', 'min-width: 130px;')}
+                  ${renderTh('grade', '기본 등급', 'width: 85px; text-align: center;', true)}
+                  ${renderTh('recommend', '추천도', 'width: 85px; text-align: center;', true)}
+                  ${renderTh('buff', `선택 (${currentTier}) 버프`, 'width: 125px; text-align: center;', true)}
                   <th style="min-width: 280px;">고유 능력</th>
-                  <th style="width: 90px; text-align: center;">필요 레벨</th>
+                  ${renderTh('level', '필요 레벨', 'width: 90px; text-align: center;', true)}
                 </tr>
               </thead>
               <tbody>
@@ -1280,6 +1661,9 @@
     if (searchEngine) {
       mounts = searchEngine.searchMounts(mounts, { query: state.query });
     }
+
+    const curSort = tabSortState.mounts;
+    mounts = sortMountsList(mounts, curSort.col, curSort.dir);
 
     elResultCount.textContent = mounts.length;
 
@@ -1363,8 +1747,8 @@
               <thead>
                 <tr>
                   <th style="width: 58px; text-align: center;">사진</th>
-                  <th style="width: 75px; text-align: center;">번호</th>
-                  <th style="min-width: 140px;">탈것 이름</th>
+                  ${renderTh('no', '번호', 'width: 75px; text-align: center;', true)}
+                  ${renderTh('name', '탈것 이름', 'min-width: 140px;')}
                   <th style="min-width: 280px;">고유 능력</th>
                   <th style="min-width: 220px;">유저 평가 & 코멘트</th>
                 </tr>
@@ -1776,13 +2160,16 @@
   // -------------------------------------------------------------
   function renderPetsView() {
     if (!expansionData || !expansionData.pets) return;
-    const pets = searchEngine
+    let pets = searchEngine
       ? searchEngine.searchPets(expansionData.pets, {
         query: state.query,
         tier: state.petTier,
         drop: state.petDrop,
       })
       : expansionData.pets;
+
+    const curSort = tabSortState.pets;
+    pets = sortPetsList(pets, curSort.col, curSort.dir);
 
     elResultCount.textContent = pets.length;
 
@@ -1880,11 +2267,11 @@
               <thead>
                 <tr>
                   <th style="width: 58px; text-align: center;">사진</th>
-                  <th style="width: 75px; text-align: center;">도감 No</th>
-                  <th style="min-width: 140px;">펫 이름</th>
-                  <th style="width: 80px; text-align: center;">티어</th>
+                  ${renderTh('no', '도감 No', 'width: 80px; text-align: center;', true)}
+                  ${renderTh('name', '펫 이름', 'min-width: 140px;')}
+                  ${renderTh('tier', '티어', 'width: 80px; text-align: center;', true)}
                   <th style="min-width: 280px;">기본 고유 능력</th>
-                  <th style="min-width: 180px;">획득 / 드랍처</th>
+                  ${renderTh('drops', '획득 / 드랍처', 'min-width: 180px;')}
                 </tr>
               </thead>
               <tbody>

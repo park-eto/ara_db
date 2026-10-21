@@ -1169,6 +1169,66 @@ input, select, textarea {
   letter-spacing: 0.02em;
 }
 
+/* Sortable Table Header */
+.data-grid-table thead th.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.data-grid-table thead th.sortable-th:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.data-grid-table thead th.sortable-th .th-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  vertical-align: middle;
+}
+
+.data-grid-table thead th.sortable-th.text-center {
+  text-align: center;
+}
+
+.data-grid-table thead th.sortable-th.text-center .th-inner {
+  justify-content: center;
+}
+
+.data-grid-table thead th.sortable-th .sort-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  opacity: 0.45;
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+.data-grid-table thead th.sortable-th:hover .sort-indicator {
+  opacity: 0.9;
+  color: #475569;
+}
+
+.data-grid-table thead th.sortable-th.is-sorted {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border-bottom-color: #3b82f6 !important;
+}
+
+.data-grid-table thead th.sortable-th.is-sorted .th-label {
+  font-weight: 800;
+}
+
+.data-grid-table thead th.sortable-th.is-sorted .sort-indicator {
+  opacity: 1;
+  color: #2563eb;
+  font-weight: 900;
+  transform: scale(1.15);
+}
+
 .data-grid-table tbody tr {
   cursor: pointer;
   transition: background-color var(--transition-fast);
