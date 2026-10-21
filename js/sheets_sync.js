@@ -371,6 +371,104 @@
     return pets;
   }
 
+  const CAT_MAP = {
+    '주 무기': 'weapon',
+    '주무기': 'weapon',
+    '보조 무기': 'sub',
+    '보조무기': 'sub',
+    '투구': 'helmet',
+    '반지': 'ring',
+    '기타': 'etc'
+  };
+
+  const USAGE_MAP = {
+    '추천': 'O',
+    '상황별': '△',
+    '비추천': 'X',
+    '최악': 'XX'
+  };
+
+  function syncItemsFromRows(rows, existingItemsMap) {
+    if (!rows || rows.length < 2) return null;
+    const headers = rows[0].map(clean);
+    if (!headers.includes('아이템명')) return null;
+
+    const colMap = buildColMap(rows[0]);
+    const items = [];
+
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !r.some(c => c.trim())) continue;
+
+      function get(colName) {
+        const idx = colMap[colName];
+        return (idx !== undefined && idx < r.length) ? r[idx].trim() : '';
+      }
+
+      const name = get('아이템명');
+      if (!name) continue;
+
+      const catRaw = clean(get('분류'));
+      const cat = CAT_MAP[catRaw] || 'etc';
+      const noRaw = get('No');
+      const no = /^\d+$/.test(noRaw) ? parseInt(noRaw, 10) : items.length + 1;
+      const range = get('공격 거리') || null;
+      const grade = get('등급') || 'F-';
+      const tier = get('티어') || null;
+      const usageLabel = get('추천') || '비추천';
+      const usage = USAGE_MAP[usageLabel] || 'X';
+
+      const abilRaw = get('기본 고유 능력');
+      const abilities = abilRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+
+      const awakening = {};
+      ['1', '2', '3', '4', '5'].forEach(lv => {
+        const aRaw = get(`${lv}각성 능력`);
+        if (aRaw) {
+          const lines = aRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+          if (lines.length) awakening[lv] = lines;
+        }
+      });
+
+      const dropsRaw = get('드랍처');
+      const drops = dropsRaw.split(/[,/]/).map(s => s.trim()).filter(Boolean);
+      const comment = get('평가 및 코멘트');
+
+      const cleanName = normKey(name);
+      const existing = existingItemsMap[cleanName] || {};
+
+      const allText = `${name} ${abilities.join(' ')} ${Object.values(awakening).flat().join(' ')} ${comment}`;
+
+      items.push({
+        ...existing,
+        id: existing.id || `${cat}-${no}`,
+        cat: cat,
+        no: no,
+        name: name,
+        range: range,
+        grade: grade,
+        tier: tier,
+        usage: usage,
+        usageLabel: usageLabel,
+        abilities: abilities.length ? abilities : (existing.abilities || []),
+        awakening: Object.keys(awakening).length ? awakening : (existing.awakening || {}),
+        drops: drops.length ? drops : (existing.drops || []),
+        comment: comment || existing.comment || '',
+        img: existing.img || `assets/items/${cat}_${String(no).padStart(3, '0')}.webp`,
+        search: {
+          name: cleanName,
+          cho: chosung(cleanName),
+          alias: existing.search?.alias || [],
+          text: normKey(allText),
+          comment: normKey(comment || ''),
+          drops: drops.map(normKey).join('')
+        }
+      });
+    }
+
+    return items.length ? items : null;
+  }
+
   async function fetchLiveExpansionData(force = false) {
     const base = window.UNDERDARK_EXPANSION || {};
 
@@ -386,13 +484,19 @@
     const existingPetsMap = {};
     (base.pets || []).forEach(p => { existingPetsMap[p.no] = p; });
 
-    // Fetch all 5 sheets concurrently
-    const [heroRows, mercRows, mountRows, subOptRows, petRows] = await Promise.all([
+    const existingItemsMap = {};
+    if (window.UNDERDARK_DATA && window.UNDERDARK_DATA.items) {
+      window.UNDERDARK_DATA.items.forEach(it => { existingItemsMap[normKey(it.name)] = it; });
+    }
+
+    // Fetch all sheets concurrently
+    const [heroRows, mercRows, mountRows, subOptRows, petRows, itemRows] = await Promise.all([
       fetchSheetCSV('영웅'),
       fetchSheetCSV('지원용병'),
       fetchSheetCSV('탈것'),
       fetchSheetCSV('탈것 부옵션'),
-      fetchSheetCSV('펫')
+      fetchSheetCSV('펫'),
+      fetchSheetCSV('아이템').catch(() => null)
     ]);
 
     const heroes = syncHeroesFromRows(heroRows, existingHeroesMap);
@@ -400,6 +504,7 @@
     const mounts = syncMountsFromRows(mountRows, existingMountsMap);
     const subOptions = syncMountSubOptionsFromRows(subOptRows);
     const pets = syncPetsFromRows(petRows, existingPetsMap);
+    const syncedItems = itemRows ? syncItemsFromRows(itemRows, existingItemsMap) : null;
 
     const bundle = {
       heroes: heroes.length ? heroes : base.heroes,
@@ -407,7 +512,8 @@
       mounts: mounts.length ? mounts : base.mounts,
       mountSubOptions: (subOptions.tower.length || subOptions.hero.length || subOptions.common.length) ? subOptions : base.mountSubOptions,
       pets: pets.length ? pets : base.pets,
-      petGuide: base.petGuide || {}
+      petGuide: base.petGuide || {},
+      items: syncedItems
     };
 
     try {

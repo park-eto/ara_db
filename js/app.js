@@ -2343,9 +2343,19 @@
     try {
       const fresh = await window.SheetsSync.fetchLiveExpansionData(isManual);
       if (fresh) {
+        let itemsChanged = false;
+        if (fresh.items && fresh.items.length && rawItemData) {
+          const oldItemsJson = JSON.stringify(rawItemData.items || []);
+          const newItemsJson = JSON.stringify(fresh.items);
+          if (oldItemsJson !== newItemsJson) {
+            rawItemData.items = fresh.items;
+            searchEngine = new window.UnderdarkSearch(rawItemData);
+            itemsChanged = true;
+          }
+        }
         const oldHash = JSON.stringify(expansionData || {});
         const newHash = JSON.stringify(fresh);
-        if (oldHash !== newHash) {
+        if (oldHash !== newHash || itemsChanged) {
           expansionData = fresh;
           window.UNDERDARK_EXPANSION = fresh;
           renderActiveView();
