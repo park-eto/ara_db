@@ -85,6 +85,12 @@
   let elPetDropFilter;
   let elPetGuideBtn;
 
+  // Filter Toggle & Sticky & ScrollTop
+  let elFilterToggle;
+  let elFilterPanel;
+  let elFilterCount;
+  let elScrollTopBtn;
+
   // Results
   let elItemsGrid;
   let elResultCount;
@@ -104,6 +110,7 @@
     await loadAllData();
     setupEngine();
     renderInitialFilters();
+    initFilterPanelState();
     bindEvents();
     readUrlParams();
     updateViewToggleButtons();
@@ -117,6 +124,11 @@
     elSearchInput = document.getElementById('searchInput');
     elSearchClear = document.getElementById('searchClear');
     elSearchHints = document.getElementById('searchHints');
+
+    elFilterToggle = document.getElementById('filterToggle');
+    elFilterPanel = document.getElementById('filterPanel');
+    elFilterCount = document.getElementById('filterCount');
+    elScrollTopBtn = document.getElementById('scrollTopBtn');
 
     elItemControls = document.getElementById('itemControlSection');
     elHeroControls = document.getElementById('heroControlSection');
@@ -255,6 +267,20 @@
     elSortSelect.appendChild(statGroup);
   }
 
+  function initFilterPanelState() {
+    if (!elFilterToggle || !elFilterPanel) return;
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      elFilterPanel.classList.add('is-collapsed');
+      elFilterToggle.classList.remove('active');
+      elFilterToggle.setAttribute('aria-expanded', 'false');
+    } else {
+      elFilterPanel.classList.remove('is-collapsed');
+      elFilterToggle.classList.add('active');
+      elFilterToggle.setAttribute('aria-expanded', 'true');
+    }
+  }
+
   function bindEvents() {
     // Global Navigation
     elGlobalNav.addEventListener('click', e => {
@@ -268,7 +294,7 @@
     let debounceTimer;
     elSearchInput.addEventListener('input', e => {
       state.query = e.target.value;
-      elSearchClear.style.display = state.query ? 'flex' : 'none';
+      elSearchClear.classList.toggle('visible', !!state.query.trim());
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         updateUrl();
@@ -280,11 +306,32 @@
     elSearchClear.addEventListener('click', () => {
       elSearchInput.value = '';
       state.query = '';
-      elSearchClear.style.display = 'none';
+      elSearchClear.classList.remove('visible');
       elSearchInput.focus();
       updateUrl();
       renderActiveView();
     });
+
+    // Filter Panel Toggle (Collapsible on all devices)
+    if (elFilterToggle && elFilterPanel) {
+      elFilterToggle.addEventListener('click', () => {
+        const isCollapsed = elFilterPanel.classList.toggle('is-collapsed');
+        const isOpen = !isCollapsed;
+        elFilterToggle.setAttribute('aria-expanded', isOpen);
+        elFilterToggle.classList.toggle('active', isOpen);
+      });
+    }
+
+    // Floating Scroll To Top Button
+    if (elScrollTopBtn) {
+      window.addEventListener('scroll', () => {
+        elScrollTopBtn.classList.toggle('visible', window.scrollY > 280);
+      }, { passive: true });
+
+      elScrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
 
     // Item Events
     elCatTabs.addEventListener('click', e => {
@@ -505,62 +552,62 @@
 
   function renderItemSearchHints() {
     elSearchHints.innerHTML = `
-      <span>빠른 검색:</span>
-      <span class="search-hint-tag" data-q="치피>=100">치피>=100</span>
-      <span class="search-hint-tag" data-q="투사체>=3">투사체>=3</span>
-      <span class="search-hint-tag" data-q="이감>=20">이감>=20</span>
-      <span class="search-hint-tag" data-q="처형 원거리">처형 원거리</span>
-      <span class="search-hint-tag" data-q="빛단">빛단</span>
-      <span class="search-hint-tag" data-q="ㅅㅁㅍㅍ">ㅅㅁㅍㅍ</span>
+      <span class="search-hint-label">⚡ 빠른 검색:</span>
+      <button type="button" class="search-hint-tag" data-q="치피>=100">치피>=100</button>
+      <button type="button" class="search-hint-tag" data-q="투사체>=3">투사체>=3</button>
+      <button type="button" class="search-hint-tag" data-q="이감>=20">이감>=20</button>
+      <button type="button" class="search-hint-tag" data-q="처형 원거리">처형 원거리</button>
+      <button type="button" class="search-hint-tag" data-q="빛단">빛단</button>
+      <button type="button" class="search-hint-tag" data-q="ㅅㅁㅍㅍ">ㅅㅁㅍㅍ</button>
     `;
     bindHintTags();
   }
 
   function renderHeroSearchHints() {
     elSearchHints.innerHTML = `
-      <span>빠른 검색:</span>
-      <span class="search-hint-tag" data-q="오크">오크 (SSS)</span>
-      <span class="search-hint-tag" data-q="아그니">아그니</span>
-      <span class="search-hint-tag" data-q="정불갑">정불갑</span>
-      <span class="search-hint-tag" data-q="용싶해">용싶해</span>
-      <span class="search-hint-tag" data-q="스턴">스턴</span>
-      <span class="search-hint-tag" data-q="곡괭이">곡괭이</span>
+      <span class="search-hint-label">⚡ 빠른 검색:</span>
+      <button type="button" class="search-hint-tag" data-q="오크">오크 (SSS)</button>
+      <button type="button" class="search-hint-tag" data-q="아그니">아그니</button>
+      <button type="button" class="search-hint-tag" data-q="정불갑">정불갑</button>
+      <button type="button" class="search-hint-tag" data-q="용싶해">용싶해</button>
+      <button type="button" class="search-hint-tag" data-q="스턴">스턴</button>
+      <button type="button" class="search-hint-tag" data-q="곡괭이">곡괭이</button>
     `;
     bindHintTags();
   }
 
   function renderMercSearchHints() {
     elSearchHints.innerHTML = `
-      <span>빠른 검색:</span>
-      <span class="search-hint-tag" data-q="저승사자">저승사자 (자사)</span>
-      <span class="search-hint-tag" data-q="세이렌">세이렌 (처형)</span>
-      <span class="search-hint-tag" data-q="발키리">발키리</span>
-      <span class="search-hint-tag" data-q="서큐비스">서큐비스</span>
+      <span class="search-hint-label">⚡ 빠른 검색:</span>
+      <button type="button" class="search-hint-tag" data-q="저승사자">저승사자 (자사)</button>
+      <button type="button" class="search-hint-tag" data-q="세이렌">세이렌 (처형)</button>
+      <button type="button" class="search-hint-tag" data-q="발키리">발키리</button>
+      <button type="button" class="search-hint-tag" data-q="서큐비스">서큐비스</button>
     `;
     bindHintTags();
   }
 
   function renderMountSearchHints() {
     elSearchHints.innerHTML = `
-      <span>빠른 검색:</span>
-      <span class="search-hint-tag" data-q="아기 백룡">아기 백룡 (종결)</span>
-      <span class="search-hint-tag" data-q="검은 악마">검은 악마 (4배)</span>
-      <span class="search-hint-tag" data-q="고대 백룡">고대 백룡 (4배모드)</span>
-      <span class="search-hint-tag" data-q="곡괭이">곡괭이</span>
+      <span class="search-hint-label">⚡ 빠른 검색:</span>
+      <button type="button" class="search-hint-tag" data-q="아기 백룡">아기 백룡 (종결)</button>
+      <button type="button" class="search-hint-tag" data-q="검은 악마">검은 악마 (4배)</button>
+      <button type="button" class="search-hint-tag" data-q="고대 백룡">고대 백룡 (4배모드)</button>
+      <button type="button" class="search-hint-tag" data-q="곡괭이">곡괭이</button>
     `;
     bindHintTags();
   }
 
   function renderPetSearchHints() {
     elSearchHints.innerHTML = `
-      <span>빠른 검색:</span>
-      <span class="search-hint-tag" data-q="용암슬라임">용암 슬라임</span>
-      <span class="search-hint-tag" data-q="쉐도우">쉐도우 (S)</span>
-      <span class="search-hint-tag" data-q="포포">포포 (A+)</span>
-      <span class="search-hint-tag" data-q="공격 속도">공격 속도</span>
-      <span class="search-hint-tag" data-q="치명타">치명타</span>
-      <span class="search-hint-tag" data-q="타워">타워 강화</span>
-      <span class="search-hint-tag" data-q="스테이지">스테이지 펫</span>
+      <span class="search-hint-label">⚡ 빠른 검색:</span>
+      <button type="button" class="search-hint-tag" data-q="용암슬라임">용암 슬라임</button>
+      <button type="button" class="search-hint-tag" data-q="쉐도우">쉐도우 (S)</button>
+      <button type="button" class="search-hint-tag" data-q="포포">포포 (A+)</button>
+      <button type="button" class="search-hint-tag" data-q="공격 속도">공격 속도</button>
+      <button type="button" class="search-hint-tag" data-q="치명타">치명타</button>
+      <button type="button" class="search-hint-tag" data-q="타워">타워 강화</button>
+      <button type="button" class="search-hint-tag" data-q="스테이지">스테이지 펫</button>
     `;
     bindHintTags();
   }
@@ -571,14 +618,47 @@
         const q = tag.getAttribute('data-q');
         elSearchInput.value = q;
         state.query = q;
-        elSearchClear.style.display = 'flex';
+        elSearchClear.classList.add('visible');
         updateUrl();
         renderActiveView();
       });
     });
   }
 
+  function updateFilterCount() {
+    if (!elFilterCount) return;
+    let count = 0;
+    if (currentTab === 'items') {
+      if (state.category !== 'all') count++;
+      if (state.awakeningLevel > 0) count++;
+      if (state.range !== 'all') count++;
+      if (state.tier !== 'all') count++;
+      if (state.usage !== 'all') count++;
+      if (state.drop !== 'all') count++;
+      if (state.tags && state.tags.length > 0) count += state.tags.length;
+    } else if (currentTab === 'heroes') {
+      if (state.heroTier !== 'all') count++;
+      if (state.heroGrade !== 'all') count++;
+      if (state.heroLevel !== 'base') count++;
+    } else if (currentTab === 'mercenaries') {
+      if (state.mercTier !== 'SSS') count++;
+      if (state.mercGrade !== 'all') count++;
+      if (state.mercRec !== 'all') count++;
+    } else if (currentTab === 'pets') {
+      if (state.petTier !== 'all') count++;
+      if (state.petDrop !== 'all') count++;
+    }
+
+    if (count > 0) {
+      elFilterCount.textContent = count;
+      elFilterCount.removeAttribute('hidden');
+    } else {
+      elFilterCount.setAttribute('hidden', '');
+    }
+  }
+
   function renderActiveView() {
+    updateFilterCount();
     if (currentTab === 'items') {
       renderItemsView();
     } else if (currentTab === 'heroes') {
@@ -664,7 +744,7 @@
           if (chips.length > 0) statsChipsHtml = `<div class="card-stats-row">${chips.slice(0, 3).join('')}</div>`;
         }
 
-        const dropsHtml = (item.drops || []).slice(0, 2).map(d => `<span class="drop-item">${d}</span>`).join('');
+        const dropsHtml = (item.drops || []).map(d => `<span class="drop-item">${d}</span>`).join('');
 
         return `
           <div class="item-card" data-item-id="${item.id}">
@@ -747,7 +827,7 @@
           if (chips.length > 0) statsChipsHtml = chips.slice(0, 3).join('');
         }
 
-        const dropsHtml = (item.drops || []).slice(0, 2).map(d => `<span class="drop-item">${d}</span>`).join('');
+        const dropsHtml = (item.drops || []).map(d => `<span class="drop-item">${d}</span>`).join('');
 
         return `
           <tr class="data-row item-row" data-item-id="${item.id}">
@@ -850,10 +930,18 @@
         if (hl !== 'base') {
           const lvInfo = hero.levels ? hero.levels[hl] : null;
           if (lvInfo) {
+            const filledStars = (lvInfo.stars || '').replace(/[^★]/g, '');
+            const starsBadge = filledStars
+              ? `<span style="color: #d97706; font-size: 0.88rem; font-weight: 800; letter-spacing: 1px;">${filledStars}</span>`
+              : '';
+
             extraHtml = `
               <div class="ability-line awakening-changed">
-                <b>${hl}레벨 능력:</b> ${lvInfo.ability}
-                ${lvInfo.stars ? `<div style="color: #d97706; font-size: 0.78rem; margin-top: 0.15rem;">${lvInfo.stars}</div>` : ''}
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+                  <b>${hl}레벨 능력</b>
+                  ${starsBadge}
+                </div>
+                <div>${lvInfo.ability}</div>
               </div>
             `;
           }
@@ -904,15 +992,16 @@
           ? `<span class="badge-tag">${hero.grade}</span>` : '-';
 
         let extraHtml = '-';
+        let starsHtml = '-';
+
         if (hl !== 'base') {
           const lvInfo = hero.levels ? hero.levels[hl] : null;
           if (lvInfo) {
-            extraHtml = `
-              <div style="color: #1d4ed8; font-weight: 600; line-height: 1.45;">
-                ${lvInfo.ability}
-                ${lvInfo.stars ? `<div style="color: #d97706; font-size: 0.8rem; margin-top: 0.15rem;">${lvInfo.stars}</div>` : ''}
-              </div>
-            `;
+            extraHtml = `<div style="color: #1d4ed8; font-weight: 600; line-height: 1.45;">${lvInfo.ability}</div>`;
+            const filledStars = (lvInfo.stars || '').replace(/[^★]/g, '');
+            if (filledStars) {
+              starsHtml = `<span style="color: #d97706; font-size: 0.95rem; font-weight: 800; letter-spacing: 1px;">${filledStars}</span>`;
+            }
           } else {
             extraHtml = `<span style="color: var(--text-dim); font-size: 0.8rem;">해당 레벨 능력 없음</span>`;
           }
@@ -931,6 +1020,7 @@
             <td style="text-align: center;">${gradeBadge}</td>
             <td class="table-ability-block">${hero.ability || '정보 없음'}</td>
             <td class="table-ability-block">${extraHtml}</td>
+            <td style="text-align: center; white-space: nowrap;">${starsHtml}</td>
             <td style="font-size: 0.82rem; color: #475569; max-width: 200px; line-height: 1.45;">
               ${hero.comment || '-'}
             </td>
@@ -948,8 +1038,9 @@
                   <th style="min-width: 130px;">영웅명</th>
                   <th style="width: 80px; text-align: center;">티어</th>
                   <th style="width: 80px; text-align: center;">등급</th>
-                  <th style="min-width: 260px;">기본 고유 능력</th>
-                  <th style="min-width: 260px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
+                  <th style="min-width: 250px;">기본 고유 능력</th>
+                  <th style="min-width: 250px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
+                  <th style="width: 110px; text-align: center;">추천도</th>
                   <th style="min-width: 160px;">평가 & 코멘트</th>
                 </tr>
               </thead>
@@ -1249,8 +1340,8 @@
 
     if (!hasAnyAwakening) {
       awakeningSectionHtml = `
-        <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--border-glass); border-radius: 8px; padding: 1.2rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
-          <div style="font-size: 1.5rem; margin-bottom: 0.3rem;">ℹ️</div>
+        <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 1.25rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+          <div style="font-size: 1.6rem; margin-bottom: 0.35rem;">ℹ️</div>
           각성 정보가 없습니다.
         </div>
       `;
@@ -1332,12 +1423,19 @@
     let levelRows = '';
     const sortedLevels = Object.values(hero.levels || {}).sort((a, b) => a.level - b.level);
     sortedLevels.forEach(lv => {
+      const filledStars = (lv.stars || '').replace(/[^★]/g, '');
+      const starsBadge = filledStars
+        ? `<span style="color: #d97706; font-size: 0.88rem; font-weight: 800; letter-spacing: 1px;">${filledStars}</span>`
+        : '';
+
       levelRows += `
         <tr>
           <th>${lv.level}레벨</th>
           <td>
-            <div>${lv.ability}</div>
-            ${lv.stars ? `<div class="star-rating" style="margin-top: 0.25rem;">${lv.stars}</div>` : ''}
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.35rem;">
+              <span>${lv.ability}</span>
+              ${starsBadge}
+            </div>
           </td>
         </tr>
       `;
@@ -1756,12 +1854,12 @@
 
   function openPetModal(pet) {
     const imgHtml = pet.img
-      ? `<img src="${pet.img}" alt="${pet.name}" style="width: 76px; height: 76px; border-radius: 12px; object-fit: cover; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);">`
+      ? `<img src="${pet.img}" alt="${pet.name}" style="width: 68px; height: 68px; border-radius: 12px; object-fit: cover; background: #f8fafc; border: 1px solid #e2e8f0;">`
       : `<div style="font-size: 2.5rem;">🐾</div>`;
 
     const tierChar = (pet.tier || 'F').charAt(0);
     const tierBadge = `<span class="tier-badge tier-${tierChar}" style="font-size: 0.85rem; padding: 0.25rem 0.6rem;">${pet.tier}</span>`;
-    const noBadge = `<span class="badge-tag" style="background: rgba(255,255,255,0.08); color: var(--accent-gold); font-size: 0.8rem; font-weight: 800;">#${String(pet.no).padStart(2, '0')}</span>`;
+    const noBadge = `<span class="badge-tag" style="background: #eff6ff; color: #1d4ed8; font-size: 0.8rem; font-weight: 800; border: 1px solid #bfdbfe;">#${String(pet.no).padStart(2, '0')}</span>`;
 
     const abilHighlighted = (pet.ability || '')
       .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
