@@ -47,8 +47,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def run():
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(('', PORT), CustomHandler) as httpd:
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    with socketserver.ThreadingTCPServer(('', PORT), CustomHandler) as httpd:
         print(f'=====================================================')
         print(f' Underdark Web Server is running!')
         print(f' -> Main Web:   http://localhost:{PORT}/index.html')

@@ -6,17 +6,43 @@ Sheet ID: 1rT0VUnOxTHSo_k8xa4MIyzWtQdxSuhTi
 from __future__ import annotations
 
 import csv
+import datetime as dt
 import io
 import json
 import re
+import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / 'tools'))
+
+from stats import extract_stats
+
 DATA_DIR = ROOT / 'data'
 IMG_DIR = ROOT / 'assets'
 SHEET_ID = '1rT0VUnOxTHSo_k8xa4MIyzWtQdxSuhTi'
+
+CAT_MAP = {
+    '주 무기': 'weapon', '주무기': 'weapon',
+    '보조 무기': 'sub', '보조무기': 'sub',
+    '투구': 'helmet', '반지': 'ring', '기타': 'etc'
+}
+USAGE_MAP = {'추천': 'O', '상황별': '△', '비추천': 'X', '최악': 'XX'}
+GRADE_ORDER = ['S+', 'S', 'S-', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-',
+               'D+', 'D', 'D-', 'E+', 'E', 'E-', 'F+', 'F', 'F-']
+STAT_TO_TAG = {
+    'execute': '처형', 'execute_slowed': '처형', 'execute_air': '처형', 'execute_hp': '처형',
+    'stun_chance': '스턴', 'slow': '이감', 'slow_chance': '이감', 'air_slow': '이감',
+    'splash': '스플', 'hero_hp': '영체', 'hero_hp_flat': '영체', 'hero_atk': '영공',
+    'all_atk': '영공', 'hero_crit_dmg': '영치피', 'hero_crit_rate': '영치확',
+    'tower_atk_mult': '타공', 'tower_atk': '타공', 'tower_aura': '타공',
+    'tower_crit_dmg': '타치피', 'tower_crit_rate': '타치확', 'pickaxe': '곡',
+    'immune_bonus': '면역', 'hero_atk_speed': '영공속', 'double_attack': '타수',
+    'triple_attack': '타수', 'status_bonus': '상추피', 'projectile': '투사체',
+    'hero_tower_mult': '배수', 'revive_cd': '부활',
+}
 
 CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'
 
@@ -333,6 +359,145 @@ def sync_pets(existing_pets_map: dict[int, dict], existing_guide: dict) -> tuple
     return pets, existing_guide
 
 
+def sync_items(existing_items_map: dict[str, dict]) -> list[dict]:
+    rows = fetch_sheet_csv('아이템')
+    if not rows or len(rows) < 2:
+        print("⚠️ Sheet '아이템' is empty or invalid.")
+        return []
+
+    headers = [clean(h) for h in rows[0]]
+    col_map = {h: i for i, h in enumerate(headers)}
+
+    items = []
+    for r in rows[1:]:
+        if not r or not any(c.strip() for c in r):
+            continue
+        def get(col_name):
+            idx = col_map.get(col_name)
+            return r[idx].strip() if idx is not None and idx < len(r) else ''
+
+        name = get('아이템명')
+        if not name:
+            continue
+
+        clean_name = norm_key(name)
+        existing = existing_items_map.get(clean_name, {})
+
+        cat_raw = clean(get('분류'))
+        cat = CAT_MAP.get(cat_raw, existing.get('cat', 'etc'))
+
+        no_raw = get('No')
+        no = int(no_raw) if no_raw.isdigit() else existing.get('no', len(items) + 1)
+
+        range_val = get('공격 거리') or existing.get('range') or None
+        grade = get('등급') or existing.get('grade') or 'F-'
+        tier = get('티어') or existing.get('tier') or None
+
+        usage_label = get('추천') or existing.get('usageLabel') or '비추천'
+        usage = USAGE_MAP.get(usage_label, existing.get('usage', 'X'))
+
+        abil_raw = get('기본 고유 능력')
+        if abil_raw:
+            abilities = [s.strip() for s in abil_raw.splitlines() if s.strip()]
+        else:
+            abilities = existing.get('abilities', [])
+
+        awakening = {}
+        for lv in ('1', '2', '3', '4', '5'):
+            a_raw = get(f'{lv}각성 능력')
+            if a_raw:
+                lines = [s.strip() for s in a_raw.splitlines() if s.strip()]
+                if lines:
+                    awakening[lv] = lines
+        if not awakening and existing.get('awakening'):
+            awakening = existing['awakening']
+
+        # Extract stats across base + awakening levels 1..5
+        base_stats = extract_stats(abil_raw or ' '.join(abilities))
+        per_level = [base_stats]
+        known_levels = [0]
+        for lv_int in range(1, 6):
+            lv_str = str(lv_int)
+            txt = ' '.join(awakening.get(lv_str, []))
+            if txt:
+                cur = dict(per_level[-1] or base_stats)
+                for prev in reversed(per_level):
+                    if prev is not None:
+                        cur = dict(prev)
+                        break
+                cur.update(extract_stats(txt))
+                per_level.append(cur)
+                known_levels.append(lv_int)
+            elif existing.get('awakeningNote') == '각성 시 주옵션만 성장합니다.':
+                per_level.append(dict(base_stats))
+                known_levels.append(lv_int)
+            else:
+                per_level.append(None)
+
+        keys = sorted({k for lvl in per_level if lvl for k in lvl})
+        stats = {k: [(lvl.get(k) if lvl is not None else None) for lvl in per_level] for k in keys}
+        if not stats and existing.get('stats'):
+            stats = existing['stats']
+            known_levels = existing.get('knownLevels', [0])
+
+        drops_raw = get('드랍처')
+        if drops_raw:
+            drops = [s.strip() for s in re.split(r'[,/]', drops_raw) if s.strip()]
+        else:
+            drops = existing.get('drops', [])
+
+        comment = get('평가 및 코멘트') or existing.get('comment', '')
+
+        tags = dict(existing.get('tags', {}))
+        for k in stats:
+            tag = STAT_TO_TAG.get(k)
+            if tag:
+                tags[tag] = True
+
+        img = existing.get('img') or f"assets/items/{cat}_{no:03d}.webp"
+        aliases = existing.get('aliases', [])
+
+        text_all = f"{name} {' '.join(aliases)} {' '.join(abilities)} {' '.join(l for ls in awakening.values() for l in ls)} {comment}"
+
+        item_obj = {
+            'id': existing.get('id', f"{cat}-{no}"),
+            'cat': cat,
+            'no': no,
+            'name': name,
+            'aliases': aliases,
+            'range': range_val,
+            'abilities': abilities,
+            'tags': tags,
+            'grade': grade,
+            'gradeRank': existing.get('gradeRank', GRADE_ORDER.index(grade) if grade in GRADE_ORDER else 99),
+            'tier': tier,
+            'usage': usage,
+            'usageLabel': usage_label,
+            'comment': comment,
+            'drops': drops,
+            'img': img,
+            'stats': stats,
+            'knownLevels': known_levels,
+            'awakening': awakening,
+            'search': {
+                'name': clean_name,
+                'cho': chosung(clean_name),
+                'alias': [norm_key(a) for a in aliases],
+                'aliasCho': [chosung(norm_key(a)) for a in aliases],
+                'text': norm_key(text_all),
+                'comment': norm_key(comment or ''),
+                'drops': norm_key(' '.join(drops)),
+            }
+        }
+        if existing.get('awakeningNote'):
+            item_obj['awakeningNote'] = existing['awakeningNote']
+
+        items.append(item_obj)
+
+    print(f"Synced {len(items)} items from Google Sheet.")
+    return items
+
+
 def main():
     h_file = DATA_DIR / 'heroes.json'
     existing_heroes = json.loads(h_file.read_text(encoding='utf-8')) if h_file.exists() else []
@@ -351,11 +516,17 @@ def main():
     p_map = {p['no']: p for p in existing_pet_data.get('pets', [])}
     p_guide = existing_pet_data.get('guide', {})
 
+    i_file = DATA_DIR / 'items.json'
+    existing_items_data = json.loads(i_file.read_text(encoding='utf-8')) if i_file.exists() else {}
+    existing_items = existing_items_data.get('items', [])
+    i_map = {norm_key(it['name']): it for it in existing_items}
+
     print(f"Connecting to Google Sheet ({SHEET_ID})...")
     heroes = sync_heroes(h_map)
     mercs = sync_mercenaries(m_map)
     mounts, sub_options = sync_mounts(mt_map)
     pets, guide = sync_pets(p_map, p_guide)
+    items = sync_items(i_map)
 
     # Save to disk
     if heroes:
@@ -372,6 +543,14 @@ def main():
             'pets': pets,
             'guide': guide
         }, ensure_ascii=False, indent=2), encoding='utf-8')
+    if items:
+        existing_items_data['items'] = items
+        existing_items_data['generatedAt'] = dt.datetime.now().isoformat(timespec='seconds')
+        i_file.write_text(json.dumps(existing_items_data, ensure_ascii=False, indent=2), encoding='utf-8')
+        (DATA_DIR / 'items.js').write_text(
+            'window.UNDERDARK_DATA=' + json.dumps(existing_items_data, ensure_ascii=False, separators=(',', ':')) + ';',
+            encoding='utf-8'
+        )
 
     bundle = {
         'heroes': heroes or existing_heroes,
@@ -380,13 +559,14 @@ def main():
         'mountSubOptions': sub_options or existing_mounts_data.get('subOptions', {}),
         'pets': pets or existing_pet_data.get('pets', []),
         'petGuide': guide or p_guide,
+        'items': items or existing_items,
     }
     (DATA_DIR / 'underdark_all.js').write_text(
         'window.UNDERDARK_EXPANSION=' + json.dumps(bundle, ensure_ascii=False, separators=(',', ':')) + ';',
         encoding='utf-8'
     )
 
-    print("\n🎉 Google Sheet data successfully synced and saved to underdark_all.js!")
+    print("\n🎉 Google Sheet data successfully synced and saved to items.json, items.js and underdark_all.js!")
 
 
 if __name__ == '__main__':

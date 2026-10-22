@@ -191,6 +191,7 @@
       if (!name) continue;
 
       const grade = get('기본 등급') || '일반';
+      const rec = get('추천 등급') || null;
       let ability = get('고유 능력');
       ability = ability.replace(/영웅이 공격할 때 공격할 때/g, '영웅이 공격할 때')
                        .replace(/1%의 확률로 세 번/g, 'N%의 확률로 세 번')
@@ -439,6 +440,33 @@
       const cleanName = normKey(name);
       const existing = existingItemsMap[cleanName] || {};
 
+      const knownLevels = [0];
+      ['1', '2', '3', '4', '5'].forEach(lv => {
+        if (awakening[lv]) knownLevels.push(parseInt(lv, 10));
+      });
+      if (knownLevels.length === 1 && existing.knownLevels) {
+        knownLevels.push(...existing.knownLevels.filter(x => x > 0));
+      }
+
+      const stats = existing.stats ? JSON.parse(JSON.stringify(existing.stats)) : {};
+      for (const [statKey, valList] of Object.entries(stats)) {
+        if (!Array.isArray(valList)) continue;
+        ['1', '2', '3', '4', '5'].forEach(lvStr => {
+          const lv = parseInt(lvStr, 10);
+          const lines = awakening[lvStr];
+          if (lines && lines.length) {
+            const combined = lines.join(' ');
+            const numMatch = combined.match(/(\d+(?:\.\d+)?)(%|배|초|개)?/);
+            if (numMatch) {
+              const parsedVal = parseFloat(numMatch[1]);
+              if (!isNaN(parsedVal)) {
+                valList[lv] = parsedVal;
+              }
+            }
+          }
+        });
+      }
+
       const allText = `${name} ${abilities.join(' ')} ${Object.values(awakening).flat().join(' ')} ${comment}`;
 
       items.push({
@@ -454,6 +482,8 @@
         usageLabel: usageLabel,
         abilities: abilities.length ? abilities : (existing.abilities || []),
         awakening: Object.keys(awakening).length ? awakening : (existing.awakening || {}),
+        knownLevels: knownLevels,
+        stats: Object.keys(stats).length ? stats : (existing.stats || {}),
         drops: drops.length ? drops : (existing.drops || []),
         comment: comment || existing.comment || '',
         img: existing.img || `assets/items/${cat}_${String(no).padStart(3, '0')}.webp`,
@@ -461,6 +491,7 @@
           name: cleanName,
           cho: chosung(cleanName),
           alias: existing.search?.alias || [],
+          aliasCho: existing.search?.aliasCho || [],
           text: normKey(allText),
           comment: normKey(comment || ''),
           drops: drops.map(normKey).join('')

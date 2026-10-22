@@ -542,6 +542,10 @@
 
     // 2. Expansion Data (Heroes, Mercs, Mounts, Pets)
     const cachedLive = window.SheetsSync ? window.SheetsSync.getCachedData() : null;
+    if (cachedLive && cachedLive.items && cachedLive.items.length && rawItemData) {
+      rawItemData = { ...rawItemData, items: cachedLive.items };
+      if (window.UNDERDARK_DATA) window.UNDERDARK_DATA.items = cachedLive.items;
+    }
     if (cachedLive && cachedLive.heroes && cachedLive.heroes.length) {
       expansionData = cachedLive;
     } else if (window.UNDERDARK_EXPANSION) {
@@ -1803,7 +1807,7 @@
     const dropsHtml = (item.drops || []).map(d => `<span class="drop-item" style="cursor: pointer;" onclick="window.filterByDrop('${d}')">${d} 🔍</span>`).join('');
 
     elModalContent.innerHTML = `
-      <div class="modal-header">
+      <div class="modal-header" data-modal-item-id="${item.id}">
         <div style="display: flex; gap: 1rem; align-items: center;">
           ${imgHtml}
           <div>
@@ -2775,6 +2779,9 @@
           const newItemsJson = JSON.stringify(fresh.items);
           if (oldItemsJson !== newItemsJson) {
             rawItemData.items = fresh.items;
+            if (window.UNDERDARK_DATA) {
+              window.UNDERDARK_DATA.items = fresh.items;
+            }
             searchEngine = new window.UnderdarkSearch(rawItemData);
             itemsChanged = true;
           }
@@ -2785,6 +2792,17 @@
           expansionData = fresh;
           window.UNDERDARK_EXPANSION = fresh;
           renderActiveView();
+
+          // If detail modal is currently open, re-render it with fresh item data
+          if (elModalOverlay && elModalOverlay.classList.contains('active')) {
+            const openHeader = elModalContent.querySelector('.modal-header[data-modal-item-id]');
+            const openId = openHeader ? openHeader.getAttribute('data-modal-item-id') : null;
+            if (openId && rawItemData && rawItemData.items) {
+              const freshItem = rawItemData.items.find(x => x.id === openId);
+              if (freshItem) openItemModal(freshItem);
+            }
+          }
+
           if (isManual) {
             showToast('✅ 구글 시트 최신 데이터가 반영되었습니다.');
           } else {
