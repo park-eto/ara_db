@@ -10,8 +10,12 @@
   'use strict';
 
   const SHEET_ID = '1rT0VUnOxTHSo_k8xa4MIyzWtQdxSuhTi';
-  const CACHE_KEY = 'underdark_live_expansion_cache';
-  const CACHE_TIME_KEY = 'underdark_live_expansion_timestamp';
+  const CACHE_KEY = 'underdark_live_expansion_cache_v3';
+  const CACHE_TIME_KEY = 'underdark_live_expansion_timestamp_v3';
+  try {
+    localStorage.removeItem('underdark_live_expansion_cache');
+    localStorage.removeItem('underdark_live_expansion_cache_v2');
+  } catch (e) {}
   const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
 
   function chosung(s) {
@@ -391,6 +395,87 @@
     '최악': 'XX'
   };
 
+  const STAT_NUM = '(\\d+(?:\\.\\d+)?)';
+  const STAT_RULES = [
+    [new RegExp(`모든 타워와 영웅의 공격력이 ${STAT_NUM}%`), { 1: 'all_atk' }],
+    [new RegExp(`영웅과 타워의 공격력이 ${STAT_NUM}배`), { 1: 'hero_tower_mult' }],
+    [new RegExp(`타워 공격력이\\s*1\\s*\\+\\s*${STAT_NUM}배`), { 1: 'tower_atk_mult' }],
+    [new RegExp(`버프 선택\\s*창에서 타워의 공격력이 ${STAT_NUM}%`), { 1: 'tower_buff_bonus' }],
+    [new RegExp(`\\(ex\\.[^)]*\\)`), {}],
+    [new RegExp(`\\d+칸 안에 있는 타워의 공격력이 ${STAT_NUM}%`), { 1: 'tower_aura' }],
+    [new RegExp(`타워 목록에 곡괭이를 들고 있는 수만큼 전체 공격력이 ${STAT_NUM}%`), { 1: 'pick_atk' }],
+    [new RegExp(`타워의 공격력이? ${STAT_NUM}%`), { 1: 'tower_atk' }],
+    [new RegExp(`영웅의 공격력이 ${STAT_NUM}%`), { 1: 'hero_atk' }],
+    [new RegExp(`영웅의 치명타 피해가 ${STAT_NUM}%`), { 1: 'hero_crit_dmg' }],
+    [new RegExp(`영웅의 치명타 확률[이리] ${STAT_NUM}%`), { 1: 'hero_crit_rate' }],
+    [new RegExp(`타워의 치명타 피해가 ${STAT_NUM}%`), { 1: 'tower_crit_dmg' }],
+    [new RegExp(`타워의 치명타 확률[이리] ${STAT_NUM}%`), { 1: 'tower_crit_rate' }],
+    [new RegExp(`\\[무기 투사체 ${STAT_NUM}개 추가\\]`), { 1: 'projectile_buff' }],
+    [new RegExp(`투사체 (?:개수[를르]|수가) ${STAT_NUM}개`), { 1: 'projectile' }],
+    [new RegExp(`투사체 크기를 ${STAT_NUM}배`), { 1: 'projectile_size' }],
+    [new RegExp(`${STAT_NUM}%의? 확률로 두 번 공격`), { 1: 'double_attack' }],
+    [new RegExp(`${STAT_NUM}%의? 확률로 세 번 공격`), { 1: 'triple_attack' }],
+    [new RegExp(`공격력의 ${STAT_NUM}%\\s*만큼 스플래시`), { 1: 'splash' }],
+    [new RegExp(`영웅의 공격 속도가 ${STAT_NUM}%`), { 1: 'hero_atk_speed' }],
+    [new RegExp(`타워의 공격 속도가 ${STAT_NUM}%`), { 1: 'tower_atk_speed' }],
+    [new RegExp(`이동 속도가 감소한 일반 몬스터를 공격하면,?\\s*${STAT_NUM}%\\s*확률로 처형`), { 1: 'execute_slowed' }],
+    [new RegExp(`${STAT_NUM}%의? 확[률룰]로 일반 몬스터를 즉시 처형`), { 1: 'execute' }],
+    [new RegExp(`${STAT_NUM}%의? 확률로 공중 일반 몬스터를 즉시 처[치지]`), { 1: 'execute_air' }],
+    [new RegExp(`${STAT_NUM}% 이하의 체력을 가진 적을 즉시 처치`), { 1: 'execute_hp' }],
+    [new RegExp(`${STAT_NUM}%의? 확률로 몬스터를 [\\d.]+초 동안 스턴`), { 1: 'stun_chance' }],
+    [new RegExp(`${STAT_NUM}%의? 확률로 [\\d.]+초 동안 몬스터의 이동 속도를 ${STAT_NUM}% 감소`), { 1: 'slow_chance', 2: 'slow' }],
+    [new RegExp(`얼음 메테오에 맞은 적은 이동속도가 [\\d.]+초 동안 ${STAT_NUM}% 감소`), { 1: 'slow' }],
+    [new RegExp(`얼음벽 주변에 있는 일반 몬스터는 ${STAT_NUM}% 이동 속도가 감소`), { 1: 'slow' }],
+    [new RegExp(`공중 몬스터의 이동\\s?속도가 ${STAT_NUM}% 감소`), { 1: 'air_slow' }],
+    [new RegExp(`몬스터의 이동 속도가 ${STAT_NUM}% 감소`), { 1: 'slow' }],
+    [new RegExp(`${STAT_NUM}% 확률로 적에게 출혈`), { 1: 'bleed_chance' }],
+    [new RegExp(`상태 이상 하나당\\s*${STAT_NUM}%`), { 1: 'status_bonus' }],
+    [new RegExp(`면역 상태인 몬스터에게 ${STAT_NUM}%`), { 1: 'immune_bonus' }],
+    [new RegExp(`이동 속도가 감소한 몬스터를 공격하면 ${STAT_NUM}%`), { 1: 'slowed_bonus' }],
+    [new RegExp(`스턴\\s?상태의 몬스터에게 (?:가하는 피해가\\s*)?${STAT_NUM}%`), { 1: 'stun_bonus' }],
+    [new RegExp(`공중 몬스터에게 추가로 ${STAT_NUM}%`), { 1: 'air_bonus' }],
+    [new RegExp(`영웅이 보스에게 주는 피해가 ${STAT_NUM}%`), { 1: 'hero_boss_dmg' }],
+    [new RegExp(`타워가 보스에게 주는 피해가 ${STAT_NUM}%`), { 1: 'tower_boss_dmg' }],
+    [new RegExp(`보스에게 추가로 ${STAT_NUM}%`), { 1: 'boss_bonus' }],
+    [new RegExp(`몬스터가 받는 피해를 ${STAT_NUM}%`), { 1: 'monster_dmg_taken' }],
+    [new RegExp(`영웅의 체력이 ${STAT_NUM}%`), { 1: 'hero_hp' }],
+    [new RegExp(`영웅 체력이 ${STAT_NUM} 증가`), { 1: 'hero_hp_flat' }],
+    [new RegExp(`영웅이 받는 피해를 ${STAT_NUM}%`), { 1: 'dmg_reduction' }],
+    [new RegExp(`영웅의 이동 속도가 ${STAT_NUM}\\s*증가`), { 1: 'hero_move_speed' }],
+    [new RegExp(`${STAT_NUM}%의? 확률로 (?:체력 )?포션을 드랍`), { 1: 'potion_drop' }],
+    [new RegExp(`부활합니다\\.?\\s*\\[쿨타임 ${STAT_NUM}초\\]`), { 1: 'revive_cd' }],
+    [new RegExp(`${STAT_NUM}% 확률로 추가되는\\s*곡괭이`), { 1: 'pickaxe' }],
+    [new RegExp(`${STAT_NUM}% 확률로 (?:네크로맨서 )?타워 카드`), { 1: 'tower_card' }],
+    [new RegExp(`${STAT_NUM}% 확률로 버프를 선택`), { 1: 'buff_select' }],
+    [new RegExp(`${STAT_NUM}% 확률로 추가 타워를 획득`), { 1: 'extra_tower' }],
+    [new RegExp(`아이템 드랍률이 ${STAT_NUM}%`), { 1: 'item_drop' }],
+    [new RegExp(`폭탄을 떨어뜨려 ${STAT_NUM}%`), { 1: 'bomb_dmg' }],
+    [new RegExp(`${STAT_NUM}% 확률로 곡괭이 대신 삽`), { 1: 'shovel' }]
+  ];
+
+  function extractStats(text) {
+    if (!text) return {};
+    let t = text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+    const out = {};
+    for (const [pat, mapping] of STAT_RULES) {
+      t = t.replace(pat, (full, ...groups) => {
+        for (const [gi, key] of Object.entries(mapping)) {
+          const valStr = groups[parseInt(gi, 10) - 1];
+          if (valStr !== undefined) {
+            const v = parseFloat(valStr);
+            if (!isNaN(v)) {
+              if (out[key] === undefined || v > out[key]) {
+                out[key] = v;
+              }
+            }
+          }
+        }
+        return '\x00'.repeat(full.length);
+      });
+    }
+    return out;
+  }
+
   function syncItemsFromRows(rows, existingItemsMap) {
     if (!rows || rows.length < 2) return null;
     const headers = rows[0].map(clean);
@@ -440,31 +525,60 @@
       const cleanName = normKey(name);
       const existing = existingItemsMap[cleanName] || {};
 
-      const knownLevels = [0];
-      ['1', '2', '3', '4', '5'].forEach(lv => {
-        if (awakening[lv]) knownLevels.push(parseInt(lv, 10));
-      });
-      if (knownLevels.length === 1 && existing.knownLevels) {
-        knownLevels.push(...existing.knownLevels.filter(x => x > 0));
+      // Check if ability text or awakening text actually changed from existing
+      const baseText = abilities.join(' ');
+      const existingBaseText = (existing.abilities || []).join(' ');
+      const isBaseChanged = normKey(baseText) !== normKey(existingBaseText);
+
+      let isAwakChanged = false;
+      const existingAwak = existing.awakening || {};
+      for (const lv of ['1', '2', '3', '4', '5']) {
+        const curLines = (awakening[lv] || []).join(' ');
+        const exLines = (existingAwak[lv] || []).join(' ');
+        if (normKey(curLines) !== normKey(exLines)) {
+          isAwakChanged = true;
+          break;
+        }
       }
 
-      const stats = existing.stats ? JSON.parse(JSON.stringify(existing.stats)) : {};
-      for (const [statKey, valList] of Object.entries(stats)) {
-        if (!Array.isArray(valList)) continue;
-        ['1', '2', '3', '4', '5'].forEach(lvStr => {
-          const lv = parseInt(lvStr, 10);
-          const lines = awakening[lvStr];
-          if (lines && lines.length) {
-            const combined = lines.join(' ');
-            const numMatch = combined.match(/(\d+(?:\.\d+)?)(%|배|초|개)?/);
-            if (numMatch) {
-              const parsedVal = parseFloat(numMatch[1]);
-              if (!isNaN(parsedVal)) {
-                valList[lv] = parsedVal;
-              }
+      let stats = existing.stats;
+      let knownLevels = existing.knownLevels ? [...existing.knownLevels] : [0];
+
+      // If text changed or existing stats is missing, re-extract stats accurately
+      if (isBaseChanged || isAwakChanged || !stats || !Object.keys(stats).length) {
+        const baseStats = extractStats(baseText);
+        const perLevel = [baseStats];
+        knownLevels = [0];
+
+        for (let lvInt = 1; lvInt <= 5; lvInt++) {
+          const lvStr = String(lvInt);
+          const txt = (awakening[lvStr] || []).join(' ');
+          if (txt) {
+            let cur = { ...(perLevel[perLevel.length - 1] || baseStats) };
+            for (let p = perLevel.length - 1; p >= 0; p--) {
+              if (perLevel[p]) { cur = { ...perLevel[p] }; break; }
             }
+            Object.assign(cur, extractStats(txt));
+            perLevel.push(cur);
+            knownLevels.push(lvInt);
+          } else if (existing.awakeningNote === '각성 시 주옵션만 성장합니다.') {
+            perLevel.push({ ...baseStats });
+            knownLevels.push(lvInt);
+          } else {
+            perLevel.push(null);
           }
+        }
+
+        const keysSet = new Set();
+        perLevel.forEach(lvl => {
+          if (lvl) Object.keys(lvl).forEach(k => keysSet.add(k));
         });
+        const keys = Array.from(keysSet).sort();
+        const extractedStats = {};
+        keys.forEach(k => {
+          extractedStats[k] = perLevel.map(lvl => (lvl && lvl[k] !== undefined) ? lvl[k] : null);
+        });
+        stats = extractedStats;
       }
 
       const allText = `${name} ${abilities.join(' ')} ${Object.values(awakening).flat().join(' ')} ${comment}`;

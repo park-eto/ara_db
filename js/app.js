@@ -556,14 +556,14 @@
   }
 
   async function loadAllData() {
+    try {
+      localStorage.removeItem('underdark_live_expansion_cache');
+      localStorage.removeItem('underdark_live_expansion_cache_v2');
+      localStorage.removeItem('underdark_items_data');
+    } catch (e) {}
+
     // 1. Items Data
-    const localSaved = localStorage.getItem('underdark_items_data');
-    if (localSaved) {
-      try {
-        rawItemData = JSON.parse(localSaved);
-      } catch (e) { }
-    }
-    if (!rawItemData && window.UNDERDARK_DATA) {
+    if (window.UNDERDARK_DATA) {
       rawItemData = window.UNDERDARK_DATA;
     }
     if (!rawItemData) {
@@ -1767,8 +1767,8 @@
     let text = ability;
 
     text = text.replace(/영웅이 공격할 때 공격할 때/g, '영웅이 공격할 때')
-               .replace(/1%의 확률로 세 번/g, 'N%의 확률로 세 번')
-               .replace(/공격할 때 1%의 확률로/g, '공격할 때 N%의 확률로');
+      .replace(/1%의 확률로 세 번/g, 'N%의 확률로 세 번')
+      .replace(/공격할 때 1%의 확률로/g, '공격할 때 N%의 확률로');
 
     if (tierVal === null || tierVal === undefined) {
       return text.replace(/\bN%\b/g, 'N%').replace(/\bN\b/g, 'N');
@@ -2884,7 +2884,7 @@
                 <td class="text-center font-mono font-bold text-subtle">${item.no}</td>
                 <td class="text-center">
                   <span class="camp-type-badge type-${item.type}">
-                    ${item.type === 'structure' ? '🏛️ 구조물' : '🏺 소품'}
+                    ${item.type === 'structure' ? '구조물' : '소품'}
                   </span>
                 </td>
                 <td class="text-center">
@@ -2919,7 +2919,7 @@
           <div class="camp-card ${item.type === 'structure' ? 'is-structure' : 'is-prop'}" data-camp-id="${item.id}" tabindex="0" role="button" title="클릭하여 상세 정보 보기">
             <div class="camp-card-header">
               <span class="camp-type-badge type-${item.type}">
-                ${item.type === 'structure' ? '🏛️ 구조물' : '🏺 소품'}
+                ${item.type === 'structure' ? '구조물' : '소품'}
               </span>
               <span class="camp-card-no">#${item.no}</span>
             </div>
@@ -3061,7 +3061,7 @@
 
   function openCampModal(item) {
     const isStructure = item.type === 'structure';
-    const typeLabel = isStructure ? '🏛️ 구조물' : '🏺 소품';
+    const typeLabel = isStructure ? '구조물' : '소품';
 
     elModalContent.innerHTML = `
       <div class="modal-header">

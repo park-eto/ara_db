@@ -552,6 +552,9 @@ def main():
             encoding='utf-8'
         )
 
+    camp_file = DATA_DIR / 'camp.json'
+    camp_data = json.loads(camp_file.read_text(encoding='utf-8')) if camp_file.exists() else None
+
     bundle = {
         'heroes': heroes or existing_heroes,
         'mercenaries': mercs or existing_mercs,
@@ -559,6 +562,7 @@ def main():
         'mountSubOptions': sub_options or existing_mounts_data.get('subOptions', {}),
         'pets': pets or existing_pet_data.get('pets', []),
         'petGuide': guide or p_guide,
+        'camp': camp_data,
         'items': items or existing_items,
     }
     (DATA_DIR / 'underdark_all.js').write_text(
