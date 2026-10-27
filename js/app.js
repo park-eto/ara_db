@@ -39,6 +39,10 @@
     // Pets
     petTier: 'all',
     petDrop: 'all',
+
+    // Camp (구조물 / 소품)
+    campType: 'all', // 'all' | 'structure' | 'prop'
+    campCommonExpanded: true,
   };
 
   // -------------------------------------------------------------
@@ -50,6 +54,7 @@
     mercenaries: { col: null, dir: 'desc' },
     mounts: { col: 'no', dir: 'asc' },
     pets: { col: 'no', dir: 'asc' },
+    camp: { col: 'no', dir: 'asc' },
   };
 
   const GRADE_RANKS = {
@@ -364,6 +369,16 @@
         <option value="name_desc">펫 이름 역순 (ㅎ~ㄱ)</option>
         <option value="drops_asc">획득처순 (가나다)</option>
       `;
+    } else if (tab === 'camp') {
+      html = `
+        <option value="default">기본 순서 (구조물 ❯ 소품)</option>
+        <option value="no_asc">번호순 (오름차순)</option>
+        <option value="no_desc">번호순 (내림차순)</option>
+        <option value="type_asc">구분순 (구조물 ❯ 소품)</option>
+        <option value="type_desc">구분순 (소품 ❯ 구조물)</option>
+        <option value="name_asc">이름순 (ㄱ~ㅎ)</option>
+        <option value="name_desc">이름 역순 (ㅎ~ㄱ)</option>
+      `;
     }
 
     elSortSelect.innerHTML = html;
@@ -401,6 +416,15 @@
   let elMercControls;
   let elMountControls;
   let elPetControls;
+  let elCampControls;
+  let elGrowthControls;
+
+  // Camp Controls
+  let elCampTypeFilter;
+  let elCampCommonToggleBtn;
+
+  // Growth Controls
+  let elGrowthZoomBtn;
 
   // Item Controls
   let elCatTabs;
@@ -482,6 +506,15 @@
     elMercControls = document.getElementById('mercControlSection');
     elMountControls = document.getElementById('mountControlSection');
     elPetControls = document.getElementById('petControlSection');
+    elCampControls = document.getElementById('campControlSection');
+    elGrowthControls = document.getElementById('growthControlSection');
+
+    // Camp
+    elCampTypeFilter = document.getElementById('campTypeFilter');
+    elCampCommonToggleBtn = document.getElementById('campCommonToggleBtn');
+
+    // Growth
+    elGrowthZoomBtn = document.getElementById('growthZoomBtn');
 
     // Item
     elCatTabs = document.getElementById('categoryTabs');
@@ -552,23 +585,35 @@
       expansionData = window.UNDERDARK_EXPANSION;
     } else {
       try {
-        const [hRes, mRes, mtRes, pRes] = await Promise.all([
+        const [hRes, mRes, mtRes, pRes, cRes] = await Promise.all([
           fetch('data/heroes.json'),
           fetch('data/mercenaries.json'),
           fetch('data/mounts.json'),
-          fetch('data/pets.json')
+          fetch('data/pets.json'),
+          fetch('data/camp.json')
         ]);
         const petJson = await pRes.json();
+        const campJson = cRes.ok ? await cRes.json() : null;
         expansionData = {
           heroes: await hRes.json(),
           mercenaries: await mRes.json(),
           mounts: (await mtRes.json()).mounts || [],
           mountSubOptions: (await mtRes.json()).subOptions || [],
           pets: petJson.pets || [],
-          petGuide: petJson.guide || {}
+          petGuide: petJson.guide || {},
+          camp: campJson
         };
       } catch (e) {
         console.warn('Could not load expansion data json', e);
+      }
+    }
+
+    if (expansionData && !expansionData.camp) {
+      try {
+        const cRes = await fetch('data/camp.json');
+        if (cRes.ok) expansionData.camp = await cRes.json();
+      } catch (e) {
+        console.warn('Could not load camp.json fallback', e);
       }
     }
 
@@ -810,6 +855,36 @@
     if (elPetGuideBtn) {
       elPetGuideBtn.addEventListener('click', openPetGuideModal);
     }
+
+    // Camp Events
+    if (elCampTypeFilter) {
+      elCampTypeFilter.addEventListener('click', e => {
+        const btn = e.target.closest('.awakening-step-btn');
+        if (!btn) return;
+        elCampTypeFilter.querySelectorAll('.awakening-step-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.campType = btn.getAttribute('data-ctype');
+        renderActiveView();
+      });
+    }
+
+    if (elCampCommonToggleBtn) {
+      elCampCommonToggleBtn.addEventListener('click', () => {
+        state.campCommonExpanded = !state.campCommonExpanded;
+        const box = document.getElementById('campCommonDashboard');
+        if (box) {
+          box.classList.toggle('is-collapsed', !state.campCommonExpanded);
+        }
+        elCampCommonToggleBtn.classList.toggle('active', state.campCommonExpanded);
+        elCampCommonToggleBtn.setAttribute('aria-expanded', state.campCommonExpanded ? 'true' : 'false');
+      });
+    }
+
+    // Growth Events
+    if (elGrowthZoomBtn) {
+      elGrowthZoomBtn.addEventListener('click', openGrowthModal);
+    }
+
     if (elAdminBtn) {
       elAdminBtn.addEventListener('click', openAdminModal);
     }
@@ -893,9 +968,18 @@
     elMercControls.style.display = 'none';
     elMountControls.style.display = 'none';
     if (elPetControls) elPetControls.style.display = 'none';
+    if (elCampControls) elCampControls.style.display = 'none';
+    if (elGrowthControls) elGrowthControls.style.display = 'none';
+
+    const stickySearch = document.querySelector('.search-sticky');
+    const resultsMeta = document.querySelector('.results-meta');
 
     // Show selected controls & customize hero banner
     if (tab === 'items') {
+      if (stickySearch) stickySearch.style.display = '';
+      if (resultsMeta) resultsMeta.style.display = '';
+      if (elSortWrapper) elSortWrapper.style.display = 'flex';
+      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
       elHeroTitle.textContent = '아이템 도감 & 능력치 검색';
       elHeroSubtitle.textContent = '이름, 초성, 능력 문장 뿐만 아니라 세부 수치 조건으로 자유롭게 검색하세요.';
       elSearchInput.placeholder = '검색어 입력 (예: 빛단, ㅅㅁㅍㅍ, 처형, 치피>=100, 투사체>2)';
@@ -903,6 +987,10 @@
       elResultUnit.textContent = '아이템';
       renderItemSearchHints();
     } else if (tab === 'heroes') {
+      if (stickySearch) stickySearch.style.display = '';
+      if (resultsMeta) resultsMeta.style.display = '';
+      if (elSortWrapper) elSortWrapper.style.display = 'flex';
+      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
       elHeroTitle.textContent = '영웅 도감 & 영덱 공략';
       elHeroSubtitle.textContent = '모든 영웅의 기본 능력과 3·6·9·12·15 레벨별 추가 능력, 티어 평가를 확인하세요.';
       elSearchInput.placeholder = '영웅 이름, 별칭, 초성 검색 (예: 오크, 정불갑, 용싶해, 아그니)';
@@ -910,6 +998,10 @@
       elResultUnit.textContent = '명의 영웅';
       renderHeroSearchHints();
     } else if (tab === 'mercenaries') {
+      if (stickySearch) stickySearch.style.display = '';
+      if (resultsMeta) resultsMeta.style.display = '';
+      if (elSortWrapper) elSortWrapper.style.display = 'flex';
+      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
       elHeroTitle.textContent = '지원용병 도감 & 추천';
       elHeroSubtitle.textContent = '지원용병의 등급별(B~SSS) 공격력/공속/치명타 버프 수치와 추천도를 확인하세요.';
       elSearchInput.placeholder = '지원용병 이름, 능력 검색 (예: 저승사자, 닌자, 세이렌, 토르)';
@@ -917,6 +1009,10 @@
       elResultUnit.textContent = '명의 지원용병';
       renderMercSearchHints();
     } else if (tab === 'mounts') {
+      if (stickySearch) stickySearch.style.display = '';
+      if (resultsMeta) resultsMeta.style.display = '';
+      if (elSortWrapper) elSortWrapper.style.display = 'flex';
+      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
       elHeroTitle.textContent = '탈것 도감 & 부옵션 가이드';
       elHeroSubtitle.textContent = '총 57종의 탈것 고유 능력과 평가 코멘트, 합성법 및 18가지 부옵션 정보입니다.';
       elSearchInput.placeholder = '탈것 이름, 능력 검색 (예: 아기 백룡, 검은 악마, 거대슬라임)';
@@ -924,12 +1020,33 @@
       elResultUnit.textContent = '종의 탈것';
       renderMountSearchHints();
     } else if (tab === 'pets') {
+      if (stickySearch) stickySearch.style.display = '';
+      if (resultsMeta) resultsMeta.style.display = '';
+      if (elSortWrapper) elSortWrapper.style.display = 'flex';
+      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
       elHeroTitle.textContent = '펫 도감 & 등급·옵션 세팅 가이드';
       elHeroSubtitle.textContent = '총 26종 펫의 고유 기본 능력과 드랍처, 등급별 해금 옵션 및 타워/영덱 종결 세팅 정보입니다.';
       elSearchInput.placeholder = '펫 이름, 초성, 능력 검색 (예: 용암슬라임, 쉐도우, ㅇㅇㅅㄹㅇ)';
       if (elPetControls) elPetControls.style.display = 'block';
       elResultUnit.textContent = '종의 펫';
       renderPetSearchHints();
+    } else if (tab === 'camp') {
+      if (stickySearch) stickySearch.style.display = '';
+      if (resultsMeta) resultsMeta.style.display = '';
+      if (elSortWrapper) elSortWrapper.style.display = 'flex';
+      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
+      elHeroTitle.textContent = '야영지 구조물 & 소품 도감';
+      elHeroSubtitle.textContent = '야영지 구조물(9종)과 소품(34종)의 고유 능력 및 공통 등급·부옵·랜덤옵 정보입니다.';
+      elSearchInput.placeholder = '구조물/소품 이름, 초성, 능력 검색 (예: 묘지, 삼각 플라스크, ㅂㅅ, 원거리)';
+      if (elCampControls) elCampControls.style.display = 'block';
+      elResultUnit.textContent = '개 항목';
+      renderCampSearchHints();
+    } else if (tab === 'growth') {
+      if (stickySearch) stickySearch.style.display = 'none';
+      if (resultsMeta) resultsMeta.style.display = 'none';
+      if (elGrowthControls) elGrowthControls.style.display = 'block';
+      elHeroTitle.textContent = '언더다크 성장 가이드';
+      elHeroSubtitle.textContent = '언더다크 성장에 필요한 전체 요구치와 성장 가이드 차트입니다.';
     }
 
     updateSortSelectForTab(tab);
@@ -999,6 +1116,22 @@
     bindHintTags();
   }
 
+  function renderCampSearchHints() {
+    elSearchHints.innerHTML = `
+      <span class="search-hint-label">⚡ 빠른 검색:</span>
+      <button type="button" class="search-hint-tag" data-q="묘지">묘지</button>
+      <button type="button" class="search-hint-tag" data-q="삼각 플라스크">삼각 플라스크</button>
+      <button type="button" class="search-hint-tag" data-q="사파이어">사파이어</button>
+      <button type="button" class="search-hint-tag" data-q="알에서 깬 병아리">알에서 깬 병아리</button>
+      <button type="button" class="search-hint-tag" data-q="주 무기">주 무기 드랍</button>
+      <button type="button" class="search-hint-tag" data-q="보조 무기">보조 무기 드랍</button>
+      <button type="button" class="search-hint-tag" data-q="투구">투구 드랍</button>
+      <button type="button" class="search-hint-tag" data-q="기타">기타 드랍</button>
+      <button type="button" class="search-hint-tag" data-q="붉은 보석">붉은 보석 획득</button>
+    `;
+    bindHintTags();
+  }
+
   function bindHintTags() {
     elSearchHints.querySelectorAll('.search-hint-tag').forEach(tag => {
       tag.addEventListener('click', () => {
@@ -1034,6 +1167,8 @@
     } else if (currentTab === 'pets') {
       if (state.petTier !== 'all') count++;
       if (state.petDrop !== 'all') count++;
+    } else if (currentTab === 'camp') {
+      if (state.campType !== 'all') count++;
     }
 
     if (count > 0) {
@@ -1056,6 +1191,10 @@
       renderMountsView();
     } else if (currentTab === 'pets') {
       renderPetsView();
+    } else if (currentTab === 'camp') {
+      renderCampView();
+    } else if (currentTab === 'growth') {
+      renderGrowthView();
     }
   }
 
@@ -2547,6 +2686,432 @@
           </ul>
         </div>
 
+      </div>
+    `;
+
+    showModal();
+  }
+
+  // -------------------------------------------------------------
+  // 6. RENDER CAMP (STRUCTURES & PROPS)
+  // -------------------------------------------------------------
+  function formatCampAbility(text) {
+    if (!text) return '';
+    return text
+      .replace(/(\[[^\]]+\])/g, '<span class="camp-kw-badge">$1</span>')
+      .replace(/(\d+(?:\.\d+)?%)/g, '<span class="stat-highlight">$1</span>')
+      .replace(/(\d+마리|\d+개)/g, '<span class="stat-highlight">$1</span>');
+  }
+
+  function sortCampList(list, col, dir) {
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      let cmp = 0;
+      if (col === 'no') {
+        cmp = a.no - b.no;
+      } else if (col === 'type') {
+        if (a.type !== b.type) {
+          cmp = a.type === 'structure' ? -1 : 1;
+        } else {
+          cmp = a.no - b.no;
+        }
+      } else if (col === 'name') {
+        cmp = a.name.localeCompare(b.name, 'ko');
+      } else if (col === 'ability') {
+        cmp = (a.ability || '').localeCompare(b.ability || '', 'ko');
+      } else {
+        cmp = a.no - b.no;
+      }
+      return dir === 'desc' ? -cmp : cmp;
+    });
+    return sorted;
+  }
+
+  function renderCampCommonDashboard(common) {
+    const grades = common.grades || ['일반', '레어', '유니크', '엘리트', '미스터리', '에픽', '전설', '신'];
+    const subOpts = common.subOptions || [];
+    const randOpts = common.randomOptions || [];
+
+    const gradeColorMap = {
+      '일반': { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
+      '레어': { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+      '유니크': { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+      '엘리트': { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+      '미스터리': { color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+      '에픽': { color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff' },
+      '전설': { color: '#e11d48', bg: '#fff1f2', border: '#fecdd3' },
+      '신': { color: '#b45309', bg: '#fef3c7', border: '#fde68a' }
+    };
+
+    const gradesHtml = grades.map((g, idx) => {
+      const st = gradeColorMap[g] || { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
+      const arrow = idx < grades.length - 1 ? `<span class="camp-step-arrow">➔</span>` : '';
+      return `
+        <div class="camp-grade-step">
+          <span class="camp-grade-badge" style="color: ${st.color}; background: ${st.bg}; border-color: ${st.border};">
+            <small class="camp-grade-num">${idx + 1}</small>${g}
+          </span>
+          ${arrow}
+        </div>
+      `;
+    }).join('');
+
+    // Separate hero vs tower options for readability
+    const heroSubs = subOpts.filter(o => o.includes('영웅'));
+    const towerSubs = subOpts.filter(o => o.includes('타워'));
+
+    const heroRands = randOpts.filter(o => o.includes('영웅'));
+    const towerRands = randOpts.filter(o => o.includes('타워'));
+
+    const isCollapsedClass = state.campCommonExpanded ? '' : 'is-collapsed';
+
+    return `
+      <section id="campCommonDashboard" class="camp-common-dashboard ${isCollapsedClass}">
+        <div class="camp-common-header">
+          <div class="camp-common-title-wrap">
+            <span class="camp-common-icon">✨</span>
+            <div>
+              <h3 class="camp-common-title">구조물 & 소품 공통 적용 안내</h3>
+              <p class="camp-common-desc">
+                아래 <strong>등급 (8단계)</strong>, <strong>부옵션 (8종)</strong>, <strong>랜덤옵션 (12종)</strong>은 야영지 구조물과 소품 전체에 동일하게 적용되는 공통 사항입니다.
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-outline btn-sm" id="inlineCampCommonToggle" title="접기 / 펼치기">
+            ${state.campCommonExpanded ? '공통 정보 접기 ▲' : '공통 정보 펼치기 ▼'}
+          </button>
+        </div>
+
+        <div class="camp-common-cards-grid">
+          <!-- 1. 등급 (8단계) -->
+          <div class="camp-common-card camp-grades-card">
+            <div class="common-card-head">
+              <span class="head-icon">🎖️</span>
+              <h4 class="head-title">적용 등급 (${grades.length}단계)</h4>
+              <span class="head-tag">일반 ➔ 신</span>
+            </div>
+            <div class="camp-grades-flow">
+              ${gradesHtml}
+            </div>
+          </div>
+
+          <!-- 2. 부옵션 (8종) -->
+          <div class="camp-common-card camp-subs-card">
+            <div class="common-card-head">
+              <span class="head-icon">⚡</span>
+              <h4 class="head-title">부옵션 (${subOpts.length}종)</h4>
+              <span class="head-tag">영웅 5종 · 타워 3종</span>
+            </div>
+            <div class="camp-options-columns">
+              <div class="camp-opt-group">
+                <span class="camp-group-label hero">🦸 영웅 부옵 (${heroSubs.length})</span>
+                <div class="camp-chips-list">
+                  ${heroSubs.map((o, i) => `<div class="camp-opt-chip hero"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
+                </div>
+              </div>
+              <div class="camp-opt-group">
+                <span class="camp-group-label tower">🏰 타워 부옵 (${towerSubs.length})</span>
+                <div class="camp-chips-list">
+                  ${towerSubs.map((o, i) => `<div class="camp-opt-chip tower"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 랜덤옵션 (12종) -->
+          <div class="camp-common-card camp-rands-card">
+            <div class="common-card-head">
+              <span class="head-icon">🎲</span>
+              <h4 class="head-title">랜덤옵션 (${randOpts.length}종)</h4>
+              <span class="head-tag">영웅 7종 · 타워 5종</span>
+            </div>
+            <div class="camp-options-columns">
+              <div class="camp-opt-group">
+                <span class="camp-group-label hero">🦸 영웅 랜덤옵 (${heroRands.length})</span>
+                <div class="camp-chips-list">
+                  ${heroRands.map((o, i) => `<div class="camp-opt-chip hero"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
+                </div>
+              </div>
+              <div class="camp-opt-group">
+                <span class="camp-group-label tower">🏰 타워 랜덤옵 (${towerRands.length})</span>
+                <div class="camp-chips-list">
+                  ${towerRands.map((o, i) => `<div class="camp-opt-chip tower"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderCampTableView(items) {
+    return `
+      <div class="table-responsive-wrapper">
+        <table class="data-grid-table camp-table">
+          <thead>
+            <tr>
+              ${renderTh('no', 'No', 'width: 60px;', true)}
+              ${renderTh('type', '구분', 'width: 100px;', true)}
+              <th style="width: 80px;" class="text-center">사진</th>
+              ${renderTh('name', '이름', 'width: 180px;')}
+              ${renderTh('ability', '고유 능력')}
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr class="camp-table-row clickable-row" data-camp-id="${item.id}" tabindex="0" role="button" title="클릭하여 상세 정보 보기">
+                <td class="text-center font-mono font-bold text-subtle">${item.no}</td>
+                <td class="text-center">
+                  <span class="camp-type-badge type-${item.type}">
+                    ${item.type === 'structure' ? '🏛️ 구조물' : '🏺 소품'}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <div class="camp-img-box">
+                    <img src="${item.img || ''}" alt="${item.name}" loading="lazy">
+                  </div>
+                </td>
+                <td class="font-bold camp-name-cell">
+                  <div class="camp-name-text">${item.name}</div>
+                </td>
+                <td class="camp-ability-cell">${formatCampAbility(item.ability)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderCampCardView(items) {
+    return `
+      <div class="camp-cards-grid">
+        ${items.map(item => `
+          <div class="camp-card ${item.type === 'structure' ? 'is-structure' : 'is-prop'}" data-camp-id="${item.id}" tabindex="0" role="button" title="클릭하여 상세 정보 보기">
+            <div class="camp-card-header">
+              <span class="camp-type-badge type-${item.type}">
+                ${item.type === 'structure' ? '🏛️ 구조물' : '🏺 소품'}
+              </span>
+              <span class="camp-card-no">#${item.no}</span>
+            </div>
+            <div class="camp-card-img-wrap">
+              <img src="${item.img || ''}" alt="${item.name}" loading="lazy">
+            </div>
+            <div class="camp-card-body">
+              <h3 class="camp-card-title">${item.name}</h3>
+              <div class="camp-card-ability">${formatCampAbility(item.ability)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderCampView() {
+    const camp = expansionData && expansionData.camp;
+    if (!camp) {
+      elItemsGrid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⏳</div>
+          <div class="empty-title">야영지 데이터를 불러오는 중입니다...</div>
+        </div>
+      `;
+      return;
+    }
+
+    const curSort = tabSortState.camp || { col: 'no', dir: 'asc' };
+    const structures = camp.structures || [];
+    const props = camp.props || [];
+    const allItems = [...structures, ...props];
+
+    // Filter by type & search query
+    let items = searchEngine && searchEngine.searchCamp
+      ? searchEngine.searchCamp(allItems, { query: state.query, type: state.campType })
+      : allItems.filter(it => (state.campType === 'all' || it.type === state.campType));
+
+    // Sort items
+    items = sortCampList(items, curSort.col, curSort.dir);
+
+    elResultCount.textContent = items.length;
+
+    // Common info dashboard HTML
+    const commonHtml = renderCampCommonDashboard(camp.common || {});
+
+    // Table or Card view
+    let listHtml = '';
+    if (items.length === 0) {
+      listHtml = `
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">조건에 맞는 야영지 구조물 또는 소품이 없습니다</div>
+          <div class="empty-desc">검색어나 구분 필터를 변경해보세요.</div>
+        </div>
+      `;
+    } else if (currentViewMode === 'table') {
+      listHtml = renderCampTableView(items);
+    } else {
+      listHtml = renderCampCardView(items);
+    }
+
+    elItemsGrid.innerHTML = `
+      <div class="camp-view-wrapper">
+        ${commonHtml}
+        <div class="camp-content-area">
+          ${listHtml}
+        </div>
+      </div>
+    `;
+
+    // Bind item click events for modal
+    elItemsGrid.querySelectorAll('[data-camp-id]').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-camp-id');
+        const item = allItems.find(x => x.id === id);
+        if (item) openCampModal(item);
+      });
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const id = el.getAttribute('data-camp-id');
+          const item = allItems.find(x => x.id === id);
+          if (item) openCampModal(item);
+        }
+      });
+    });
+
+    // Bind common toggle inside view if clicked
+    const inlineToggle = elItemsGrid.querySelector('#inlineCampCommonToggle');
+    if (inlineToggle) {
+      inlineToggle.addEventListener('click', () => {
+        state.campCommonExpanded = !state.campCommonExpanded;
+        const box = document.getElementById('campCommonDashboard');
+        if (box) box.classList.toggle('is-collapsed', !state.campCommonExpanded);
+        if (elCampCommonToggleBtn) {
+          elCampCommonToggleBtn.classList.toggle('active', state.campCommonExpanded);
+          elCampCommonToggleBtn.setAttribute('aria-expanded', state.campCommonExpanded ? 'true' : 'false');
+        }
+        inlineToggle.textContent = state.campCommonExpanded ? '공통 정보 접기 ▲' : '공통 정보 펼치기 ▼';
+      });
+    }
+  }
+
+  function openCampModal(item) {
+    const isStructure = item.type === 'structure';
+    const typeLabel = isStructure ? '🏛️ 구조물' : '🏺 소품';
+
+    elModalContent.innerHTML = `
+      <div class="modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+            <span class="camp-type-badge type-${item.type}">${typeLabel}</span>
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">#${item.no}</span>
+          </div>
+          <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin: 0;">${item.name}</h2>
+        </div>
+        <button class="modal-close-btn" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div style="display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid var(--border-glass); border-radius: 12px; padding: 1.5rem;">
+          <img src="${item.img || ''}" alt="${item.name}" style="max-width: 140px; max-height: 140px; object-fit: contain; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.12));">
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid var(--border-glass); border-radius: 10px; padding: 1.1rem; box-shadow: var(--shadow-sm);">
+          <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 0.45rem; text-transform: uppercase;">고유 능력</div>
+          <div style="font-size: 1rem; font-weight: 600; line-height: 1.6; color: var(--text-main);">
+            ${formatCampAbility(item.ability)}
+          </div>
+        </div>
+
+        <div class="mount-tip-box" style="margin: 0;">
+          <h4 style="color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 0.4rem;">💡 야영지 공통 옵션 적용</h4>
+          <p style="font-size: 0.85rem; line-height: 1.55; margin: 0; color: var(--text-muted);">
+            본 항목(${item.name})은 <strong>일반 ~ 신 (8단계 등급)</strong>으로 승급이 가능하며, 공통 <strong>부옵션 (8종)</strong> 및 <strong>랜덤옵션 (12종)</strong> 풀이 동일하게 적용됩니다.
+          </p>
+        </div>
+      </div>
+    `;
+
+    showModal();
+  }
+
+  // -------------------------------------------------------------
+  // 7. RENDER GROWTH (성장 가이드)
+  // -------------------------------------------------------------
+  function renderGrowthView() {
+    elResultCount.textContent = '1';
+    elItemsGrid.innerHTML = `
+      <div class="growth-view-wrapper">
+        <div class="growth-card">
+          <div class="growth-card-header">
+            <div class="growth-header-info">
+              <span class="growth-badge">성장 가이드</span>
+              <h2 class="growth-title">언더다크 단계별 성장 가이드 차트</h2>
+              <p class="growth-subtitle">캐릭터 단계별 요구 재화, 성장 스탯 증가율 및 레벨별 필요 사항을 담은 종합 안내도입니다. 차트를 클릭하면 전체화면으로 크게 볼 수 있습니다.</p>
+            </div>
+            <div class="growth-card-actions">
+              <button type="button" class="btn-outline btn-sm" id="inlineGrowthZoomBtn">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg>
+                전체화면 확대
+              </button>
+              <a href="assets/growth/underdark_growth.png" download="언더다크_성장.png" class="btn-outline btn-sm">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                이미지 저장
+              </a>
+            </div>
+          </div>
+
+          <div class="growth-image-container" id="growthImageTrigger" role="button" tabindex="0" title="클릭하여 원본 크기로 확대">
+            <img src="assets/growth/underdark_growth.png" alt="언더다크 성장 가이드" class="growth-image" loading="lazy">
+            <div class="growth-image-overlay">
+              <span class="growth-zoom-pill">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg>
+                클릭하여 원본 크기(1031 × 1155)로 확대 보기
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const trigger = elItemsGrid.querySelector('#growthImageTrigger');
+    if (trigger) {
+      trigger.addEventListener('click', openGrowthModal);
+      trigger.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openGrowthModal();
+        }
+      });
+    }
+
+    const inlineBtn = elItemsGrid.querySelector('#inlineGrowthZoomBtn');
+    if (inlineBtn) {
+      inlineBtn.addEventListener('click', openGrowthModal);
+    }
+  }
+
+  function openGrowthModal() {
+    elModalContent.innerHTML = `
+      <div class="modal-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+            <span class="growth-badge">성장 차트</span>
+          </div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0;">언더다크 성장 가이드 (고해상도 원본)</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <a href="assets/growth/underdark_growth.png" download="언더다크_성장.png" class="btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            저장
+          </a>
+          <button class="modal-close-btn" aria-label="닫기">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body growth-modal-body" style="padding: 1rem; overflow-y: auto; max-height: 80vh; text-align: center; background: #0f172a;">
+        <img src="assets/growth/underdark_growth.png" alt="언더다크 성장 가이드 원본" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
       </div>
     `;
 

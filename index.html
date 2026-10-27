@@ -47,6 +47,14 @@
           <svg viewBox="0 0 24 24"><circle cx="11" cy="4" r="2" /><circle cx="18" cy="8" r="2" /><circle cx="20" cy="16" r="2" /><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" /></svg>
           <span>펫</span>
         </button>
+        <button class="g-tab" data-tab="camp">
+          <svg viewBox="0 0 24 24"><path d="m3 21 9-18 9 18H3z" /><path d="M9 21v-4a3 3 0 0 1 6 0v4" /></svg>
+          <span>구조물/소품</span>
+        </button>
+        <button class="g-tab" data-tab="growth">
+          <svg viewBox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4" /><path d="m3 9 9-7 9 7" /></svg>
+          <span>성장</span>
+        </button>
       </nav>
 
       <button id="adminBtn" type="button" class="btn-header admin-btn" title="관리자">
@@ -266,6 +274,46 @@
               <option value="종말">전방위 / 종말 / 심연 등</option>
             </select>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CAMP CONTROLS (구조물 / 소품) -->
+    <section id="campControlSection" class="control-container" style="display: none;">
+      <div class="control-card">
+        <div class="camp-controls-header">
+          <div class="awakening-bar" style="margin-bottom: 0;">
+            <div class="awakening-label">구분 필터</div>
+            <div id="campTypeFilter" class="awakening-steps">
+              <button class="awakening-step-btn active" data-ctype="all">전체 <span class="badge-count" id="campCountAll">43</span></button>
+              <button class="awakening-step-btn" data-ctype="structure">🏛️ 구조물 <span class="badge-count">9</span></button>
+              <button class="awakening-step-btn" data-ctype="prop">🏺 소품 <span class="badge-count">34</span></button>
+            </div>
+          </div>
+          <button id="campCommonToggleBtn" class="btn-outline camp-common-toggle-btn" type="button" aria-expanded="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            공통 옵션 정보 (등급·부옵·랜덤옵)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GROWTH CONTROLS (성장) -->
+    <section id="growthControlSection" class="control-container" style="display: none;">
+      <div class="control-card guide-bar">
+        <div class="guide-text">
+          <strong>언더다크 성장 가이드 차트</strong>
+          <span>성장에 필요한 재화, 스탯 증가치 및 레벨별 요구량 종합 안내도</span>
+        </div>
+        <div class="growth-toolbar-actions">
+          <button id="growthZoomBtn" class="btn-outline" type="button">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg>
+            크게 보기
+          </button>
+          <a href="assets/growth/underdark_growth.png" download="언더다크_성장.png" class="btn-outline">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            이미지 저장
+          </a>
         </div>
       </div>
     </section>

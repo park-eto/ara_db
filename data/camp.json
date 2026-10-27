@@ -1,0 +1,647 @@
+{
+  "title": "언더다크 : 야영지 구조물 / 소품",
+  "updatedAt": "2026-07-14",
+  "author": "Ara-달품",
+  "common": {
+    "grades": [
+      "일반",
+      "레어",
+      "유니크",
+      "엘리트",
+      "미스터리",
+      "에픽",
+      "전설",
+      "신"
+    ],
+    "subOptions": [
+      "영웅의 체력이 1% 증가합니다.",
+      "영웅의 공격력이 1 증가합니다.",
+      "영웅의 공격력이 1% 증가합니다.",
+      "영웅의 체력이 2 증가합니다.",
+      "영웅의 치명타 피해가 2% 증가합니다.",
+      "타워의 공격력이 1% 증가합니다.",
+      "타워의 공격력이 1 증가합니다.",
+      "타워의 치명타 피해가 2% 증가합니다."
+    ],
+    "randomOptions": [
+      "영웅의 공격력이 15% 증가합니다.",
+      "영웅의 공격력이 1 증가합니다.",
+      "영웅의 공격 속도가 7% 증가합니다.",
+      "영웅의 치명타 확률이 5% 증가합니다.",
+      "영웅의 치명타 피해가 15% 증가합니다.",
+      "영웅의 체력이 15% 증가합니다.",
+      "영웅의 체력이 3 증가합니다.",
+      "타워의 공격력이 15% 증가합니다.",
+      "타워의 공격력이 1 증가합니다.",
+      "타워의 공격 속도가 7% 증가합니다.",
+      "타워의 치명타 확률이 3% 증가합니다.",
+      "타워의 치명타 피해가 15% 증가합니다."
+    ]
+  },
+  "structures": [
+    {
+      "id": "structure-1",
+      "no": 1,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "묘지",
+      "ability": "[비석]으로 몬스터 0/3000 마리 처치 시 보상 붉은 보석을 3000개 획득 합니다.",
+      "img": "assets/camp/structure_01_묘지.webp",
+      "search": {
+        "name": "묘지",
+        "cho": "ㅁㅈ",
+        "text": "묘지비석으로몬스터03000마리처치시보상붉은보석을3000개획득합니다"
+      }
+    },
+    {
+      "id": "structure-2",
+      "no": 2,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "영혼을 가둔 램프",
+      "ability": "[원거리 아이템]으로 몬스터 0/5000 마리 처치 시 보상 붉은 보석을 2500개 획득합니다.",
+      "img": "assets/camp/structure_02_영혼을가둔램프.webp",
+      "search": {
+        "name": "영혼을가둔램프",
+        "cho": "ㅇㅎㅇㄱㄷㄹㅍ",
+        "text": "영혼을가둔램프원거리아이템으로몬스터05000마리처치시보상붉은보석을2500개획득합니다"
+      }
+    },
+    {
+      "id": "structure-3",
+      "no": 3,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "용암 슬라임 전시장",
+      "ability": "[불정령]으로 몬스터 0/3000 마리 처치 시 보상 붉은 보석을 3000개 획득합니다.",
+      "img": "assets/camp/structure_03_용암슬라임전시장.webp",
+      "search": {
+        "name": "용암슬라임전시장",
+        "cho": "ㅇㅇㅅㄹㅇㅈㅅㅈ",
+        "text": "용암슬라임전시장불정령으로몬스터03000마리처치시보상붉은보석을3000개획득합니다"
+      }
+    },
+    {
+      "id": "structure-4",
+      "no": 4,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "큰 둥지",
+      "ability": "일반 몬스터의 펫 드랍 확률 0.05% 증가",
+      "img": "assets/camp/structure_04_큰둥지.webp",
+      "search": {
+        "name": "큰둥지",
+        "cho": "ㅋㄷㅈ",
+        "text": "큰둥지일반몬스터의펫드랍확률005%증가"
+      }
+    },
+    {
+      "id": "structure-5",
+      "no": 5,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "고독한 엘프",
+      "ability": "[근거리 아이템]으로 몬스터 0/5000 마리 처치 시 붉은 보석을 2500개 획득합니다.",
+      "img": "assets/camp/structure_05_고독한엘프.webp",
+      "search": {
+        "name": "고독한엘프",
+        "cho": "ㄱㄷㅎㅇㅍ",
+        "text": "고독한엘프근거리아이템으로몬스터05000마리처치시붉은보석을2500개획득합니다"
+      }
+    },
+    {
+      "id": "structure-6",
+      "no": 6,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "가시 철판",
+      "ability": "영웅의 체력이 50% 증가합니다.",
+      "img": "assets/camp/structure_06_가시철판.webp",
+      "search": {
+        "name": "가시철판",
+        "cho": "ㄱㅅㅊㅍ",
+        "text": "가시철판영웅의체력이50%증가합니다"
+      }
+    },
+    {
+      "id": "structure-7",
+      "no": 7,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "활과 과녁",
+      "ability": "[주 무기] 원거리 무기 공격력이 35% 증가합니다.",
+      "img": "assets/camp/structure_07_활과과녁.webp",
+      "search": {
+        "name": "활과과녁",
+        "cho": "ㅎㄱㄱㄴ",
+        "text": "활과과녁주무기원거리무기공격력이35%증가합니다"
+      }
+    },
+    {
+      "id": "structure-8",
+      "no": 8,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "더러운 마녀 항아리",
+      "ability": "[버섯]으로 몬스터 0/3000 마리 처치 시 보상 붉은 보석을 3000개 획득합니다.",
+      "img": "assets/camp/structure_08_더러운마녀항아리.webp",
+      "search": {
+        "name": "더러운마녀항아리",
+        "cho": "ㄷㄹㅇㅁㄴㅎㅇㄹ",
+        "text": "더러운마녀항아리버섯으로몬스터03000마리처치시보상붉은보석을3000개획득합니다"
+      }
+    },
+    {
+      "id": "structure-9",
+      "no": 9,
+      "type": "structure",
+      "typeName": "구조물",
+      "name": "전투 깃발",
+      "ability": "[주 무기] 근거리 무기 공격력이 40% 증가합니다.",
+      "img": "assets/camp/structure_09_전투깃발.webp",
+      "search": {
+        "name": "전투깃발",
+        "cho": "ㅈㅌㄱㅂ",
+        "text": "전투깃발주무기근거리무기공격력이40%증가합니다"
+      }
+    }
+  ],
+  "props": [
+    {
+      "id": "prop-1",
+      "no": 1,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "삼각 플라스크",
+      "ability": "모든 타워와 영웅의 공격력이 15% 증가합니다.",
+      "img": "assets/camp/prop_01_삼각플라스크.webp",
+      "search": {
+        "name": "삼각플라스크",
+        "cho": "ㅅㄱㅍㄹㅅㅋ",
+        "text": "삼각플라스크모든타워와영웅의공격력이15%증가합니다"
+      }
+    },
+    {
+      "id": "prop-2",
+      "no": 2,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "횃불",
+      "ability": "모든 타워와 영웅의 공격력이 15% 증가합니다.",
+      "img": "assets/camp/prop_02_횃불.webp",
+      "search": {
+        "name": "횃불",
+        "cho": "ㅎㅂ",
+        "text": "횃불모든타워와영웅의공격력이15%증가합니다"
+      }
+    },
+    {
+      "id": "prop-3",
+      "no": 3,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "세 쌍둥이 영혼",
+      "ability": "모든 타워와 영웅의 공격력이 15% 증가합니다.",
+      "img": "assets/camp/prop_03_세쌍둥이영혼.webp",
+      "search": {
+        "name": "세쌍둥이영혼",
+        "cho": "ㅅㅆㄷㅇㅇㅎ",
+        "text": "세쌍둥이영혼모든타워와영웅의공격력이15%증가합니다"
+      }
+    },
+    {
+      "id": "prop-4",
+      "no": 4,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "마력석",
+      "ability": "모든 타워와 영웅의 공격력이 15% 증가합니다.",
+      "img": "assets/camp/prop_04_마력석.webp",
+      "search": {
+        "name": "마력석",
+        "cho": "ㅁㄹㅅ",
+        "text": "마력석모든타워와영웅의공격력이15%증가합니다"
+      }
+    },
+    {
+      "id": "prop-5",
+      "no": 5,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "갈색 술병",
+      "ability": "영웅의 체력이 30% 증가 합니다.",
+      "img": "assets/camp/prop_05_갈색술병.webp",
+      "search": {
+        "name": "갈색술병",
+        "cho": "ㄱㅅㅅㅂ",
+        "text": "갈색술병영웅의체력이30%증가합니다"
+      }
+    },
+    {
+      "id": "prop-6",
+      "no": 6,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "널브러진 문서",
+      "ability": "영웅의 공격력이 20% 증가합니다.",
+      "img": "assets/camp/prop_06_널브러진문서.webp",
+      "search": {
+        "name": "널브러진문서",
+        "cho": "ㄴㅂㄹㅈㅁㅅ",
+        "text": "널브러진문서영웅의공격력이20%증가합니다"
+      }
+    },
+    {
+      "id": "prop-7",
+      "no": 7,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "둥근 플라스크",
+      "ability": "영웅의 공격력이 20% 증가합니다.",
+      "img": "assets/camp/prop_07_둥근플라스크.webp",
+      "search": {
+        "name": "둥근플라스크",
+        "cho": "ㄷㄱㅍㄹㅅㅋ",
+        "text": "둥근플라스크영웅의공격력이20%증가합니다"
+      }
+    },
+    {
+      "id": "prop-8",
+      "no": 8,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "화분",
+      "ability": "영웅의 공격 속도가 20% 증가합니다.",
+      "img": "assets/camp/prop_08_화분.webp",
+      "search": {
+        "name": "화분",
+        "cho": "ㅎㅂ",
+        "text": "화분영웅의공격속도가20%증가합니다"
+      }
+    },
+    {
+      "id": "prop-9",
+      "no": 9,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "선인장2",
+      "ability": "영웅의 치명타 피해가 25% 증가합니다.",
+      "img": "assets/camp/prop_09_선인장2.webp",
+      "search": {
+        "name": "선인장2",
+        "cho": "ㅅㅇㅈ2",
+        "text": "선인장2영웅의치명타피해가25%증가합니다"
+      }
+    },
+    {
+      "id": "prop-10",
+      "no": 10,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "사파이어2",
+      "ability": "영웅의 치명타 피해가 35% 증가합니다.",
+      "img": "assets/camp/prop_10_사파이어2.webp",
+      "search": {
+        "name": "사파이어2",
+        "cho": "ㅅㅍㅇㅇ2",
+        "text": "사파이어2영웅의치명타피해가35%증가합니다"
+      }
+    },
+    {
+      "id": "prop-11",
+      "no": 11,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "등불",
+      "ability": "타워의 공격력이 30% 증가합니다.",
+      "img": "assets/camp/prop_11_등불.webp",
+      "search": {
+        "name": "등불",
+        "cho": "ㄷㅂ",
+        "text": "등불타워의공격력이30%증가합니다"
+      }
+    },
+    {
+      "id": "prop-12",
+      "no": 12,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "술병",
+      "ability": "타워의 공격력이 30% 증가합니다.",
+      "img": "assets/camp/prop_12_술병.webp",
+      "search": {
+        "name": "술병",
+        "cho": "ㅅㅂ",
+        "text": "술병타워의공격력이30%증가합니다"
+      }
+    },
+    {
+      "id": "prop-13",
+      "no": 13,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "선인장3",
+      "ability": "타워의 치명타 피해가 35% 증가합니다.",
+      "img": "assets/camp/prop_13_선인장3.webp",
+      "search": {
+        "name": "선인장3",
+        "cho": "ㅅㅇㅈ3",
+        "text": "선인장3타워의치명타피해가35%증가합니다"
+      }
+    },
+    {
+      "id": "prop-14",
+      "no": 14,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "사파이어3",
+      "ability": "타워의 치명타 피해가 35% 증가합니다.",
+      "img": "assets/camp/prop_14_사파이어3.webp",
+      "search": {
+        "name": "사파이어3",
+        "cho": "ㅅㅍㅇㅇ3",
+        "text": "사파이어3타워의치명타피해가35%증가합니다"
+      }
+    },
+    {
+      "id": "prop-15",
+      "no": 15,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "사파이어1",
+      "ability": "보스의 이동 속도가 20% 감소합니다.",
+      "img": "assets/camp/prop_15_사파이어1.webp",
+      "search": {
+        "name": "사파이어1",
+        "cho": "ㅅㅍㅇㅇ1",
+        "text": "사파이어1보스의이동속도가20%감소합니다"
+      }
+    },
+    {
+      "id": "prop-16",
+      "no": 16,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "선인장1",
+      "ability": "보스의 이동 속도가 20% 감소합니다.",
+      "img": "assets/camp/prop_16_선인장1.webp",
+      "search": {
+        "name": "선인장1",
+        "cho": "ㅅㅇㅈ1",
+        "text": "선인장1보스의이동속도가20%감소합니다"
+      }
+    },
+    {
+      "id": "prop-17",
+      "no": 17,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "뼈 무더기",
+      "ability": "일반 몬스터의 아이템 드랍률 0.05% 증가",
+      "img": "assets/camp/prop_17_뼈무더기.webp",
+      "search": {
+        "name": "뼈무더기",
+        "cho": "ㅃㅁㄷㄱ",
+        "text": "뼈무더기일반몬스터의아이템드랍률005%증가"
+      }
+    },
+    {
+      "id": "prop-18",
+      "no": 18,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "영혼 깃든 비석",
+      "ability": "일반 몬스터의 아이템 드랍률 0.05% 증가",
+      "img": "assets/camp/prop_18_영혼깃든비석.webp",
+      "search": {
+        "name": "영혼깃든비석",
+        "cho": "ㅇㅎㄱㄷㅂㅅ",
+        "text": "영혼깃든비석일반몬스터의아이템드랍률005%증가"
+      }
+    },
+    {
+      "id": "prop-19",
+      "no": 19,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "작은 둥지",
+      "ability": "일반 몬스터의 펫 드랍률 0.05% 증가",
+      "img": "assets/camp/prop_19_작은둥지.webp",
+      "search": {
+        "name": "작은둥지",
+        "cho": "ㅈㅇㄷㅈ",
+        "text": "작은둥지일반몬스터의펫드랍률005%증가"
+      }
+    },
+    {
+      "id": "prop-20",
+      "no": 20,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "해골 손",
+      "ability": "몬스터가 아이템을 드랍할 때 , [주 무기]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_20_해골손.webp",
+      "search": {
+        "name": "해골손",
+        "cho": "ㅎㄱㅅ",
+        "text": "해골손몬스터가아이템을드랍할때주무기일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-21",
+      "no": 21,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "검은 항아리",
+      "ability": "몬스터가 아이템을 드랍할 때 , [주 무기]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_21_검은항아리.webp",
+      "search": {
+        "name": "검은항아리",
+        "cho": "ㄱㅇㅎㅇㄹ",
+        "text": "검은항아리몬스터가아이템을드랍할때주무기일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-22",
+      "no": 22,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "알에서 깬 병아리1",
+      "ability": "몬스터가 아이템을 드랍할 때 , [주 무기]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_22_알에서깬병아리1.webp",
+      "search": {
+        "name": "알에서깬병아리1",
+        "cho": "ㅇㅇㅅㄲㅂㅇㄹ1",
+        "text": "알에서깬병아리1몬스터가아이템을드랍할때주무기일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-23",
+      "no": 23,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "파란 항아리",
+      "ability": "몬스터가 아이템을 드랍할 때 , [보조 무기]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_23_파란항아리.webp",
+      "search": {
+        "name": "파란항아리",
+        "cho": "ㅍㄹㅎㅇㄹ",
+        "text": "파란항아리몬스터가아이템을드랍할때보조무기일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-24",
+      "no": 24,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "동물 뼈 무더기",
+      "ability": "몬스터가 아이템을 드랍할 때 , [보조 무기]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_24_동물뼈무더기.webp",
+      "search": {
+        "name": "동물뼈무더기",
+        "cho": "ㄷㅁㅃㅁㄷㄱ",
+        "text": "동물뼈무더기몬스터가아이템을드랍할때보조무기일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-25",
+      "no": 25,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "파란 촛불",
+      "ability": "몬스터가 아이템을 드랍할 때 , [보조 무기]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_25_파란촛불.webp",
+      "search": {
+        "name": "파란촛불",
+        "cho": "ㅍㄹㅊㅂ",
+        "text": "파란촛불몬스터가아이템을드랍할때보조무기일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-26",
+      "no": 26,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "알에서 깬 병아리2",
+      "ability": "몬스터가 아이템을 드랍할 때 , [보조 무기]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_26_알에서깬병아리2.webp",
+      "search": {
+        "name": "알에서깬병아리2",
+        "cho": "ㅇㅇㅅㄲㅂㅇㄹ2",
+        "text": "알에서깬병아리2몬스터가아이템을드랍할때보조무기일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-27",
+      "no": 27,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "낡은 투구",
+      "ability": "몬스터가 아이템을 드랍할 때 , [투구]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_27_낡은투구.webp",
+      "search": {
+        "name": "낡은투구",
+        "cho": "ㄴㅇㅌㄱ",
+        "text": "낡은투구몬스터가아이템을드랍할때투구일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-28",
+      "no": 28,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "영혼 밥그릇",
+      "ability": "몬스터가 아이템을 드랍할 때 , [투구]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_28_영혼밥그릇.webp",
+      "search": {
+        "name": "영혼밥그릇",
+        "cho": "ㅇㅎㅂㄱㄹ",
+        "text": "영혼밥그릇몬스터가아이템을드랍할때투구일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-29",
+      "no": 29,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "비석2",
+      "ability": "몬스터가 아이템을 드랍할 때 , [투구]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_29_비석2.webp",
+      "search": {
+        "name": "비석2",
+        "cho": "ㅂㅅ2",
+        "text": "비석2몬스터가아이템을드랍할때투구일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-30",
+      "no": 30,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "어두운 투구",
+      "ability": "몬스터가 아이템을 드랍할 때 , [기타]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_30_어두운투구.webp",
+      "search": {
+        "name": "어두운투구",
+        "cho": "ㅇㄷㅇㅌㄱ",
+        "text": "어두운투구몬스터가아이템을드랍할때기타일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-31",
+      "no": 31,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "붉은 항아리",
+      "ability": "몬스터가 아이템을 드랍할 때 , [기타]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_31_붉은항아리.webp",
+      "search": {
+        "name": "붉은항아리",
+        "cho": "ㅂㅇㅎㅇㄹ",
+        "text": "붉은항아리몬스터가아이템을드랍할때기타일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-32",
+      "no": 32,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "영혼 촛불",
+      "ability": "몬스터가 아이템을 드랍할 때 , [기타]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_32_영혼촛불.webp",
+      "search": {
+        "name": "영혼촛불",
+        "cho": "ㅇㅎㅊㅂ",
+        "text": "영혼촛불몬스터가아이템을드랍할때기타일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-33",
+      "no": 33,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "비석",
+      "ability": "몬스터가 아이템을 드랍할 때 , [기타]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_33_비석.webp",
+      "search": {
+        "name": "비석",
+        "cho": "ㅂㅅ",
+        "text": "비석몬스터가아이템을드랍할때기타일확률이40%증가합니다"
+      }
+    },
+    {
+      "id": "prop-34",
+      "no": 34,
+      "type": "prop",
+      "typeName": "소품",
+      "name": "알에서 깬 병아리3",
+      "ability": "몬스터가 아이템을 드랍할 때 , [기타]일 확률이 40% 증가합니다.",
+      "img": "assets/camp/prop_34_알에서깬병아리3.webp",
+      "search": {
+        "name": "알에서깬병아리3",
+        "cho": "ㅇㅇㅅㄲㅂㅇㄹ3",
+        "text": "알에서깬병아리3몬스터가아이템을드랍할때기타일확률이40%증가합니다"
+      }
+    }
+  ]
+}

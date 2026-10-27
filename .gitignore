@@ -10,3 +10,4 @@ __pycache__/
 # 로컬 개발 서버용 스크립트 (선택 사항: GitHub Pages는 정적 서빙이므로 필요 없음)
 # server.py
 # tools/
+

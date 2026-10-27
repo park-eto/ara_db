@@ -19,7 +19,7 @@
       const code = str.charCodeAt(i) - 0xac00;
       if (code >= 0 && code < 11172) {
         result += CHO[Math.floor(code / 588)];
-      } else if (/[0-9a-zA-Z가-힣]/.test(str[i])) {
+      } else if (/[0-9a-zA-Z가-힣ㄱ-ㅎ]/.test(str[i])) {
         result += str[i].toLowerCase();
       }
     }
@@ -404,6 +404,35 @@
           return (
             nameNorm.includes(tNorm) ||
             choNorm.includes(tCho) ||
+            textNorm.includes(tNorm)
+          );
+        });
+      });
+    }
+
+    /**
+     * Search Camp Structures & Props
+     */
+    searchCamp(items = [], options = {}) {
+      const { query = '', type = 'all' } = options;
+      const tokens = query.trim().split(/\s+/).filter(Boolean);
+
+      return items.filter(item => {
+        if (type !== 'all' && item.type !== type) return false;
+
+        if (tokens.length === 0) return true;
+
+        const nameNorm = item.search ? item.search.name : normalize(item.name);
+        const choNorm = item.search ? item.search.cho : getChosung(item.name);
+        const textNorm = item.search ? item.search.text : normalize(item.name + ' ' + (item.ability || ''));
+
+        return tokens.every(tok => {
+          const tNorm = normalize(tok);
+          const tCho = getChosung(tok);
+
+          return (
+            nameNorm.includes(tNorm) ||
+            (tCho && choNorm.includes(tCho)) ||
             textNorm.includes(tNorm)
           );
         });
