@@ -864,15 +864,19 @@
       elPetGuideBtn.addEventListener('click', openPetGuideModal);
     }
 
-    // Camp Events
+    // Camp Events (Scroll to Section)
     if (elCampTypeFilter) {
       elCampTypeFilter.addEventListener('click', e => {
         const btn = e.target.closest('.awakening-step-btn');
         if (!btn) return;
         elCampTypeFilter.querySelectorAll('.awakening-step-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        state.campType = btn.getAttribute('data-ctype');
-        renderActiveView();
+        const target = btn.getAttribute('data-scroll-to');
+        const targetId = target === 'structures' ? 'campStructuresSection' : 'campPropsSection';
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       });
     }
 
@@ -2853,7 +2857,15 @@
     `;
   }
 
-  function renderCampTableView(items) {
+  function renderCampTableView(items, typeLabel = '항목') {
+    if (!items || items.length === 0) {
+      return `
+        <div class="empty-state" style="padding: 1.5rem; background: #ffffff; border-radius: 12px; border: 1px dashed var(--border-subtle);">
+          <div class="empty-icon" style="font-size: 1.8rem;">🔍</div>
+          <div class="empty-title" style="font-size: 0.95rem;">검색된 ${typeLabel}이 없습니다</div>
+        </div>
+      `;
+    }
     return `
       <div class="table-responsive-wrapper">
         <table class="data-grid-table camp-table">
@@ -2892,7 +2904,15 @@
     `;
   }
 
-  function renderCampCardView(items) {
+  function renderCampCardView(items, typeLabel = '항목') {
+    if (!items || items.length === 0) {
+      return `
+        <div class="empty-state" style="padding: 1.5rem; background: #ffffff; border-radius: 12px; border: 1px dashed var(--border-subtle);">
+          <div class="empty-icon" style="font-size: 1.8rem;">🔍</div>
+          <div class="empty-title" style="font-size: 0.95rem;">검색된 ${typeLabel}이 없습니다</div>
+        </div>
+      `;
+    }
     return `
       <div class="camp-cards-grid">
         ${items.map(item => `
@@ -2941,47 +2961,72 @@
     const curSort = tabSortState.camp || { col: 'no', dir: 'asc' };
     const structures = camp.structures || [];
     const props = camp.props || [];
-    const allItems = [...structures, ...props];
 
-    // Filter by type & search query
-    let items = searchEngine && searchEngine.searchCamp
-      ? searchEngine.searchCamp(allItems, { query: state.query, type: state.campType })
-      : allItems.filter(it => (state.campType === 'all' || it.type === state.campType));
+    // Filter structures & props separately
+    let filteredStructures = searchEngine && searchEngine.searchCamp
+      ? searchEngine.searchCamp(structures, { query: state.query, type: 'structure' })
+      : structures;
+
+    let filteredProps = searchEngine && searchEngine.searchCamp
+      ? searchEngine.searchCamp(props, { query: state.query, type: 'prop' })
+      : props;
 
     // Sort items
-    items = sortCampList(items, curSort.col, curSort.dir);
+    filteredStructures = sortCampList(filteredStructures, curSort.col, curSort.dir);
+    filteredProps = sortCampList(filteredProps, curSort.col, curSort.dir);
 
-    elResultCount.textContent = items.length;
+    elResultCount.textContent = filteredStructures.length + filteredProps.length;
+    elResultUnit.textContent = `개 항목 (구조물 ${filteredStructures.length} · 소품 ${filteredProps.length})`;
+
+    if (elCampTypeFilter) {
+      const structBadge = elCampTypeFilter.querySelector('[data-scroll-to="structures"] .badge-count');
+      const propBadge = elCampTypeFilter.querySelector('[data-scroll-to="props"] .badge-count');
+      if (structBadge) structBadge.textContent = filteredStructures.length;
+      if (propBadge) propBadge.textContent = filteredProps.length;
+    }
 
     // Common info dashboard HTML
     const commonHtml = renderCampCommonDashboard(camp.common || {});
 
-    // Table or Card view
-    let listHtml = '';
-    if (items.length === 0) {
-      listHtml = `
-        <div class="empty-state">
-          <div class="empty-icon">🔍</div>
-          <div class="empty-title">조건에 맞는 야영지 구조물 또는 소품이 없습니다</div>
-          <div class="empty-desc">검색어나 구분 필터를 변경해보세요.</div>
-        </div>
-      `;
-    } else if (currentViewMode === 'table') {
-      listHtml = renderCampTableView(items);
-    } else {
-      listHtml = renderCampCardView(items);
-    }
-
+    // Render separate sections for structures and props
     elItemsGrid.innerHTML = `
       <div class="camp-view-wrapper">
         ${commonHtml}
-        <div class="camp-content-area">
-          ${listHtml}
-        </div>
+
+        <!-- 1. 구조물 섹션 -->
+        <section id="campStructuresSection" class="camp-section">
+          <div class="camp-section-header">
+            <div class="camp-section-title-wrap">
+              <span class="camp-section-icon">🏛️</span>
+              <h3 class="camp-section-title">야영지 구조물</h3>
+              <span class="camp-section-count badge-structure">${filteredStructures.length}종</span>
+            </div>
+            <span class="camp-section-desc">몬스터 처치 보상 및 고유 패시브 효과를 제공하는 설치형 야영지 구조물</span>
+          </div>
+          <div class="camp-section-body">
+            ${currentViewMode === 'table' ? renderCampTableView(filteredStructures, '구조물') : renderCampCardView(filteredStructures, '구조물')}
+          </div>
+        </section>
+
+        <!-- 2. 소품 섹션 -->
+        <section id="campPropsSection" class="camp-section">
+          <div class="camp-section-header">
+            <div class="camp-section-title-wrap">
+              <span class="camp-section-icon">🏺</span>
+              <h3 class="camp-section-title">야영지 소품</h3>
+              <span class="camp-section-count badge-prop">${filteredProps.length}종</span>
+            </div>
+            <span class="camp-section-desc">영웅/타워 능력치 버프 및 부위별 아이템 드랍 확률을 증가시키는 소품</span>
+          </div>
+          <div class="camp-section-body">
+            ${currentViewMode === 'table' ? renderCampTableView(filteredProps, '소품') : renderCampCardView(filteredProps, '소품')}
+          </div>
+        </section>
       </div>
     `;
 
     // Bind item click events for modal
+    const allItems = [...structures, ...props];
     elItemsGrid.querySelectorAll('[data-camp-id]').forEach(el => {
       el.addEventListener('click', () => {
         const id = el.getAttribute('data-camp-id');
