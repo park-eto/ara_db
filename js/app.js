@@ -2178,17 +2178,68 @@
         <button class="modal-close-btn">&times;</button>
       </div>
       <div class="modal-body" style="gap: 1.25rem;">
-        <!-- Synthesis Card -->
-        <div style="background: #f8fafc; border-radius: 12px; padding: 1rem; border: 1px solid var(--border-glass);">
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>▶</span> 탈것 합성 & 부옵션 활성화 규칙
-          </h4>
-          <ul style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.25rem;">
+        <!-- 1. 기본 합성 & 부옵션 활성화 규칙 -->
+        <div class="mount-guide-card">
+          <div class="mount-guide-header">
+            <h4 class="mount-guide-title">
+              <span>🐎</span> 탈것 합성 & 부옵션 활성화 기본 규칙
+            </h4>
+            <span class="mount-guide-tag">기본 규칙</span>
+          </div>
+          <ul class="mount-guide-list">
             <li>같은 종류 <b>신급 펫 2개</b> = <b>일반 등급 탈것 1개</b></li>
             <li>같은 종류 <b>동일 등급 일반 탈것 2개</b> = <b>상위 등급 탈것 1개</b></li>
             <li>등급 단계: 일반(4강) ➔ 레어(8강) ➔ 유니크(12강) ➔ 엘리트(16강) ➔ 미스테리(20강) ➔ 에픽(24강) ➔ 전설(28강) ➔ 신화(32강)</li>
             <li><b style="color: var(--accent-gold);">★ 미스테리 등급(20강)부터 부옵션 +1강 활성화</b> (강화 레벨 x 10 푸른다이아 소모)</li>
           </ul>
+        </div>
+
+        <!-- 2. 탈것 일반 합성 확률 (탈것일반합성확률.png) -->
+        <div class="mount-guide-card">
+          <div class="mount-guide-header">
+            <h4 class="mount-guide-title">
+              <span>🎲</span> 탈것 일반 합성 확률
+            </h4>
+            <span class="mount-guide-tag">총 25종 (각 4.00%)</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+            일반 신급 펫 합성 시 총 <b>25종</b>의 일반 탈것이 각각 <b>4.00%</b> 동일 확률로 등장합니다.
+          </p>
+          <div class="mount-img-frame">
+            <img src="assets/mounts/mount_combine_normal.png" alt="탈것 일반 합성 확률표" loading="lazy" style="max-height: 440px; object-fit: contain;">
+          </div>
+        </div>
+
+        <!-- 3. 고급 탈것 조합 대상 펫 (고급탈것조합펫.png) -->
+        <div class="mount-guide-card">
+          <div class="mount-guide-header">
+            <h4 class="mount-guide-title">
+              <span>✨</span> 고급 탈것 조합 대상 펫
+            </h4>
+            <span class="mount-guide-tag" style="color: #d97706; background: #fffbeb; border-color: #fde68a;">총 10종 펫</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+            아래의 <b>10종 펫</b>을 조합 재료로 사용하면 전 종류(총 57종)의 탈것이 등장하는 <b>고급 탈것 조합</b>이 진행됩니다.
+          </p>
+          <div class="mount-img-frame" style="background: #1e293b; padding: 1rem;">
+            <img src="assets/mounts/mount_combine_adv_pets.png" alt="고급 탈것 조합 대상 펫 10종" loading="lazy" style="max-width: 440px; width: 100%; image-rendering: -webkit-optimize-contrast;">
+          </div>
+        </div>
+
+        <!-- 4. 고급 탈것 조합법 및 합성 확률 (탈것고급합성확률.png) -->
+        <div class="mount-guide-card">
+          <div class="mount-guide-header">
+            <h4 class="mount-guide-title">
+              <span>🌟</span> 고급 탈것 조합법 (합성 확률)
+            </h4>
+            <span class="mount-guide-tag" style="color: #9333ea; background: #faf5ff; border-color: #f3e8ff;">전체 57종 (각 1.75%)</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+            고급 탈것 조합 펫을 사용한 합성 시 전체 <b>57종</b>의 모든 탈것이 각각 <b>1.75%</b> 동일 확률로 등장합니다.
+          </p>
+          <div class="mount-img-frame">
+            <img src="assets/mounts/mount_combine_adv.png" alt="탈것 고급 합성 확률표" loading="lazy" style="max-height: 480px; object-fit: contain;">
+          </div>
         </div>
 
         <!-- Sub-options 3-Category Nav -->
@@ -2307,7 +2358,7 @@
       });
     });
 
-    showModal();
+    showModal(true);
   }
 
   // -------------------------------------------------------------
@@ -2693,7 +2744,6 @@
         <div class="mount-tip-box" style="margin: 0;">
           <h4 style="color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 0.4rem;">📌 중요 참고사항</h4>
           <ul style="font-size: 0.85rem; line-height: 1.6; margin: 0; padding-left: 1.2rem; color: var(--text-muted);">
-            <li><b style="color: var(--accent-gold);">탈것 조합 시 모든 종류 나오는 펫 (동일 확률)</b></li>
             <li>협동 던전 1·2, 일일 던전(일반/협동), 길드 던전 1·2(일반/협동)의 펫 획득 정보는 시트에 미표기되어 있습니다.</li>
           </ul>
         </div>
@@ -2701,7 +2751,7 @@
       </div>
     `;
 
-    showModal();
+    showModal(true);
   }
 
   // -------------------------------------------------------------
@@ -3181,12 +3231,14 @@
     showModal();
   }
 
-  function showModal() {
+  function showModal(isWide = false) {
+    if (elModalContent) elModalContent.classList.toggle('modal-wide', !!isWide);
     elModalOverlay.classList.add('active');
   }
 
   function closeModal() {
     elModalOverlay.classList.remove('active');
+    if (elModalContent) elModalContent.classList.remove('modal-wide');
   }
 
   window.filterByDrop = function (dropName) {
