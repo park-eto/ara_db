@@ -546,6 +546,7 @@
       mountSubOptions: (subOptions.tower.length || subOptions.hero.length || subOptions.common.length) ? subOptions : base.mountSubOptions,
       pets: pets.length ? pets : base.pets,
       petGuide: base.petGuide || {},
+      camp: base.camp || (window.UNDERDARK_EXPANSION ? window.UNDERDARK_EXPANSION.camp : null),
       items: syncedItems
     };
 

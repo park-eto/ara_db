@@ -2609,17 +2609,26 @@ input, select, textarea {
 
 .growth-image-overlay {
   position: absolute;
-  bottom: 18px;
+  bottom: 24px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(6px);
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
+}
+
+.growth-image-container:hover .growth-image-overlay {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 .growth-zoom-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.9);
   color: #ffffff;
   padding: 0.5rem 1.1rem;
   border-radius: 20px;
@@ -2628,11 +2637,11 @@ input, select, textarea {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
   transition: all var(--transition-fast);
 }
 
 .growth-image-container:hover .growth-zoom-pill {
-  background: rgba(37, 99, 235, 0.92);
+  background: rgba(37, 99, 235, 0.95);
 }
 

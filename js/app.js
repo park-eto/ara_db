@@ -579,8 +579,12 @@
       rawItemData = { ...rawItemData, items: cachedLive.items };
       if (window.UNDERDARK_DATA) window.UNDERDARK_DATA.items = cachedLive.items;
     }
+    const baseCamp = (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp) || null;
     if (cachedLive && cachedLive.heroes && cachedLive.heroes.length) {
-      expansionData = cachedLive;
+      expansionData = {
+        ...cachedLive,
+        camp: cachedLive.camp || baseCamp
+      };
     } else if (window.UNDERDARK_EXPANSION) {
       expansionData = window.UNDERDARK_EXPANSION;
     } else {
@@ -609,11 +613,15 @@
     }
 
     if (expansionData && !expansionData.camp) {
-      try {
-        const cRes = await fetch('data/camp.json');
-        if (cRes.ok) expansionData.camp = await cRes.json();
-      } catch (e) {
-        console.warn('Could not load camp.json fallback', e);
+      if (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp) {
+        expansionData.camp = window.UNDERDARK_EXPANSION.camp;
+      } else {
+        try {
+          const cRes = await fetch('data/camp.json');
+          if (cRes.ok) expansionData.camp = await cRes.json();
+        } catch (e) {
+          console.warn('Could not load camp.json fallback', e);
+        }
       }
     }
 
@@ -2909,8 +2917,18 @@
   }
 
   function renderCampView() {
-    const camp = expansionData && expansionData.camp;
+    let camp = (expansionData && expansionData.camp) || (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp);
     if (!camp) {
+      fetch('data/camp.json')
+        .then(r => r.json())
+        .then(data => {
+          if (!expansionData) expansionData = {};
+          expansionData.camp = data;
+          if (window.UNDERDARK_EXPANSION) window.UNDERDARK_EXPANSION.camp = data;
+          renderActiveView();
+        })
+        .catch(e => console.warn('Failed to load camp.json', e));
+
       elItemsGrid.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">⏳</div>
@@ -3338,6 +3356,9 @@
     try {
       const fresh = await window.SheetsSync.fetchLiveExpansionData(isManual);
       if (fresh) {
+        if (!fresh.camp) {
+          fresh.camp = (expansionData && expansionData.camp) || (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp);
+        }
         let itemsChanged = false;
         if (fresh.items && fresh.items.length && rawItemData) {
           const oldItemsJson = JSON.stringify(rawItemData.items || []);
