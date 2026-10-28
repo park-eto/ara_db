@@ -515,7 +515,6 @@
 
     // Camp
     elCampTypeFilter = document.getElementById('campTypeFilter');
-    elCampLevelSteps = document.getElementById('campLevelSteps');
     elCampCommonToggleBtn = document.getElementById('campCommonToggleBtn');
 
     // Growth
@@ -870,7 +869,7 @@
       elPetGuideBtn.addEventListener('click', openPetGuideModal);
     }
 
-    // Camp Events (Scroll to Section & Level Filter)
+    // Camp Events (Scroll to Section)
     if (elCampTypeFilter) {
       elCampTypeFilter.addEventListener('click', e => {
         const btn = e.target.closest('.awakening-step-btn');
@@ -883,17 +882,6 @@
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      });
-    }
-
-    if (elCampLevelSteps) {
-      elCampLevelSteps.addEventListener('click', e => {
-        const btn = e.target.closest('.awakening-step-btn');
-        if (!btn) return;
-        elCampLevelSteps.querySelectorAll('.awakening-step-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.campLevel = btn.getAttribute('data-clevel') || 'all';
-        renderActiveView();
       });
     }
 
@@ -2845,13 +2833,13 @@
   function renderCampLevelBadge(level) {
     const lv = level ?? 0;
     const styleMap = {
-      0: { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: '0렙 (기본)' },
-      20: { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: 'Lv.20' },
-      40: { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', label: 'Lv.40' },
-      60: { color: '#d97706', bg: '#fffbeb', border: '#fde68a', label: 'Lv.60' },
+      0: { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: '0' },
+      20: { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: '20' },
+      40: { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', label: '40' },
+      60: { color: '#d97706', bg: '#fffbeb', border: '#fde68a', label: '60' },
     };
-    const st = styleMap[lv] || { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: `Lv.${lv}` };
-    return `<span class="camp-level-badge" style="display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;padding:0.2rem 0.55rem;border-radius:6px;color:${st.color};background:${st.bg};border:1px solid ${st.border};white-space:nowrap;">${st.label}</span>`;
+    const st = styleMap[lv] || { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: `${lv}` };
+    return `<span class="camp-level-badge" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;font-size:0.82rem;font-weight:800;padding:0.2rem 0.55rem;border-radius:6px;color:${st.color};background:${st.bg};border:1px solid ${st.border};white-space:nowrap;">${st.label}</span>`;
   }
 
   function sortCampList(list, col, dir) {
@@ -3015,9 +3003,9 @@
             <tr>
               ${renderTh('no', 'No', 'width: 60px;', true)}
               ${renderTh('type', '구분', 'width: 90px;', true)}
-              ${renderTh('level', '획득 레벨', 'width: 95px;', true)}
-              <th style="width: 80px;" class="text-center">사진</th>
               ${renderTh('name', '이름', 'width: 170px;')}
+              ${renderTh('level', '레벨', 'width: 85px;', true)}
+              <th style="width: 80px;" class="text-center">사진</th>
               ${renderTh('ability', '고유 능력')}
             </tr>
           </thead>
@@ -3030,14 +3018,14 @@
                     ${item.type === 'structure' ? '구조물' : '소품'}
                   </span>
                 </td>
+                <td class="font-bold camp-name-cell">
+                  <div class="camp-name-text">${item.name}</div>
+                </td>
                 <td class="text-center">${renderCampLevelBadge(item.level)}</td>
                 <td class="text-center">
                   <div class="camp-img-box">
                     <img src="${item.img || ''}" alt="${item.name}" loading="lazy">
                   </div>
-                </td>
-                <td class="font-bold camp-name-cell">
-                  <div class="camp-name-text">${item.name}</div>
                 </td>
                 <td class="camp-ability-cell">${formatCampAbility(item.ability)}</td>
               </tr>
@@ -3066,6 +3054,7 @@
                 <span class="camp-type-badge type-${item.type}">
                   ${item.type === 'structure' ? '구조물' : '소품'}
                 </span>
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">레벨</span>
                 ${renderCampLevelBadge(item.level)}
               </div>
               <span class="camp-card-no">#${item.no}</span>
@@ -3086,7 +3075,7 @@
   function renderCampView() {
     let camp = (expansionData && expansionData.camp) || (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp);
     if (!camp) {
-      fetch('data/camp.json')
+      fetch('data/camp.json?v=20261028_2')
         .then(r => r.json())
         .then(data => {
           if (!expansionData) expansionData = {};
@@ -3111,11 +3100,11 @@
 
     // Filter structures & props separately
     let filteredStructures = searchEngine && searchEngine.searchCamp
-      ? searchEngine.searchCamp(structures, { query: state.query, type: 'structure', level: state.campLevel })
+      ? searchEngine.searchCamp(structures, { query: state.query, type: 'structure' })
       : structures;
 
     let filteredProps = searchEngine && searchEngine.searchCamp
-      ? searchEngine.searchCamp(props, { query: state.query, type: 'prop', level: state.campLevel })
+      ? searchEngine.searchCamp(props, { query: state.query, type: 'prop' })
       : props;
 
     // Sort items
