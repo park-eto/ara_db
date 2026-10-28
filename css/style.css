@@ -1628,6 +1628,67 @@ input, select, textarea {
   max-width: 860px;
 }
 
+/* Mount Guide Modal Sub-tabs */
+.mount-modal-subnav {
+  display: flex;
+  gap: 0.4rem;
+  background: #f1f5f9;
+  padding: 0.35rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.mount-modal-subtab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.mount-modal-subtab:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mount-modal-subtab.active {
+  background: #ffffff;
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.15);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+}
+
+@media (max-width: 640px) {
+  .mount-modal-subnav {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .mount-modal-subtab {
+    font-size: 0.78rem;
+    padding: 0.5rem 0.5rem;
+  }
+}
+
+.mount-subview {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
 /* Mount Synthesis Guide Images */
 .mount-guide-card {
   background: #ffffff;

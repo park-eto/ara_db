@@ -17,7 +17,9 @@ from PIL import Image
 import openpyxl
 
 ROOT = Path(__file__).resolve().parent.parent
-XLSX_PATH = ROOT / '영덱 공략 종합_전체 야영지.xlsx'
+XLSX_PATH = ROOT / '전체 야영지.xlsx'
+if not XLSX_PATH.exists():
+    XLSX_PATH = ROOT / '영덱 공략 종합_전체 야영지.xlsx'
 GROWTH_SRC = ROOT / '언더다크 성장.png'
 DATA_DIR = ROOT / 'data'
 IMG_CAMP = ROOT / 'assets' / 'camp'
@@ -59,13 +61,17 @@ def main():
     wb = openpyxl.load_workbook(XLSX_PATH)
     ws = wb['전체 야영지']
 
+    # Clean old camp images so renumbered items don't leave stale files
+    for old_f in IMG_CAMP.glob('*.webp'):
+        old_f.unlink()
+
     # Map images by 0-based anchor row
-    # Image in col 2 (C열)
+    # Image in col 3 (D열) in updated sheet, or col 2 (C열) in legacy sheet
     images_by_row = {}
     for img in ws._images:
         r = img.anchor._from.row
         c = img.anchor._from.col
-        if c == 2:
+        if c in (2, 3):
             images_by_row[r] = img
 
     def save_camp_image(img, out_name: str) -> str:
@@ -76,15 +82,25 @@ def main():
         im.save(out_path, 'WEBP', quality=90, method=6)
         return out_path.relative_to(ROOT).as_posix()
 
-    # 3. Parse Structures (Rows 6 ~ 14, 0-based 5 ~ 13)
+    def parse_level(val) -> int:
+        if val is None:
+            return 0
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            m = re.search(r'\d+', str(val))
+            return int(m.group(0)) if m else 0
+
+    # 3. Parse Structures (Rows 7 ~ 16, 0-based 6 ~ 15)
     structures = []
-    for r in range(6, 15):
+    for r in range(7, 17):
         name = clean(ws.cell(r, 2).value)
-        abil = clean(ws.cell(r, 4).value)
+        level = parse_level(ws.cell(r, 3).value)
+        abil = clean(ws.cell(r, 5).value)
         if not name:
             continue
-        
-        idx = r - 5 # 1 to 9
+
+        idx = len(structures) + 1  # 1 to 10
         img_rel = None
         img_obj = images_by_row.get(r - 1)
         if img_obj:
@@ -96,24 +112,26 @@ def main():
             'type': 'structure',
             'typeName': '구조물',
             'name': name,
+            'level': level,
             'ability': abil,
             'img': img_rel,
             'search': {
                 'name': norm_key(name),
                 'cho': chosung(name),
-                'text': norm_key(f"{name} {abil}"),
+                'text': norm_key(f"{name} {level}레벨 {level}렙 {abil}"),
             }
         })
 
-    # 4. Parse Props (Rows 18 ~ 51, 0-based 17 ~ 50)
+    # 4. Parse Props (Rows 20 ~ 53, 0-based 19 ~ 52)
     props = []
-    for r in range(18, 52):
+    for r in range(20, 54):
         name = clean(ws.cell(r, 2).value)
-        abil = clean(ws.cell(r, 4).value)
+        level = parse_level(ws.cell(r, 3).value)
+        abil = clean(ws.cell(r, 5).value)
         if not name:
             continue
 
-        idx = r - 17 # 1 to 34
+        idx = len(props) + 1  # 1 to 34
         img_rel = None
         img_obj = images_by_row.get(r - 1)
         if img_obj:
@@ -125,39 +143,43 @@ def main():
             'type': 'prop',
             'typeName': '소품',
             'name': name,
+            'level': level,
             'ability': abil,
             'img': img_rel,
             'search': {
                 'name': norm_key(name),
                 'cho': chosung(name),
-                'text': norm_key(f"{name} {abil}"),
+                'text': norm_key(f"{name} {level}레벨 {level}렙 {abil}"),
             }
         })
 
-    # 5. Common info: Grades, Sub-options, Random options
+    # 5. Common info: Grades, Sub-options, Random options (Col 7 / G열)
     grades = []
-    for r in range(6, 14):
-        g = clean(ws.cell(r, 6).value)
+    for r in range(7, 15):
+        g = clean(ws.cell(r, 7).value)
         if g:
             grades.append(g)
 
     sub_options = []
-    for r in range(18, 26):
-        opt = clean(ws.cell(r, 6).value)
+    for r in range(20, 28):
+        opt = clean(ws.cell(r, 7).value)
         if opt:
             sub_options.append(opt)
 
     random_options = []
-    for r in range(28, 40):
-        opt = clean(ws.cell(r, 6).value)
+    for r in range(30, 42):
+        opt = clean(ws.cell(r, 7).value)
         if opt:
             random_options.append(opt)
 
+    level_note = clean(ws.cell(4, 2).value) or '레벨 - 계정 레벨에 따라 구조물과 소품의 획득이 가능해집니다.'
+
     camp_data = {
         'title': '언더다크 : 야영지 구조물 / 소품',
-        'updatedAt': '2026-07-14',
+        'updatedAt': '2026-10-28',
         'author': 'Ara-달품',
         'common': {
+            'levelNote': level_note,
             'grades': grades,
             'subOptions': sub_options,
             'randomOptions': random_options,

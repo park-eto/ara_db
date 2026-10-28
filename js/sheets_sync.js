@@ -10,11 +10,12 @@
   'use strict';
 
   const SHEET_ID = '1rT0VUnOxTHSo_k8xa4MIyzWtQdxSuhTi';
-  const CACHE_KEY = 'underdark_live_expansion_cache_v3';
-  const CACHE_TIME_KEY = 'underdark_live_expansion_timestamp_v3';
+  const CACHE_KEY = 'underdark_live_expansion_cache_v4';
+  const CACHE_TIME_KEY = 'underdark_live_expansion_timestamp_v4';
   try {
     localStorage.removeItem('underdark_live_expansion_cache');
     localStorage.removeItem('underdark_live_expansion_cache_v2');
+    localStorage.removeItem('underdark_live_expansion_cache_v3');
   } catch (e) {}
   const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
 

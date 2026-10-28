@@ -42,6 +42,7 @@
 
     // Camp (구조물 / 소품)
     campType: 'all', // 'all' | 'structure' | 'prop'
+    campLevel: 'all', // 'all' | '0' | '20' | '40' | '60'
     campCommonExpanded: true,
   };
 
@@ -374,6 +375,8 @@
         <option value="default">기본 순서 (구조물 ❯ 소품)</option>
         <option value="no_asc">번호순 (오름차순)</option>
         <option value="no_desc">번호순 (내림차순)</option>
+        <option value="level_asc">획득 레벨 낮은순 (0렙 ❯ 60렙)</option>
+        <option value="level_desc">획득 레벨 높은순 (60렙 ❯ 0렙)</option>
         <option value="type_asc">구분순 (구조물 ❯ 소품)</option>
         <option value="type_desc">구분순 (소품 ❯ 구조물)</option>
         <option value="name_asc">이름순 (ㄱ~ㅎ)</option>
@@ -421,6 +424,7 @@
 
   // Camp Controls
   let elCampTypeFilter;
+  let elCampLevelSteps;
   let elCampCommonToggleBtn;
 
   // Growth Controls
@@ -511,6 +515,7 @@
 
     // Camp
     elCampTypeFilter = document.getElementById('campTypeFilter');
+    elCampLevelSteps = document.getElementById('campLevelSteps');
     elCampCommonToggleBtn = document.getElementById('campCommonToggleBtn');
 
     // Growth
@@ -559,8 +564,9 @@
     try {
       localStorage.removeItem('underdark_live_expansion_cache');
       localStorage.removeItem('underdark_live_expansion_cache_v2');
+      localStorage.removeItem('underdark_live_expansion_cache_v3');
       localStorage.removeItem('underdark_items_data');
-    } catch (e) {}
+    } catch (e) { }
 
     // 1. Items Data
     if (window.UNDERDARK_DATA) {
@@ -583,7 +589,7 @@
     if (cachedLive && cachedLive.heroes && cachedLive.heroes.length) {
       expansionData = {
         ...cachedLive,
-        camp: cachedLive.camp || baseCamp
+        camp: baseCamp || cachedLive.camp
       };
     } else if (window.UNDERDARK_EXPANSION) {
       expansionData = window.UNDERDARK_EXPANSION;
@@ -864,7 +870,7 @@
       elPetGuideBtn.addEventListener('click', openPetGuideModal);
     }
 
-    // Camp Events (Scroll to Section)
+    // Camp Events (Scroll to Section & Level Filter)
     if (elCampTypeFilter) {
       elCampTypeFilter.addEventListener('click', e => {
         const btn = e.target.closest('.awakening-step-btn');
@@ -877,6 +883,17 @@
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+      });
+    }
+
+    if (elCampLevelSteps) {
+      elCampLevelSteps.addEventListener('click', e => {
+        const btn = e.target.closest('.awakening-step-btn');
+        if (!btn) return;
+        elCampLevelSteps.querySelectorAll('.awakening-step-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.campLevel = btn.getAttribute('data-clevel') || 'all';
+        renderActiveView();
       });
     }
 
@@ -1026,7 +1043,7 @@
       if (elSortWrapper) elSortWrapper.style.display = 'flex';
       if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
       elHeroTitle.textContent = '탈것 도감 & 부옵션 가이드';
-      elHeroSubtitle.textContent = '총 57종의 탈것 고유 능력과 평가 코멘트, 합성법 및 18가지 부옵션 정보입니다.';
+      elHeroSubtitle.textContent = '총 57종의 탈것 고유 능력과 평가 코멘트, 뽑기 및 30가지 부옵션 정보입니다.';
       elSearchInput.placeholder = '탈것 이름, 능력 검색 (예: 아기 백룡, 검은 악마, 거대슬라임)';
       elMountControls.style.display = 'block';
       elResultUnit.textContent = '종의 탈것';
@@ -1048,8 +1065,8 @@
       if (elSortWrapper) elSortWrapper.style.display = 'flex';
       if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
       elHeroTitle.textContent = '야영지 구조물 & 소품 도감';
-      elHeroSubtitle.textContent = '야영지 구조물(9종)과 소품(34종)의 고유 능력 및 공통 등급·부옵·랜덤옵 정보입니다.';
-      elSearchInput.placeholder = '구조물/소품 이름, 초성, 능력 검색 (예: 묘지, 삼각 플라스크, ㅂㅅ, 원거리)';
+      elHeroSubtitle.textContent = '야영지 구조물(10종)과 소품(34종)의 계정 레벨별 획득 조건, 고유 능력 및 공통 등급·부옵·랜덤옵 정보입니다.';
+      elSearchInput.placeholder = '구조물/소품 이름, 초성, 능력 검색 (예: 화로, 묘지, 삼각 플라스크, ㅂㅅ, 원거리)';
       if (elCampControls) elCampControls.style.display = 'block';
       elResultUnit.textContent = '개 항목';
       renderCampSearchHints();
@@ -1131,6 +1148,7 @@
   function renderCampSearchHints() {
     elSearchHints.innerHTML = `
       <span class="search-hint-label">⚡ 빠른 검색:</span>
+      <button type="button" class="search-hint-tag" data-q="화로">화로</button>
       <button type="button" class="search-hint-tag" data-q="묘지">묘지</button>
       <button type="button" class="search-hint-tag" data-q="삼각 플라스크">삼각 플라스크</button>
       <button type="button" class="search-hint-tag" data-q="사파이어">사파이어</button>
@@ -1181,6 +1199,7 @@
       if (state.petDrop !== 'all') count++;
     } else if (currentTab === 'camp') {
       if (state.campType !== 'all') count++;
+      if (state.campLevel !== 'all') count++;
     }
 
     if (count > 0) {
@@ -2171,163 +2190,221 @@
         <div style="display: flex; gap: 0.75rem; align-items: center;">
           <div style="font-size: 2rem;">🐎</div>
           <div>
-            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">탈것 합성법 & 부옵션 가이드</h2>
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">총 30종 부옵션 (타워 / 영웅 / 공통) 및 강화 단계 정보</div>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">탈것 뽑기 & 부옵션 가이드</h2>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">일반/고급 뽑기 확률 및 30종 부옵션 정보</div>
           </div>
         </div>
         <button class="modal-close-btn">&times;</button>
       </div>
-      <div class="modal-body" style="gap: 1.25rem;">
-        <!-- 1. 기본 합성 & 부옵션 활성화 규칙 -->
-        <div class="mount-guide-card">
-          <div class="mount-guide-header">
-            <h4 class="mount-guide-title">
-              <span>🐎</span> 탈것 합성 & 부옵션 활성화 기본 규칙
-            </h4>
-            <span class="mount-guide-tag">기본 규칙</span>
-          </div>
-          <ul class="mount-guide-list">
-            <li>같은 종류 <b>신급 펫 2개</b> = <b>일반 등급 탈것 1개</b></li>
-            <li>같은 종류 <b>동일 등급 일반 탈것 2개</b> = <b>상위 등급 탈것 1개</b></li>
-            <li>등급 단계: 일반(4강) ➔ 레어(8강) ➔ 유니크(12강) ➔ 엘리트(16강) ➔ 미스테리(20강) ➔ 에픽(24강) ➔ 전설(28강) ➔ 신화(32강)</li>
-            <li><b style="color: var(--accent-gold);">★ 미스테리 등급(20강)부터 부옵션 +1강 활성화</b> (강화 레벨 x 10 푸른다이아 소모)</li>
-          </ul>
+
+      <div class="modal-body" style="gap: 1rem;">
+        <!-- Top Sub-tabs Switcher -->
+        <div class="mount-modal-subnav" id="mountModalSubnav">
+          <button class="mount-modal-subtab active" data-view="normal" type="button">
+            <span>🎲</span> 일반 뽑기 (25종)
+          </button>
+          <button class="mount-modal-subtab" data-view="advanced" type="button">
+            <span>🌟</span> 고급 뽑기 (57종)
+          </button>
+          <button class="mount-modal-subtab" data-view="subopts" type="button">
+            <span>✨</span> 부옵션 가이드 (30종)
+          </button>
         </div>
 
-        <!-- 2. 탈것 일반 합성 확률 (탈것일반합성확률.png) -->
-        <div class="mount-guide-card">
-          <div class="mount-guide-header">
-            <h4 class="mount-guide-title">
-              <span>🎲</span> 탈것 일반 합성 확률
-            </h4>
-            <span class="mount-guide-tag">총 25종 (각 4.00%)</span>
-          </div>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-            일반 신급 펫 합성 시 총 <b>25종</b>의 일반 탈것이 각각 <b>4.00%</b> 동일 확률로 등장합니다.
-          </p>
-          <div class="mount-img-frame">
-            <img src="assets/mounts/mount_combine_normal.png" alt="탈것 일반 합성 확률표" loading="lazy" style="max-height: 440px; object-fit: contain;">
-          </div>
-        </div>
-
-        <!-- 3. 고급 탈것 조합 대상 펫 (고급탈것조합펫.png) -->
-        <div class="mount-guide-card">
-          <div class="mount-guide-header">
-            <h4 class="mount-guide-title">
-              <span>✨</span> 고급 탈것 조합 대상 펫
-            </h4>
-            <span class="mount-guide-tag" style="color: #d97706; background: #fffbeb; border-color: #fde68a;">총 10종 펫</span>
-          </div>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-            아래의 <b>10종 펫</b>을 조합 재료로 사용하면 전 종류(총 57종)의 탈것이 등장하는 <b>고급 탈것 조합</b>이 진행됩니다.
-          </p>
-          <div class="mount-img-frame" style="background: #1e293b; padding: 1rem;">
-            <img src="assets/mounts/mount_combine_adv_pets.png" alt="고급 탈것 조합 대상 펫 10종" loading="lazy" style="max-width: 440px; width: 100%; image-rendering: -webkit-optimize-contrast;">
-          </div>
-        </div>
-
-        <!-- 4. 고급 탈것 조합법 및 합성 확률 (탈것고급합성확률.png) -->
-        <div class="mount-guide-card">
-          <div class="mount-guide-header">
-            <h4 class="mount-guide-title">
-              <span>🌟</span> 고급 탈것 조합법 (합성 확률)
-            </h4>
-            <span class="mount-guide-tag" style="color: #9333ea; background: #faf5ff; border-color: #f3e8ff;">전체 57종 (각 1.75%)</span>
-          </div>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-            고급 탈것 조합 펫을 사용한 합성 시 전체 <b>57종</b>의 모든 탈것이 각각 <b>1.75%</b> 동일 확률로 등장합니다.
-          </p>
-          <div class="mount-img-frame">
-            <img src="assets/mounts/mount_combine_adv.png" alt="탈것 고급 합성 확률표" loading="lazy" style="max-height: 480px; object-fit: contain;">
-          </div>
-        </div>
-
-        <!-- Sub-options 3-Category Nav -->
-        <div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold);">▶ 부옵션 분류 선택</h4>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">총 30개 옵션</span>
-          </div>
-          <div class="subopt-nav" id="suboptNav">
-            <button class="subopt-tab active" data-subtab="all">📋 전체 3개 카테고리 (30)</button>
-            <button class="subopt-tab" data-subtab="tower">🏹 타워 관련 (${towerList.length})</button>
-            <button class="subopt-tab" data-subtab="hero">🦸 영웅 관련 (${heroList.length})</button>
-            <button class="subopt-tab" data-subtab="common">⚔️ 타워 · 영웅 공통 (${commonList.length})</button>
-          </div>
-        </div>
-
-        <!-- 1. 타워 관련 섹션 -->
-        <div class="subopt-section" id="subSectionTower">
-          <div class="subopt-section-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <span style="font-size: 1.1rem;">🏹</span>
-              <span style="font-weight: 800; color: #00f5d4; font-size: 1rem;">1. 타워 관련 부옵션</span>
+        <!-- 1. 일반 뽑기 뷰 -->
+        <div class="mount-subview" id="mountViewNormal">
+          <!-- 기본 뽑기 및 승급 규칙 -->
+          <div class="mount-guide-card">
+            <div class="mount-guide-header">
+              <h4 class="mount-guide-title">
+                <span>🐎</span> 탈것 뽑기 & 승급 기본 규칙
+              </h4>
+              <span class="mount-guide-tag">기본 규칙</span>
             </div>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">${towerList.length}개 항목</span>
+            <ul class="mount-guide-list">
+              <li>같은 종류 <b>신급 펫 2개</b> = <b>일반 등급 탈것 1개</b></li>
+              <li>같은 종류 <b>동일 등급 일반 탈것 2개</b> = <b>상위 등급 탈것 1개</b></li>
+              <li>등급 단계: 일반(4강) ➔ 레어(8강) ➔ 유니크(12강) ➔ 엘리트(16강) ➔ 미스테리(20강) ➔ 에픽(24강) ➔ 전설(28강) ➔ 신화(32강)</li>
+              <li><b style="color: var(--accent-gold);">★ 미스테리 등급(20강)부터 부옵션 +1강 활성화</b> (강화 레벨 x 10 푸른다이아 소모)</li>
+            </ul>
           </div>
-          <table class="awakening-table" style="margin-top: 0;">
-            <thead>
-              <tr style="background: rgba(0, 245, 212, 0.08);">
-                <th style="width: 50px;">번호</th>
-                <th>옵션 내용</th>
-                <th style="width: 95px;">변동옵</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${towerRows}
-            </tbody>
-          </table>
+
+          <!-- 탈것 일반 뽑기 확률 (탈것일반합성확률.png) -->
+          <div class="mount-guide-card">
+            <div class="mount-guide-header">
+              <h4 class="mount-guide-title">
+                <span>🎲</span> 탈것 일반 뽑기 확률표
+              </h4>
+              <span class="mount-guide-tag">총 25종 (각 4.00%)</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              일반 신급 펫 뽑기 시 총 <b>25종</b>의 일반 탈것이 각각 <b>4.00%</b> 동일 확률로 등장합니다.
+            </p>
+            <div class="mount-img-frame">
+              <img src="assets/mounts/mount_combine_normal.png" alt="탈것 일반 뽑기 확률표" loading="lazy" style="max-height: 440px; object-fit: contain;">
+            </div>
+          </div>
         </div>
 
-        <!-- 2. 영웅 관련 섹션 -->
-        <div class="subopt-section" id="subSectionHero">
-          <div class="subopt-section-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <span style="font-size: 1.1rem;">🦸</span>
-              <span style="font-weight: 800; color: #c77dff; font-size: 1rem;">2. 영웅 관련 부옵션</span>
+        <!-- 2. 고급 뽑기 뷰 -->
+        <div class="mount-subview" id="mountViewAdvanced" style="display: none;">
+          <!-- 고급 탈것 뽑기 대상 펫 (고급탈것조합펫.png) -->
+          <div class="mount-guide-card">
+            <div class="mount-guide-header">
+              <h4 class="mount-guide-title">
+                <span>✨</span> 고급 탈것 뽑기 대상 펫
+              </h4>
+              <span class="mount-guide-tag" style="color: #d97706; background: #fffbeb; border-color: #fde68a;">총 10종 펫</span>
             </div>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">${heroList.length}개 항목</span>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              아래의 <b>10종 펫</b>을 재료로 사용하면 전 종류(총 57종)의 탈것이 등장하는 <b>고급 탈것 뽑기</b>가 진행됩니다.
+            </p>
+            <div class="mount-img-frame" style="background: #1e293b; padding: 1rem;">
+              <img src="assets/mounts/mount_combine_adv_pets.png" alt="고급 탈것 뽑기 대상 펫 10종" loading="lazy" style="max-width: 440px; width: 100%; image-rendering: -webkit-optimize-contrast;">
+            </div>
           </div>
-          <table class="awakening-table" style="margin-top: 0;">
-            <thead>
-              <tr style="background: rgba(157, 78, 221, 0.1);">
-                <th style="width: 50px;">번호</th>
-                <th>옵션 내용</th>
-                <th style="width: 95px;">변동옵</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${heroRows}
-            </tbody>
-          </table>
+
+          <!-- 고급 탈것 뽑기 확률 (탈것고급합성확률.png) -->
+          <div class="mount-guide-card">
+            <div class="mount-guide-header">
+              <h4 class="mount-guide-title">
+                <span>🌟</span> 고급 탈것 뽑기 확률표
+              </h4>
+              <span class="mount-guide-tag" style="color: #9333ea; background: #faf5ff; border-color: #f3e8ff;">전체 57종 (각 1.75%)</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+              고급 탈것 뽑기 대상 펫을 사용한 뽑기 시 전체 <b>57종</b>의 모든 탈것이 각각 <b>1.75%</b> 동일 확률로 등장합니다.
+            </p>
+            <div class="mount-img-frame">
+              <img src="assets/mounts/mount_combine_adv.png" alt="탈것 고급 뽑기 확률표" loading="lazy" style="max-height: 480px; object-fit: contain;">
+            </div>
+          </div>
         </div>
 
-        <!-- 3. 타워 · 영웅 공통 섹션 -->
-        <div class="subopt-section" id="subSectionCommon">
-          <div class="subopt-section-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <span style="font-size: 1.1rem;">⚔️</span>
-              <span style="font-weight: 800; color: #ffd166; font-size: 1rem;">3. 타워 · 영웅 공통 부옵션</span>
+        <!-- 3. 부옵션 가이드 뷰 -->
+        <div class="mount-subview" id="mountViewSubopts" style="display: none;">
+          <!-- 부옵션 안내 카드 -->
+          <div class="mount-guide-card">
+            <div class="mount-guide-header">
+              <h4 class="mount-guide-title">
+                <span>💎</span> 부옵션 활성화 및 강화 규칙
+              </h4>
+              <span class="mount-guide-tag" style="color: #059669; background: #ecfdf5; border-color: #a7f3d0;">부옵션 규칙</span>
             </div>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">${commonList.length}개 항목</span>
+            <ul class="mount-guide-list">
+              <li><b style="color: var(--accent-gold);">★ 미스테리 등급(20강)부터 부옵션 +1강 활성화</b> (강화 레벨 x 10 푸른다이아 소모)</li>
+              <li>미스테리(20강) ➔ 에픽(24강) ➔ 전설(28강) ➔ 신화(32강) 승급 시 추가 부옵션이 해금됩니다.</li>
+              <li>총 <b>30종의 고유 부옵션</b>(타워 11종 / 영웅 7종 / 공통 12종) 풀에서 확률에 따라 부여됩니다.</li>
+            </ul>
           </div>
-          <table class="awakening-table" style="margin-top: 0;">
-            <thead>
-              <tr style="background: rgba(255, 209, 102, 0.1);">
-                <th style="width: 50px;">번호</th>
-                <th>옵션 내용</th>
-                <th style="width: 95px;">변동옵</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${commonRows}
-            </tbody>
-          </table>
+
+          <!-- Sub-options 3-Category Nav -->
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold);">▶ 부옵션 분류 선택</h4>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">총 30개 옵션</span>
+            </div>
+            <div class="subopt-nav" id="suboptNav">
+              <button class="subopt-tab active" data-subtab="all" type="button">📋 전체 3개 카테고리 (30)</button>
+              <button class="subopt-tab" data-subtab="tower" type="button">🏹 타워 관련 (${towerList.length})</button>
+              <button class="subopt-tab" data-subtab="hero" type="button">🦸 영웅 관련 (${heroList.length})</button>
+              <button class="subopt-tab" data-subtab="common" type="button">⚔️ 타워 · 영웅 공통 (${commonList.length})</button>
+            </div>
+          </div>
+
+          <!-- 1. 타워 관련 섹션 -->
+          <div class="subopt-section" id="subSectionTower">
+            <div class="subopt-section-header">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.1rem;">🏹</span>
+                <span style="font-weight: 800; color: #00f5d4; font-size: 1rem;">1. 타워 관련 부옵션</span>
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">${towerList.length}개 항목</span>
+            </div>
+            <table class="awakening-table" style="margin-top: 0;">
+              <thead>
+                <tr style="background: rgba(0, 245, 212, 0.08);">
+                  <th style="width: 50px;">번호</th>
+                  <th>옵션 내용</th>
+                  <th style="width: 95px;">변동옵</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${towerRows}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 2. 영웅 관련 섹션 -->
+          <div class="subopt-section" id="subSectionHero">
+            <div class="subopt-section-header">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.1rem;">🦸</span>
+                <span style="font-weight: 800; color: #c77dff; font-size: 1rem;">2. 영웅 관련 부옵션</span>
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">${heroList.length}개 항목</span>
+            </div>
+            <table class="awakening-table" style="margin-top: 0;">
+              <thead>
+                <tr style="background: rgba(157, 78, 221, 0.1);">
+                  <th style="width: 50px;">번호</th>
+                  <th>옵션 내용</th>
+                  <th style="width: 95px;">변동옵</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${heroRows}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 3. 타워 · 영웅 공통 섹션 -->
+          <div class="subopt-section" id="subSectionCommon">
+            <div class="subopt-section-header">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.1rem;">⚔️</span>
+                <span style="font-weight: 800; color: #ffd166; font-size: 1rem;">3. 타워 · 영웅 공통 부옵션</span>
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">${commonList.length}개 항목</span>
+            </div>
+            <table class="awakening-table" style="margin-top: 0;">
+              <thead>
+                <tr style="background: rgba(255, 209, 102, 0.1);">
+                  <th style="width: 50px;">번호</th>
+                  <th>옵션 내용</th>
+                  <th style="width: 95px;">변동옵</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${commonRows}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     `;
 
-    // Bind category filter tabs
+    // Bind top sub-tabs (일반 뽑기 / 고급 뽑기 / 부옵션 가이드)
+    const mainTabs = elModalContent.querySelectorAll('.mount-modal-subtab');
+    const viewNormal = elModalContent.querySelector('#mountViewNormal');
+    const viewAdv = elModalContent.querySelector('#mountViewAdvanced');
+    const viewSubopts = elModalContent.querySelector('#mountViewSubopts');
+    const modalBody = elModalContent.querySelector('.modal-body');
+
+    mainTabs.forEach(tabBtn => {
+      tabBtn.addEventListener('click', () => {
+        const view = tabBtn.getAttribute('data-view');
+        mainTabs.forEach(t => t.classList.toggle('active', t === tabBtn));
+
+        viewNormal.style.display = view === 'normal' ? 'flex' : 'none';
+        viewAdv.style.display = view === 'advanced' ? 'flex' : 'none';
+        viewSubopts.style.display = view === 'subopts' ? 'flex' : 'none';
+
+        if (modalBody) modalBody.scrollTop = 0;
+      });
+    });
+
+    // Bind category filter tabs (inside subopts view)
     const subTabs = elModalContent.querySelectorAll('.subopt-tab');
     const secTower = elModalContent.querySelector('#subSectionTower');
     const secHero = elModalContent.querySelector('#subSectionHero');
@@ -2765,12 +2842,26 @@
       .replace(/(\d+마리|\d+개)/g, '<span class="stat-highlight">$1</span>');
   }
 
+  function renderCampLevelBadge(level) {
+    const lv = level ?? 0;
+    const styleMap = {
+      0: { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: '0렙 (기본)' },
+      20: { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: 'Lv.20' },
+      40: { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', label: 'Lv.40' },
+      60: { color: '#d97706', bg: '#fffbeb', border: '#fde68a', label: 'Lv.60' },
+    };
+    const st = styleMap[lv] || { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: `Lv.${lv}` };
+    return `<span class="camp-level-badge" style="display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;padding:0.2rem 0.55rem;border-radius:6px;color:${st.color};background:${st.bg};border:1px solid ${st.border};white-space:nowrap;">${st.label}</span>`;
+  }
+
   function sortCampList(list, col, dir) {
     const sorted = [...list];
     sorted.sort((a, b) => {
       let cmp = 0;
       if (col === 'no') {
         cmp = a.no - b.no;
+      } else if (col === 'level') {
+        cmp = ((a.level ?? 0) - (b.level ?? 0)) || (a.no - b.no);
       } else if (col === 'type') {
         if (a.type !== b.type) {
           cmp = a.type === 'structure' ? -1 : 1;
@@ -2835,7 +2926,8 @@
             <div>
               <h3 class="camp-common-title">구조물 & 소품 공통 적용 안내</h3>
               <p class="camp-common-desc">
-                아래 <strong>등급 (8단계)</strong>, <strong>부옵션 (8종)</strong>, <strong>랜덤옵션 (12종)</strong>은 야영지 구조물과 소품 전체에 동일하게 적용되는 공통 사항입니다.
+                아래 <strong>등급 (8단계)</strong>, <strong>부옵션 (8종)</strong>, <strong>랜덤옵션 (12종)</strong>은 야영지 구조물과 소품 전체에 동일하게 적용되는 공통 사항입니다.<br>
+                <span style="color: var(--accent-secondary); font-weight: 700;">📌 레벨 안내: 계정 레벨(0 · 20 · 40 · 60)에 따라 구조물과 소품의 획득이 가능해집니다.</span>
               </p>
             </div>
           </div>
@@ -2922,9 +3014,10 @@
           <thead>
             <tr>
               ${renderTh('no', 'No', 'width: 60px;', true)}
-              ${renderTh('type', '구분', 'width: 100px;', true)}
+              ${renderTh('type', '구분', 'width: 90px;', true)}
+              ${renderTh('level', '획득 레벨', 'width: 95px;', true)}
               <th style="width: 80px;" class="text-center">사진</th>
-              ${renderTh('name', '이름', 'width: 180px;')}
+              ${renderTh('name', '이름', 'width: 170px;')}
               ${renderTh('ability', '고유 능력')}
             </tr>
           </thead>
@@ -2937,6 +3030,7 @@
                     ${item.type === 'structure' ? '구조물' : '소품'}
                   </span>
                 </td>
+                <td class="text-center">${renderCampLevelBadge(item.level)}</td>
                 <td class="text-center">
                   <div class="camp-img-box">
                     <img src="${item.img || ''}" alt="${item.name}" loading="lazy">
@@ -2968,9 +3062,12 @@
         ${items.map(item => `
           <div class="camp-card ${item.type === 'structure' ? 'is-structure' : 'is-prop'}" data-camp-id="${item.id}" tabindex="0" role="button" title="클릭하여 상세 정보 보기">
             <div class="camp-card-header">
-              <span class="camp-type-badge type-${item.type}">
-                ${item.type === 'structure' ? '구조물' : '소품'}
-              </span>
+              <div style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                <span class="camp-type-badge type-${item.type}">
+                  ${item.type === 'structure' ? '구조물' : '소품'}
+                </span>
+                ${renderCampLevelBadge(item.level)}
+              </div>
               <span class="camp-card-no">#${item.no}</span>
             </div>
             <div class="camp-card-img-wrap">
@@ -3014,11 +3111,11 @@
 
     // Filter structures & props separately
     let filteredStructures = searchEngine && searchEngine.searchCamp
-      ? searchEngine.searchCamp(structures, { query: state.query, type: 'structure' })
+      ? searchEngine.searchCamp(structures, { query: state.query, type: 'structure', level: state.campLevel })
       : structures;
 
     let filteredProps = searchEngine && searchEngine.searchCamp
-      ? searchEngine.searchCamp(props, { query: state.query, type: 'prop' })
+      ? searchEngine.searchCamp(props, { query: state.query, type: 'prop', level: state.campLevel })
       : props;
 
     // Sort items
@@ -3112,12 +3209,14 @@
   function openCampModal(item) {
     const isStructure = item.type === 'structure';
     const typeLabel = isStructure ? '구조물' : '소품';
+    const lv = item.level ?? 0;
 
     elModalContent.innerHTML = `
       <div class="modal-header">
         <div>
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
             <span class="camp-type-badge type-${item.type}">${typeLabel}</span>
+            ${renderCampLevelBadge(lv)}
             <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">#${item.no}</span>
           </div>
           <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin: 0;">${item.name}</h2>
@@ -3131,7 +3230,10 @@
         </div>
 
         <div style="background: #ffffff; border: 1px solid var(--border-glass); border-radius: 10px; padding: 1.1rem; box-shadow: var(--shadow-sm);">
-          <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-bottom: 0.45rem; text-transform: uppercase;">고유 능력</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.45rem;">
+            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">고유 능력</span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--accent-secondary);">획득 조건: 계정 레벨 ${lv === 0 ? '0 (기본)' : `${lv} 이상`}</span>
+          </div>
           <div style="font-size: 1rem; font-weight: 600; line-height: 1.6; color: var(--text-main);">
             ${formatCampAbility(item.ability)}
           </div>
@@ -3140,7 +3242,7 @@
         <div class="mount-tip-box" style="margin: 0;">
           <h4 style="color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 0.4rem;">💡 야영지 공통 옵션 적용</h4>
           <p style="font-size: 0.85rem; line-height: 1.55; margin: 0; color: var(--text-muted);">
-            본 항목(${item.name})은 <strong>일반 ~ 신 (8단계 등급)</strong>으로 승급이 가능하며, 공통 <strong>부옵션 (8종)</strong> 및 <strong>랜덤옵션 (12종)</strong> 풀이 동일하게 적용됩니다.
+            본 항목(${item.name})은 계정 레벨 <strong>${lv}레벨</strong>부터 획득 가능하며, <strong>일반 ~ 신 (8단계 등급)</strong> 승급 및 공통 <strong>부옵션 (8종)</strong> · <strong>랜덤옵션 (12종)</strong> 풀이 동일하게 적용됩니다.
           </p>
         </div>
       </div>

@@ -266,14 +266,14 @@
     <section id="mountControlSection" class="control-container" style="display: none;">
       <div class="control-card guide-bar">
         <div class="guide-text">
-          <strong>탈것 합성 &amp; 부옵션</strong>
-          <span>신급 펫 2마리로 탈것 획득 · 미스테리(20강)부터 부옵 활성화</span>
+          <strong>탈것 뽑기 &amp; 부옵션</strong>
+          <span>신급 펫 2마리로 탈것 뽑기 · 미스테리(20강)부터 부옵 활성화</span>
         </div>
         <button id="mountGuideBtn" class="btn-outline" type="button">
           <svg viewBox="0 0 24 24">
             <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
           </svg>
-          합성법 · 부옵션 가이드
+          뽑기 · 부옵션 가이드
         </button>
       </div>
     </section>
@@ -324,13 +324,25 @@
     <section id="campControlSection" class="control-container" style="display: none;">
       <div class="control-card">
         <div class="camp-controls-header">
-          <div class="awakening-bar" style="margin-bottom: 0;">
-            <div class="awakening-label">섹션 이동</div>
-            <div id="campTypeFilter" class="awakening-steps">
-              <button class="awakening-step-btn" type="button" data-scroll-to="structures">구조물 <span
-                  class="badge-count">9</span></button>
-              <button class="awakening-step-btn" type="button" data-scroll-to="props">소품 <span
-                  class="badge-count">34</span></button>
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+            <div class="awakening-bar" style="margin-bottom: 0;">
+              <div class="awakening-label">섹션 이동</div>
+              <div id="campTypeFilter" class="awakening-steps">
+                <button class="awakening-step-btn" type="button" data-scroll-to="structures">구조물 <span
+                    class="badge-count">10</span></button>
+                <button class="awakening-step-btn" type="button" data-scroll-to="props">소품 <span
+                    class="badge-count">34</span></button>
+              </div>
+            </div>
+            <div class="awakening-bar" style="margin-bottom: 0;">
+              <div class="awakening-label">획득 레벨</div>
+              <div id="campLevelSteps" class="awakening-steps">
+                <button class="awakening-step-btn active" type="button" data-clevel="all">전체</button>
+                <button class="awakening-step-btn" type="button" data-clevel="0">0렙</button>
+                <button class="awakening-step-btn" type="button" data-clevel="20">20렙</button>
+                <button class="awakening-step-btn" type="button" data-clevel="40">40렙</button>
+                <button class="awakening-step-btn" type="button" data-clevel="60">60렙</button>
+              </div>
             </div>
           </div>
           <button id="campCommonToggleBtn" class="btn-outline camp-common-toggle-btn" type="button"

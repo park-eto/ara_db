@@ -86,17 +86,19 @@ print(f"Camp Grades ({len(grades)}): {grades}")
 print(f"Camp Sub Options count: {len(sub_opts)}")
 print(f"Camp Random Options count: {len(rand_opts)}")
 
-assert len(structures) == 9, f"Should have 9 structures, got {len(structures)}"
+assert len(structures) == 10, f"Should have 10 structures, got {len(structures)}"
 assert len(props) == 34, f"Should have 34 props, got {len(props)}"
 assert len(grades) == 8, f"Should have 8 grades, got {len(grades)}"
 assert len(sub_opts) == 8, f"Should have 8 sub options, got {len(sub_opts)}"
 assert len(rand_opts) == 12, f"Should have 12 random options, got {len(rand_opts)}"
 
-# Verify all images exist
+# Verify all images and levels exist
 for s in structures:
     assert (ROOT / s["img"]).exists(), f"Structure image missing: {s['img']}"
+    assert s.get("level") in (0, 20, 40, 60), f"Invalid structure level: {s}"
 for p in props:
     assert (ROOT / p["img"]).exists(), f"Prop image missing: {p['img']}"
+    assert p.get("level") in (0, 20, 40, 60), f"Invalid prop level: {p}"
 
 # Growth Asset
 growth_img = ROOT / "assets" / "growth" / "underdark_growth.png"

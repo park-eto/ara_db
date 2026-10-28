@@ -414,11 +414,12 @@
      * Search Camp Structures & Props
      */
     searchCamp(items = [], options = {}) {
-      const { query = '', type = 'all' } = options;
+      const { query = '', type = 'all', level = 'all' } = options;
       const tokens = query.trim().split(/\s+/).filter(Boolean);
 
       return items.filter(item => {
         if (type !== 'all' && item.type !== type) return false;
+        if (level !== 'all' && String(item.level ?? 0) !== String(level)) return false;
 
         if (tokens.length === 0) return true;
 
