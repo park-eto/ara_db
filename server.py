@@ -1,64 +1,34 @@
-"""Simple local HTTP server with admin save API.
-
-Usage: python server.py
-Serves the underdark_web directory at http://localhost:8000
+# -*- coding: utf-8 -*-
 """
-from __future__ import annotations
-
+Local HTTP Server for Ara DB VER 2.0 (C:/dev/workplace/underdark_public)
+Usage: python server.py [port]
+"""
 import http.server
-import json
-import socketserver
+import os
+import sys
 from pathlib import Path
 
-PORT = 8000
 ROOT = Path(__file__).resolve().parent
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+
+os.chdir(ROOT)
 
 
-class CustomHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT), **kwargs)
-
-    def do_POST(self):
-        if self.path == '/api/save-items':
-            content_length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(content_length).decode('utf-8')
-            try:
-                data = json.loads(body)
-                json_path = ROOT / 'data' / 'items.json'
-                js_path = ROOT / 'data' / 'items.js'
-
-                json_path.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
-                js_path.write_text('window.UNDERDARK_DATA=' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';', encoding='utf-8')
-
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.end_headers()
-                self.wfile.write(b'{"success": true, "message": "Saved successfully to disk."}')
-                print(' [Admin] Successfully saved updated items to disk!')
-            except Exception as e:
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.end_headers()
-                err_msg = json.dumps({'success': False, 'error': str(e)}).encode('utf-8')
-                self.wfile.write(err_msg)
-        else:
-            self.send_response(404)
-            self.end_headers()
+class NoCacheHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
 
 
-def run():
-    socketserver.ThreadingTCPServer.allow_reuse_address = True
-    with socketserver.ThreadingTCPServer(('', PORT), CustomHandler) as httpd:
-        print(f'=====================================================')
-        print(f' Underdark Web Server is running!')
-        print(f' -> Main Web:   http://localhost:{PORT}/index.html')
-        print(f' -> Admin Page: http://localhost:{PORT}/admin.html')
-        print(f'=====================================================')
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print('\nServer stopped.')
+NoCacheHTTPRequestHandler.extensions_map.update({
+    ".js": "application/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".webp": "image/webp",
+})
 
+print(f"Starting Ara DB VER 2.0 server at http://localhost:{PORT}", flush=True)
+with http.server.ThreadingHTTPServer(("0.0.0.0", PORT), NoCacheHTTPRequestHandler) as httpd:
+    httpd.serve_forever()
 
-if __name__ == '__main__':
-    run()

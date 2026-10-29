@@ -1,430 +1,255 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
-  <title>Ara DB 백과사전 &amp; 검색기 (아이템·영웅·용병·탈것·펫)</title>
-  <meta name="description" content="디펜스 게임 Ara DB의 모든 아이템, 영웅(영덱), 지원용병, 탈것(57종), 펫(26종) 상세 정보와 수치 검색 기능">
-  <link rel="stylesheet" href="css/style.css?v=20261028_2">
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌊</text></svg>">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1120" />
+  <title>Ara DB V2 — 언더다크 공식 데이터 통합 도감 (3.5.0)</title>
+  <meta name="description"
+    content="언더다크 디펜스 공식 데이터(3.5.0-35003) 기반 통합 도감. 장비 0~5각성 계산기, 영웅·스킨, 지원용병, 타워 웨이브 버프, 탈것, 펫, 야영지, 유물·룬 초성·수치 통합 검색." />
+  <link rel="stylesheet" href="css/style.css?v=20261030_v11" />
 </head>
 
-<body data-tab="items">
-  <!-- Header (brand + global nav; nav turns into bottom tab bar on mobile) -->
-  <header class="site-header">
-    <div class="header-inner">
-      <a href="index.html" class="brand" aria-label="Ara DB 홈">
-        <span class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <path d="M2 8c2-2 4-2 6 0s4 2 6 0 4-2 6 0" />
-            <path d="M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0" />
-          </svg>
-        </span>
-        <span class="brand-name">Ara<b>DB</b></span>
-      </a>
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-inner">
+        <div class="brand-group" id="brandHomeBtn" role="button" tabindex="0" title="홈으로 초기화">
+          <div class="brand-logo">UD</div>
+          <div class="brand-titles">
+            <div class="brand-title-row">
+              <h1 class="brand-title">Ara DB</h1>
+              <span class="ver-badge">VER 2.0</span>
+              <span class="official-badge" title="언더다크 개발팀 공식 데이터 스냅샷 적용">공식 3.5.0</span>
+            </div>
+            <p class="brand-sub">언더다크 공식 데이터 통합 도감</p>
+          </div>
+        </div>
 
-      <nav class="global-nav" id="globalNav" aria-label="카테고리">
-        <button class="g-tab active" data-tab="items">
-          <svg viewBox="0 0 24 24">
-            <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
-            <path d="m13 19 6-6" />
-            <path d="m16 16 4 4" />
-            <path d="m19 21 2-2" />
-          </svg>
-          <span>아이템</span>
-        </button>
-        <button class="g-tab" data-tab="heroes">
-          <svg viewBox="0 0 24 24">
-            <path d="m2 5 3 11h14l3-11-6 6-4-7-4 7-6-6z" />
-            <path d="M5 20h14" />
-          </svg>
-          <span>영웅</span>
-        </button>
-        <button class="g-tab" data-tab="mercenaries">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-          <span>용병</span>
-        </button>
-        <button class="g-tab" data-tab="mounts">
-          <svg viewBox="0 0 24 24">
-            <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" />
-            <path d="M9.6 4.6A2 2 0 1 1 11 8H2" />
-            <path d="M12.6 19.4A2 2 0 1 0 14 16H2" />
-          </svg>
-          <span>탈것</span>
-        </button>
-        <button class="g-tab" data-tab="pets">
-          <svg viewBox="0 0 24 24">
-            <circle cx="11" cy="4" r="2" />
-            <circle cx="18" cy="8" r="2" />
-            <circle cx="20" cy="16" r="2" />
-            <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" />
-          </svg>
-          <span>펫</span>
-        </button>
-        <button class="g-tab" data-tab="camp">
-          <svg viewBox="0 0 24 24">
-            <path d="m3 21 9-18 9 18H3z" />
-            <path d="M9 21v-4a3 3 0 0 1 6 0v4" />
-          </svg>
-          <span>구조물/소품</span>
-        </button>
-        <button class="g-tab" data-tab="growth">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 20V10M18 20V4M6 20v-4" />
-            <path d="m3 9 9-7 9 7" />
-          </svg>
-          <span>성장</span>
-        </button>
+        <!-- Global Search Bar (Desktop & Mobile Sticky) -->
+        <div class="omni-search-wrap">
+          <div class="omni-search-box" id="omniSearchBox">
+            <svg class="search-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+              stroke-width="2.2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
+            </svg>
+            <input type="search" id="globalSearchInput" class="omni-input"
+              placeholder="통합 검색: 이름, 초성(ㅂㄷ/ㅎㄹ), 별칭(빛단), 수치(치피>=60, 투사체>=1)…" autocomplete="off" spellcheck="false" />
+            <button type="button" id="clearSearchBtn" class="clear-search-btn" hidden aria-label="검색어 지우기">✕</button>
+            <kbd class="search-kbd" title="단축키 / 또는 Ctrl+K">/</kbd>
+          </div>
+
+          <!-- Cross-Category Instant Match Bar (shows when typing search query) -->
+          <div class="cross-match-bar" id="crossMatchBar" hidden></div>
+        </div>
+
+        <!-- Right Utility Actions -->
+        <div class="header-actions">
+          <button type="button" class="action-pill sync-pill" id="openSheetModalBtn" title="구글 마스터 시트 실시간 연동 설정" hidden
+            style="display:none;">
+            <span class="sync-dot" id="syncStatusDot"></span>
+            <span id="syncStatusText">구글시트 연동</span>
+          </button>
+          <button type="button" class="icon-btn" id="themeToggleBtn" title="다크/라이트 테마 전환" aria-label="테마 전환">
+            <span id="themeIcon">🌙</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Primary Category Navigation (Desktop Top Bar) -->
+      <nav class="primary-nav" id="primaryNav" aria-label="도감 카테고리">
+        <div class="nav-scroll">
+          <button type="button" class="nav-tab active" data-tab="items">
+            <span class="nav-ic">⚔️</span>
+            <span class="nav-label">장비</span>
+            <span class="nav-cnt" id="cnt-items">208</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="heroes">
+            <span class="nav-ic">🦸</span>
+            <span class="nav-label">영웅·스킨</span>
+            <span class="nav-cnt" id="cnt-heroes">35</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="mercenaries">
+            <span class="nav-ic">🛡️</span>
+            <span class="nav-label">지원용병</span>
+            <span class="nav-cnt" id="cnt-mercenaries">35</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="towers">
+            <span class="nav-ic">🏰</span>
+            <span class="nav-label">타워·버프</span>
+            <span class="nav-cnt" id="cnt-towers">46</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="mounts">
+            <span class="nav-ic">🦌</span>
+            <span class="nav-label">탈것</span>
+            <span class="nav-cnt" id="cnt-mounts">57</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="pets">
+            <span class="nav-ic">🐾</span>
+            <span class="nav-label">펫</span>
+            <span class="nav-cnt" id="cnt-pets">26</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="camp">
+            <span class="nav-ic">⛺</span>
+            <span class="nav-label">야영지</span>
+            <span class="nav-cnt" id="cnt-camp">55</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="relics">
+            <span class="nav-ic">🔮</span>
+            <span class="nav-label">유물·룬·스킨</span>
+            <span class="nav-cnt" id="cnt-relics">88</span>
+          </button>
+          <button type="button" class="nav-tab" data-tab="growth">
+            <span class="nav-ic">📈</span>
+            <span class="nav-label">성장·계산기</span>
+          </button>
+        </div>
       </nav>
+    </header>
 
-      <button id="adminBtn" type="button" class="btn-header admin-btn" title="관리자">
-        <svg viewBox="0 0 24 24">
-          <rect x="3" y="11" width="18" height="11" rx="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-        <span class="hide-mobile">관리자</span>
-      </button>
-    </div>
-  </header>
+    <!-- Main Content Workspace -->
+    <main class="main-workspace" id="mainWorkspace">
+      <!-- Dynamic Contextual Filter & Toolbar -->
+      <section class="context-toolbar" id="contextToolbar"></section>
 
-  <!-- Page Title -->
-  <section class="hero-section">
-    <h1 id="heroTitle" class="hero-title">아이템 도감 &amp; 능력치 검색</h1>
-    <p id="heroSubtitle" class="hero-subtitle">이름, 초성, 능력 문장 뿐만 아니라 세부 수치 조건으로 자유롭게 검색하세요.</p>
-  </section>
+      <!-- Quick Smart Search Chips -->
+      <section class="quick-chips-bar" id="quickChipsBar"></section>
 
-  <!-- Sticky Search Bar -->
-  <div class="search-sticky">
-    <div class="search-inner">
-      <div class="search-row">
-        <div class="search-box-wrapper">
-          <svg class="search-icon" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="7.5" />
-            <path d="m20.5 20.5-4.2-4.2" />
-          </svg>
-          <input type="search" id="searchInput" class="main-search-input"
-            placeholder="검색어 입력 (예: 빛단, ㅅㅁㅍㅍ, 처형, 치피>=100)" autocomplete="off" spellcheck="false" enterkeyhint="search">
-          <button id="searchClear" class="search-clear-btn" title="검색어 지우기" aria-label="검색어 지우기">
-            <svg viewBox="0 0 24 24">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-          <kbd class="search-kbd hide-mobile">/</kbd>
+      <!-- Result Summary & View Mode Switcher -->
+      <section class="results-header" id="resultsHeader">
+        <div class="results-count-wrap">
+          <span class="results-title" id="resultsCategoryTitle">장비 도감</span>
+          <span class="results-badge" id="resultsCountBadge">208개</span>
+          <span class="active-filter-summary" id="activeFilterSummary"></span>
         </div>
-        <button id="filterToggle" class="filter-toggle-btn" type="button" aria-expanded="false"
-          aria-controls="filterPanel">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
-            <circle cx="16" cy="6" r="2" />
-            <circle cx="10" cy="12" r="2" />
-            <circle cx="18" cy="18" r="2" />
-          </svg>
-          <span>필터</span>
-          <span id="filterCount" class="filter-count" hidden>0</span>
-        </button>
-      </div>
-
-      <!-- Search Hints (dynamic per tab) -->
-      <div id="searchHints" class="search-hints"></div>
-    </div>
-  </div>
-
-  <!-- ================= FILTER PANEL ================= -->
-  <div id="filterPanel" class="filter-panel">
-
-    <!-- ITEM CONTROLS -->
-    <section id="itemControlSection" class="control-container">
-      <div class="control-card">
-        <div id="categoryTabs" class="category-tabs"></div>
-
-        <div class="awakening-bar">
-          <div class="awakening-label">각성 단계</div>
-          <div id="awakeningSteps" class="awakening-steps">
-            <button class="awakening-step-btn active" data-level="0">기본</button>
-            <button class="awakening-step-btn" data-level="1">1각</button>
-            <button class="awakening-step-btn" data-level="2">2각</button>
-            <button class="awakening-step-btn" data-level="3">3각</button>
-            <button class="awakening-step-btn" data-level="4">4각</button>
-            <button class="awakening-step-btn" data-level="5">5각</button>
-          </div>
-        </div>
-
-        <div class="filter-row">
-          <div class="filter-group">
-            <select id="rangeFilter" class="filter-select" aria-label="공격 거리">
-              <option value="all">공격 거리</option>
-              <option value="근거리">근거리</option>
-              <option value="원거리">원거리</option>
-            </select>
-            <select id="tierFilter" class="filter-select" aria-label="등급">
-              <option value="all">등급</option>
-              <option value="S">S 등급</option>
-              <option value="A">A 등급</option>
-              <option value="B">B 등급</option>
-              <option value="C">C 등급</option>
-              <option value="D">D 등급</option>
-              <option value="E">E 등급</option>
-              <option value="F">F 등급</option>
-            </select>
-            <select id="usageFilter" class="filter-select" aria-label="사용 추천">
-              <option value="all">사용 추천</option>
-              <option value="O">추천 (O)</option>
-              <option value="△">상황별 (△)</option>
-              <option value="X">비추천 (X)</option>
-            </select>
-            <select id="dropFilter" class="filter-select" aria-label="드랍처">
-              <option value="all">드랍처</option>
-            </select>
-          </div>
-          <div id="tagChips" class="tag-chips"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- HERO CONTROLS -->
-    <section id="heroControlSection" class="control-container" style="display: none;">
-      <div class="control-card">
-        <div class="awakening-bar">
-          <div class="awakening-label">레벨 능력</div>
-          <div id="heroLevelSteps" class="awakening-steps">
-            <button class="awakening-step-btn active" data-hlevel="base">기본</button>
-            <button class="awakening-step-btn" data-hlevel="3">3Lv</button>
-            <button class="awakening-step-btn" data-hlevel="6">6Lv</button>
-            <button class="awakening-step-btn" data-hlevel="9">9Lv</button>
-            <button class="awakening-step-btn" data-hlevel="12">12Lv</button>
-            <button class="awakening-step-btn" data-hlevel="15">15Lv+</button>
-          </div>
-        </div>
-        <div class="filter-row">
-          <div class="filter-group">
-            <select id="heroTierFilter" class="filter-select" aria-label="티어">
-              <option value="all">티어</option>
-              <option value="SSS">SSS 티어</option>
-              <option value="SS">SS 티어</option>
-              <option value="S">S 티어</option>
-              <option value="A">A 티어</option>
-              <option value="B">B 티어</option>
-              <option value="C">C 티어</option>
-              <option value="D">D 티어</option>
-              <option value="E">E 티어</option>
-              <option value="F">F 티어</option>
-            </select>
-            <select id="heroGradeFilter" class="filter-select" aria-label="등급">
-              <option value="all">등급</option>
-              <option value="전설">전설 영웅</option>
-              <option value="희귀">희귀 영웅</option>
-              <option value="일반">일반 영웅</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MERCENARY CONTROLS -->
-    <section id="mercControlSection" class="control-container" style="display: none;">
-      <div class="control-card">
-        <div class="awakening-bar">
-          <div class="awakening-label">버프 등급</div>
-          <div id="mercTierSteps" class="awakening-steps">
-            <button class="awakening-step-btn" data-mtier="B">B<small>5렙</small></button>
-            <button class="awakening-step-btn" data-mtier="A">A<small>9렙</small></button>
-            <button class="awakening-step-btn" data-mtier="S">S<small>13렙</small></button>
-            <button class="awakening-step-btn" data-mtier="SS">SS<small>17렙</small></button>
-            <button class="awakening-step-btn active" data-mtier="SSS">SSS<small>20렙</small></button>
-          </div>
-        </div>
-        <div class="filter-row">
-          <div class="filter-group">
-            <select id="mercGradeFilter" class="filter-select" aria-label="기본 등급">
-              <option value="all">기본 등급</option>
-              <option value="전설">전설</option>
-              <option value="희귀">희귀</option>
-              <option value="일반">일반</option>
-            </select>
-            <select id="mercRecFilter" class="filter-select" aria-label="추천도">
-              <option value="all">추천도</option>
-              <option value="SSS">SSS - 극추천</option>
-              <option value="SS">SS - 필수급</option>
-              <option value="S">S - 최고!</option>
-              <option value="A">A - 자주 사용</option>
-              <option value="B">B - 그럭저럭</option>
-              <option value="J">J - 자동사냥용</option>
-              <option value="C">C - 종종 사용</option>
-              <option value="X">X - 사용안함</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MOUNT CONTROLS -->
-    <section id="mountControlSection" class="control-container" style="display: none;">
-      <div class="control-card guide-bar">
-        <div class="guide-text">
-          <strong>탈것 뽑기 &amp; 부옵션</strong>
-          <span>신급 펫 2마리로 탈것 뽑기 · 미스테리(20강)부터 부옵 활성화</span>
-        </div>
-        <button id="mountGuideBtn" class="btn-outline" type="button">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-          </svg>
-          뽑기 · 부옵션 가이드
-        </button>
-      </div>
-    </section>
-
-    <!-- PET CONTROLS -->
-    <section id="petControlSection" class="control-container" style="display: none;">
-      <div class="control-card">
-        <div class="guide-bar">
-          <div class="guide-text">
-            <strong>펫 등급 · 부옵 · 랜덤옵</strong>
-            <span>타워/영덱 종결 추천 세팅과 옵션 풀을 확인하세요</span>
-          </div>
-          <button id="petGuideBtn" class="btn-outline" type="button">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-            </svg>
-            추천 세팅 가이드
-          </button>
-        </div>
-        <div class="filter-row">
-          <div class="filter-group">
-            <select id="petTierFilter" class="filter-select" aria-label="티어">
-              <option value="all">티어</option>
-              <option value="S_group">S+ / S (종결)</option>
-              <option value="A_group">A+ / A / A- (우수)</option>
-              <option value="B_group">B+ / B (상황별)</option>
-              <option value="C_group">C</option>
-              <option value="D_group">D+ / D / D-</option>
-              <option value="E_group">E / E-</option>
-              <option value="F_group">F+ / F / F-</option>
-            </select>
-            <select id="petDropFilter" class="filter-select" aria-label="획득처">
-              <option value="all">획득처</option>
-              <option value="상점">상점 펫/오브젝트 뽑기</option>
-              <option value="스테이지">스테이지</option>
-              <option value="고블린">고블린 야영지</option>
-              <option value="사원">불결한 사원</option>
-              <option value="무덤">붉은 무덤</option>
-              <option value="제단">이도교 제단</option>
-              <option value="종말">전방위 / 종말 / 심연 등</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CAMP CONTROLS (구조물 / 소품) -->
-    <section id="campControlSection" class="control-container" style="display: none;">
-      <div class="control-card">
-        <div class="camp-controls-header">
-          <div class="awakening-bar" style="margin-bottom: 0;">
-            <div class="awakening-label">섹션 이동</div>
-            <div id="campTypeFilter" class="awakening-steps">
-              <button class="awakening-step-btn" type="button" data-scroll-to="structures">구조물 <span
-                  class="badge-count">10</span></button>
-              <button class="awakening-step-btn" type="button" data-scroll-to="props">소품 <span
-                  class="badge-count">34</span></button>
+        <div class="results-controls">
+          <div class="awk-global-toggle" id="awkGlobalToggleWrap" title="장비 목록 표시 각성 단계 일괄 전환">
+            <span class="awk-toggle-label">목록 각성:</span>
+            <div class="seg-group" id="globalAwkSeg">
+              <button type="button" class="seg-btn active" data-awk="0">0성</button>
+              <button type="button" class="seg-btn" data-awk="1">1성</button>
+              <button type="button" class="seg-btn" data-awk="2">2성</button>
+              <button type="button" class="seg-btn" data-awk="3">3성</button>
+              <button type="button" class="seg-btn" data-awk="4">4성</button>
+              <button type="button" class="seg-btn awk-max" data-awk="5">★5성</button>
             </div>
           </div>
-          <button id="campCommonToggleBtn" class="btn-outline camp-common-toggle-btn" type="button"
-            aria-expanded="true">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-            </svg>
-            공통 옵션 정보 (등급·부옵·랜덤옵)
-          </button>
-        </div>
-      </div>
-    </section>
 
-    <!-- GROWTH CONTROLS (성장) -->
-    <section id="growthControlSection" class="control-container" style="display: none;">
-      <div class="control-card guide-bar">
-        <div class="guide-text">
-          <strong>언더다크 성장 가이드 차트</strong>
-          <span>성장에 필요한 재화, 스탯 증가치 및 레벨별 요구량 종합 안내도</span>
+          <select id="sortSelect" class="ctrl-select" aria-label="정렬 기준">
+            <option value="default">기본 순번/번호순</option>
+            <option value="tier">등급/티어/추천 높은순</option>
+            <option value="name">이름 가나다순</option>
+          </select>
+
+          <div class="view-mode-group" role="group" aria-label="보기 방식">
+            <button type="button" class="view-btn active" data-view="grid" title="카드 그리드 보기">▦ 카드</button>
+            <button type="button" class="view-btn" data-view="table" title="고밀도 테이블 보기">☰ 표</button>
+          </div>
         </div>
-        <div class="growth-toolbar-actions">
-          <button id="growthZoomBtn" class="btn-outline" type="button">
-            <svg viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3M11 8v6M8 11h6" />
-            </svg>
-            크게 보기
-          </button>
-          <a href="assets/growth/underdark_growth.png" download="언더다크_성장.png" class="btn-outline">
-            <svg viewBox="0 0 24 24">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-            </svg>
-            이미지 저장
-          </a>
-        </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- Dynamic Content Container -->
+      <section class="content-stage" id="contentStage" aria-live="polite"></section>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="모바일 하단 메뉴">
+      <button type="button" class="m-nav-item active" data-tab="items">
+        <span class="m-ic">⚔️</span>
+        <span class="m-txt">장비</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="heroes">
+        <span class="m-ic">🦸</span>
+        <span class="m-txt">영웅</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="mercenaries">
+        <span class="m-ic">🛡️</span>
+        <span class="m-txt">용병</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="towers">
+        <span class="m-ic">🏰</span>
+        <span class="m-txt">타워</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="mounts">
+        <span class="m-ic">🦌</span>
+        <span class="m-txt">탈것</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="pets">
+        <span class="m-ic">🐾</span>
+        <span class="m-txt">펫</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="camp">
+        <span class="m-ic">⛺</span>
+        <span class="m-txt">야영지</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="relics">
+        <span class="m-ic">🔮</span>
+        <span class="m-txt">유물·룬</span>
+      </button>
+      <button type="button" class="m-nav-item" data-tab="growth">
+        <span class="m-ic">📈</span>
+        <span class="m-txt">계산기</span>
+      </button>
+    </nav>
   </div>
 
-  <!-- Results Count & Sort & View Toggle -->
-  <div class="results-meta">
-    <div class="results-count">
-      <span id="resultCount" class="count-highlight">0</span><span id="resultUnit">아이템</span>
+  <!-- Detail Modal / Mobile Bottom Sheet -->
+  <div class="modal-backdrop" id="detailModalBackdrop" hidden>
+    <div class="modal-sheet" id="detailModalSheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-drag-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div class="modal-title-wrap" id="modalHeaderContent"></div>
+        <button type="button" class="modal-close-btn" id="closeDetailModalBtn" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body" id="modalBodyContent"></div>
     </div>
-    <div class="results-actions">
-      <div id="sortWrapper" class="sort-wrapper">
-        <select id="sortSelect" class="filter-select filter-select-sm" aria-label="정렬">
-          <option value="default">추천순</option>
-          <option value="grade">등급순</option>
-          <option value="name">이름순</option>
-        </select>
+  </div>
+
+  <!-- Google Sheets Live Sync Configuration Modal -->
+  <div class="modal-backdrop" id="sheetConfigBackdrop" hidden>
+    <div class="modal-sheet modal-sheet-sm" role="dialog" aria-modal="true" aria-labelledby="sheetModalTitle">
+      <div class="modal-drag-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-h2" id="sheetModalTitle">📊 구글 마스터 시트 실시간 연동</h2>
+          <p class="modal-sub">유저 코멘트 · 티어 · 별칭을 구글 스프레드시트에서 실시간으로 불러옵니다.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="closeSheetModalBtn" aria-label="닫기">✕</button>
       </div>
-      <div id="viewModeToggle" class="view-mode-toggle" role="group" aria-label="보기 방식">
-        <button type="button" class="view-btn" data-mode="table" title="표로 보기" aria-label="표로 보기">
-          <svg viewBox="0 0 24 24">
-            <path d="M3 6h18M3 12h18M3 18h18" />
-          </svg>
-        </button>
-        <button type="button" class="view-btn" data-mode="card" title="카드로 보기" aria-label="카드로 보기">
-          <svg viewBox="0 0 24 24">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" />
-            <rect x="3" y="14" width="7" height="7" rx="1.5" />
-            <rect x="14" y="14" width="7" height="7" rx="1.5" />
-          </svg>
-        </button>
+      <div class="modal-body">
+        <div class="sheet-guide-card">
+          <h3>📁 1단계: V2 마스터 시트 파일 준비</h3>
+          <p>프로젝트 폴더에 생성된 <code>Ara_DB_V2_구글시트_마스터.xlsx</code> 파일을 구글 드라이브에 업로드한 뒤 <strong>Google 스프레드시트로
+              저장</strong>하세요.</p>
+          <p class="sheet-tip">💡 시트 탭 구성: <code>아이템</code>, <code>영웅</code>, <code>지원용병</code>, <code>타워</code>,
+            <code>탈것</code>, <code>펫</code>, <code>야영지</code>, <code>유물_룬_스킨</code> (기존 V1 시트와도 자동 호환됩니다)</p>
+        </div>
+
+        <div class="sheet-guide-card">
+          <h3>🔗 2단계: 구글 스프레드시트 주소 또는 ID 입력</h3>
+          <p>구글 시트 우측 상단 <strong>[공유] → 링크가 있는 모든 사용자(뷰어)</strong>로 설정 후 아래에 링크나 시트 ID를 붙여넣으세요.</p>
+          <div class="sheet-input-group">
+            <input type="text" id="sheetIdInput" class="ctrl-input"
+              placeholder="예: https://docs.google.com/spreadsheets/d/1rT0VUnOx.../edit" />
+          </div>
+          <div class="sheet-btn-row">
+            <button type="button" class="btn-primary" id="saveAndSyncSheetBtn">🔄 지금 동기화 및 저장</button>
+            <button type="button" class="btn-secondary" id="resetSheetIdBtn">기본 시트로 복원</button>
+          </div>
+          <div class="sheet-sync-log" id="sheetSyncLog"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Results -->
-  <main class="items-container">
-    <div id="itemsGrid"></div>
-  </main>
-
-  <!-- Scroll To Top -->
-  <button id="scrollTopBtn" class="scroll-top-btn" type="button" aria-label="맨 위로">
-    <svg viewBox="0 0 24 24">
-      <path d="m18 15-6-6-6 6" />
-    </svg>
-  </button>
-
-  <!-- Detail Modal -->
-  <div id="modalOverlay" class="modal-overlay">
-    <div id="modalContent" class="modal-content" role="dialog" aria-modal="true"></div>
-  </div>
-
-  <!-- Data & Scripts -->
-  <script src="data/items.js?v=20261028_2"></script>
-  <script src="data/underdark_all.js?v=20261028_2"></script>
-  <script src="js/search.js?v=20261028_2"></script>
-  <script src="js/sheets_sync.js?v=20261028_2"></script>
-  <script src="js/app.js?v=20261028_2"></script>
+  <!-- Scripts -->
+  <script src="data/db_v2.js?v=20261030_v11"></script>
+  <script src="js/search.js?v=20261030_v11"></script>
+  <script src="js/sheets_sync.js?v=20261030_v11"></script>
+  <script src="js/app.js?v=20261030_v11"></script>
 </body>
 
 </html>

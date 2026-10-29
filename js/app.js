@@ -1,3033 +1,1396 @@
 /**
- * Underdark Web - Main Application Controller
- * Handles Items, Heroes, Mercenaries, and Mounts
+ * Ara DB VER 2.0 — Main Application Controller (js/app.js)
+ * Mobile-First + High-Density Desktop UI
  */
-
 (function () {
   'use strict';
 
-  let rawItemData = null;
-  let expansionData = null; // heroes, mercenaries, mounts
-  let searchEngine = null;
+  const DB = window.ARA_DB_V2;
+  const Search = window.AraSearchV2;
+  const SheetsSync = window.AraSheetsSyncV2;
 
-  // Active Tab: 'items' | 'heroes' | 'mercenaries' | 'mounts' | 'pets'
-  let currentTab = 'items';
+  if (!DB) {
+    console.error('ARA_DB_V2 data not loaded.');
+    return;
+  }
 
-  // State
-  const state = {
-    // Items
+  const STATE = {
+    tab: 'items',
     query: '',
-    category: 'all',
-    range: 'all',
-    tier: 'all',
-    usage: 'all',
-    tags: [],
-    drop: 'all',
-    awakeningLevel: 0,
+    viewMode: window.innerWidth <= 860 ? 'grid' : 'table',
     sortBy: 'default',
-
-    // Heroes
-    heroTier: 'all',
-    heroGrade: 'all',
-    heroLevel: 'base', // 'base' | '3' | '6' | '9' | '12' | '15'
-
-    // Mercenaries
-    mercGrade: 'all',
-    mercRec: 'all',
-    mercTier: 'SSS', // 'B' | 'A' | 'S' | 'SS' | 'SSS'
-
-    // Pets
-    petTier: 'all',
-    petDrop: 'all',
-
-    // Camp (구조물 / 소품)
-    campType: 'all', // 'all' | 'structure' | 'prop'
-    campLevel: 'all', // 'all' | '0' | '20' | '40' | '60'
-    campCommonExpanded: true,
+    globalAwk: '0',
+    filters: {
+      items: { cat: 'all', range: 'all', grade: 'all', usage: 'all' },
+      heroes: { grade: 'all', tier: 'all' },
+      mercenaries: { recommend: 'all', grade: 'all' },
+      towers: { grade: 'all', deck: 'all' },
+      mounts: { pool: 'all', subView: 'list' },
+      pets: { grade: 'all', subView: 'list' },
+      camp: { type: 'all', level: 'all', subView: 'list' },
+      relics: { subType: 'relic' },
+    },
   };
 
-  // -------------------------------------------------------------
-  // Data Grid Table Sorting State & Ranking Definitions
-  // -------------------------------------------------------------
-  const tabSortState = {
-    items: { col: null, dir: 'desc' },
-    heroes: { col: null, dir: 'desc' },
-    mercenaries: { col: null, dir: 'desc' },
-    mounts: { col: 'no', dir: 'asc' },
-    pets: { col: 'no', dir: 'asc' },
-    camp: { col: 'no', dir: 'asc' },
+  const QUICK_CHIPS_BY_TAB = {
+    items: [
+      { label: '🔥 S등급', q: 'S+' },
+      { label: '💥 치피>=60', q: '치피>=60' },
+      { label: '🏹 투사체>=1', q: '투사체>=1' },
+      { label: '⚡ 공속>=40', q: '공속>=40' },
+      { label: '🎯 관통', q: '관통' },
+      { label: '💀 처형', q: '처형' },
+      { label: '💫 스턴', q: '스턴' },
+      { label: '❄️ 감속', q: '감속' },
+      { label: '🌊 스플래시', q: '스플래시' },
+    ],
+    heroes: [
+      { label: '🔥 SSS티어', q: 'SSS' },
+      { label: '⭐ SS티어', q: 'SS' },
+      { label: '💥 치명타', q: '치명타' },
+      { label: '💫 스턴', q: '스턴' },
+      { label: '❄️ 감속', q: '감속' },
+      { label: '👑 보스', q: '보스' },
+    ],
+    mercenaries: [
+      { label: '🌟 SSS추천', q: 'SSS' },
+      { label: '⭐ SS추천', q: 'SS' },
+      { label: '👍 S추천', q: 'S' },
+      { label: '⚔️ 공격력', q: '공격력' },
+      { label: '💥 치명타', q: '치명타' },
+      { label: '⚡ 공격 속도', q: '공격 속도' },
+    ],
+    towers: [
+      { label: '🏆 영웅덱 추천', q: '영웅덱' },
+      { label: '⚔️ 공격력 버프', q: '공격력' },
+      { label: '⚡ 공격속도 버프', q: '공격 속도' },
+      { label: '💥 치명타', q: '치명타' },
+      { label: '💫 스턴/기절', q: '스턴' },
+    ],
+    mounts: [
+      { label: '💎 고급 합성', q: '고급 합성' },
+      { label: '🎲 일반 합성', q: '일반 합성' },
+      { label: '⚔️ 영웅 공격력', q: '영웅의 공격력' },
+      { label: '🏰 타워 공격력', q: '타워의 공격력' },
+      { label: '💥 치명타 피해', q: '치명타 피해' },
+    ],
+    pets: [
+      { label: '🔥 S등급', q: 'S+' },
+      { label: '⭐ A등급', q: 'A+' },
+      { label: '⚔️ 공격력', q: '공격력' },
+      { label: '💥 치명타', q: '치명타' },
+      { label: '👑 보스 피해', q: '보스' },
+    ],
+    camp: [
+      { label: '🏛️ 구조물', q: '구조물' },
+      { label: '🏺 소품', q: '소품' },
+      { label: '🌄 배경', q: '배경' },
+      { label: '🔓 기본 해금', q: '기본' },
+      { label: '⚔️ 공격력', q: '공격력' },
+      { label: '💥 치명타', q: '치명타' },
+    ],
+    relics: [
+      { label: '🔮 유물', q: '쿨타임' },
+      { label: '💠 룬', q: '룬' },
+      { label: '👗 치명타 스킨', q: '치명타' },
+      { label: '⚔️ 공격력 스킨', q: '공격력' },
+    ],
+    growth: [],
   };
 
-  const GRADE_RANKS = {
-    '신화': 60,
-    '전설': 50,
-    '영웅': 40,
-    '희귀': 30,
-    '고급': 20,
-    '일반': 10
+  const TAB_TITLES = {
+    items: '⚔️ 장비 도감 (공식 0~5각성)',
+    heroes: '🦸 영웅 · 스킨 도감',
+    mercenaries: '🛡️ 지원용병 도감 (B~SSS)',
+    towers: '🏰 타워 · 인게임 웨이브 버프 도감',
+    mounts: '🦌 탈것 도감 · 부옵션/강화표',
+    pets: '🐾 펫 도감 · 드랍 가이드',
+    camp: '⛺ 야영지 도감 (구조물·소품·배경)',
+    relics: '🔮 유물 · 룬 · 스킨 도감',
+    growth: '📈 공식 성장 테이블 & 스탯 계산기',
   };
 
-  function parseTierRank(tier) {
-    if (!tier) return 0;
-    const baseMap = { SSS: 100, SS: 85, S: 70, A: 55, B: 40, C: 30, D: 20, E: 10, F: 0 };
-    for (const [key, base] of Object.entries(baseMap)) {
-      if (tier.startsWith(key)) {
-        if (tier.endsWith('+')) return base + 4;
-        if (tier.endsWith('-')) return base - 4;
-        return base;
-      }
+  // DOM Elements
+  const els = {
+    searchInput: document.getElementById('globalSearchInput'),
+    clearSearchBtn: document.getElementById('clearSearchBtn'),
+    crossMatchBar: document.getElementById('crossMatchBar'),
+    primaryNav: document.getElementById('primaryNav'),
+    mobileBottomNav: document.getElementById('mobileBottomNav'),
+    contextToolbar: document.getElementById('contextToolbar'),
+    quickChipsBar: document.getElementById('quickChipsBar'),
+    resultsHeader: document.getElementById('resultsHeader'),
+    resultsCategoryTitle: document.getElementById('resultsCategoryTitle'),
+    resultsCountBadge: document.getElementById('resultsCountBadge'),
+    activeFilterSummary: document.getElementById('activeFilterSummary'),
+    awkGlobalToggleWrap: document.getElementById('awkGlobalToggleWrap'),
+    globalAwkSeg: document.getElementById('globalAwkSeg'),
+    sortSelect: document.getElementById('sortSelect'),
+    contentStage: document.getElementById('contentStage'),
+    detailModalBackdrop: document.getElementById('detailModalBackdrop'),
+    modalHeaderContent: document.getElementById('modalHeaderContent'),
+    modalBodyContent: document.getElementById('modalBodyContent'),
+    closeDetailModalBtn: document.getElementById('closeDetailModalBtn'),
+    sheetConfigBackdrop: document.getElementById('sheetConfigBackdrop'),
+    openSheetModalBtn: document.getElementById('openSheetModalBtn'),
+    closeSheetModalBtn: document.getElementById('closeSheetModalBtn'),
+    sheetIdInput: document.getElementById('sheetIdInput'),
+    saveAndSyncSheetBtn: document.getElementById('saveAndSyncSheetBtn'),
+    resetSheetIdBtn: document.getElementById('resetSheetIdBtn'),
+    sheetSyncLog: document.getElementById('sheetSyncLog'),
+    syncStatusDot: document.getElementById('syncStatusDot'),
+    syncStatusText: document.getElementById('syncStatusText'),
+    themeToggleBtn: document.getElementById('themeToggleBtn'),
+    themeIcon: document.getElementById('themeIcon'),
+    brandHomeBtn: document.getElementById('brandHomeBtn'),
+  };
+
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function tierBadgeClass(tierStr) {
+    const s = String(tierStr || '').trim().toUpperCase();
+    if (!s) return '';
+    if (s.startsWith('SSS') || s.startsWith('SS') || s.startsWith('S') || s === 'O' || s.includes('필수') || s === '추천') return 'badge-tier-0';
+    if (s.startsWith('A') || s === '△') return 'badge-tier-1';
+    if (s.startsWith('B')) return 'badge-tier-2';
+    return '';
+  }
+
+  function tierRankScore(item) {
+    const t = String(item.tier || item.grade || item.recommend || item.heroDeckRec || '').trim().toUpperCase();
+    if (!t) return 99;
+    if (t === 'SSS') return 1;
+    if (t === 'SSS-') return 2;
+    if (t === 'SS' || t.includes('필수')) return 3;
+    if (t === 'S+' || t === 'S~S+' || t === 'S+~S') return 4;
+    if (t === 'S' || t === '추천') return 5;
+    if (t === 'S-' || t === 'S~S-' || t === 'S-~A+') return 6;
+    if (t === 'A+') return 7;
+    if (t === 'A' || t === 'A~A+') return 8;
+    if (t === 'A-' || t === 'A~A-') return 9;
+    if (t === 'B+' || t === 'B~B+') return 10;
+    if (t === 'B') return 11;
+    if (t === 'B-' || t === 'B~B-') return 12;
+    if (t.startsWith('C')) return 13;
+    if (t.startsWith('D')) return 14;
+    if (t.startsWith('E')) return 15;
+    if (t.startsWith('F') || t === 'X' || t === 'J') return 16;
+    return 99;
+  }
+
+  // =========================================================================
+  // Official Item Main Stat Calculator Helper
+  // =========================================================================
+  const GRADE_COL_MAP = {
+    '4': ['Att_Basic', 'Att_LvUp'],
+    '3': ['AllAtt_Basic', 'AllAtt_LvUp'],
+    '1': ['Tower_Basic', 'Tower_LvUp'],
+    '10': ['Hp_Basic', 'Hp_LvUp'],
+  };
+  const AWK_MAIN_BONUS = [0, 50, 120, 200, 300, 400];
+
+  function calculateItemMainStat(item, gradeIdx, level, qualityPct, awkLv) {
+    const gradeTable = (DB.itemMeta && DB.itemMeta.gradeTable) || [];
+    const gRow = gradeTable[gradeIdx] || gradeTable[7] || {};
+    const statCode = (item.basicStat && item.basicStat.statCode) || '4';
+    const cols = GRADE_COL_MAP[statCode] || GRADE_COL_MAP['4'];
+    const basic = parseFloat(gRow[cols[0]] || 0);
+    const lvUp = parseFloat(gRow[cols[1]] || 0);
+    const effLv = Math.min(Math.max(1, parseInt(level, 10) || 1), 400);
+    const q = Math.min(1.1, Math.max(0.9, parseFloat(qualityPct || 100) / 100));
+
+    let s = q * (basic + lvUp * (effLv - 1));
+    if (item.cat === 'ring' || (item.basicStat && item.basicStat.isRing)) {
+      s *= 0.3;
     }
-    return 0;
-  }
 
-  const REC_RANKS = {
-    'SSS': 100,
-    'SS': 90,
-    'S': 80,
-    'A': 70,
-    'B': 60,
-    'J': 55,
-    'C': 50,
-    'X': 10
-  };
-
-  const USAGE_RANKS = {
-    'O': 40,
-    '△': 30,
-    'X': 20,
-    'XX': 10
-  };
-
-  function renderTh(colKey, label, style = '', isCenter = false) {
-    const cur = tabSortState[currentTab] || {};
-    const isActive = cur.col === colKey;
-    const dir = cur.dir || 'desc';
-    const alignClass = isCenter ? 'text-center' : '';
-    const sortedClass = isActive ? `is-sorted sort-${dir}` : '';
-    const arrow = isActive ? (dir === 'asc' ? '▲' : '▼') : '↕';
-    const sortTitle = isActive
-      ? (dir === 'asc' ? `${label} (현재 오름차순, 클릭 시 내림차순)` : `${label} (현재 내림차순, 클릭 시 오름차순)`)
-      : `${label} (클릭하여 정렬)`;
-
-    return `
-      <th class="sortable-th ${alignClass} ${sortedClass}" data-sort-col="${colKey}" style="${style}" title="${sortTitle}" role="button" tabindex="0">
-        <div class="th-inner">
-          <span class="th-label">${label}</span>
-          <span class="sort-indicator" aria-hidden="true">${arrow}</span>
-        </div>
-      </th>
-    `;
-  }
-
-  function handleTableSortClick(colKey) {
-    const cur = tabSortState[currentTab];
-    if (!cur) return;
-
-    if (cur.col === colKey) {
-      cur.dir = cur.dir === 'asc' ? 'desc' : 'asc';
-    } else {
-      cur.col = colKey;
-      if (['tier', 'grade', 'stars', 'recommend', 'usage', 'buff'].includes(colKey)) {
-        cur.dir = 'desc';
+    const bonus = (gradeIdx === 7 && awkLv > 0) ? (AWK_MAIN_BONUS[awkLv] || 0) : 0;
+    if (bonus > 0) {
+      if (item.cat === 'weapon' && statCode === '4') {
+        s = (100 + s) * (1 + bonus / 100) - 100;
       } else {
-        cur.dir = 'asc';
+        s = s * (1 + bonus / 100);
       }
     }
 
-    syncSortSelectValue();
-    renderActiveView();
-  }
-
-  function getHeroStarsCount(hero, hl) {
-    if (hl && hl !== 'base') {
-      const lvInfo = hero.levels ? (hero.levels[hl] || (hl === '15' ? (hero.levels['16'] || hero.levels['17'] || hero.levels['18']) : null)) : null;
-      if (lvInfo && lvInfo.stars) {
-        return (lvInfo.stars.match(/★/g) || []).length;
-      }
-      return 0;
+    const mainPct = Math.round(s);
+    let weaponFinalAtk = null;
+    if (item.weaponSpecs && item.weaponSpecs.atk > 0) {
+      weaponFinalAtk = Math.round(item.weaponSpecs.atk * (1 + s / 100));
     }
-    let total = 0;
-    if (hero.levels) {
-      Object.values(hero.levels).forEach(lv => {
-        if (lv && lv.stars) total += (lv.stars.match(/★/g) || []).length;
-      });
+    return { mainPct, weaponFinalAtk };
+  }
+
+  // =========================================================================
+  // Context Filter Bar Builder
+  // =========================================================================
+  function renderContextToolbar() {
+    const tab = STATE.tab;
+    els.awkGlobalToggleWrap.style.display = tab === 'items' ? 'flex' : 'none';
+    els.resultsHeader.style.display = tab === 'growth' ? 'none' : 'flex';
+
+    if (tab === 'growth') {
+      els.contextToolbar.style.display = 'none';
+      return;
     }
-    return total;
-  }
-
-  function sortItemsList(items, col, dir) {
-    if (!col || col === 'default') return items;
-    const sorted = [...items];
-    const mult = dir === 'asc' ? 1 : -1;
-
-    sorted.sort((a, b) => {
-      let res = 0;
-      if (col === 'name') {
-        res = a.name.localeCompare(b.name, 'ko');
-      } else if (col === 'tier') {
-        const scoreA = 100 - (a.gradeRank !== null && a.gradeRank !== undefined ? a.gradeRank : 999);
-        const scoreB = 100 - (b.gradeRank !== null && b.gradeRank !== undefined ? b.gradeRank : 999);
-        res = scoreA - scoreB;
-      } else if (col === 'usage') {
-        const ua = USAGE_RANKS[a.usage] || 0;
-        const ub = USAGE_RANKS[b.usage] || 0;
-        res = ua - ub;
-      } else if (col === 'range') {
-        res = (a.range || '').localeCompare(b.range || '', 'ko');
-      } else if (col === 'drops') {
-        const da = (a.drops && a.drops[0]) || '';
-        const db = (b.drops && b.drops[0]) || '';
-        res = da.localeCompare(db, 'ko');
-      }
-      if (res !== 0) return res * mult;
-      return (a.no || 0) - (b.no || 0);
-    });
-
-    return sorted;
-  }
-
-  function sortHeroesList(heroes, col, dir, hl) {
-    if (!col || col === 'default') return heroes;
-    const sorted = [...heroes];
-    const mult = dir === 'asc' ? 1 : -1;
-
-    sorted.sort((a, b) => {
-      let res = 0;
-      if (col === 'name') {
-        res = a.name.localeCompare(b.name, 'ko');
-      } else if (col === 'tier') {
-        const ta = parseTierRank(a.tier);
-        const tb = parseTierRank(b.tier);
-        res = ta - tb;
-      } else if (col === 'stars') {
-        const sa = getHeroStarsCount(a, hl);
-        const sb = getHeroStarsCount(b, hl);
-        res = sa - sb;
-      } else if (col === 'grade') {
-        const ga = GRADE_RANKS[a.grade] || 0;
-        const gb = GRADE_RANKS[b.grade] || 0;
-        res = ga - gb;
-      }
-
-      if (res !== 0) return res * mult;
-      return (a.no || 0) - (b.no || 0) || a.name.localeCompare(b.name, 'ko');
-    });
-
-    return sorted;
-  }
-
-  function sortMercenariesList(mercs, col, dir, currentTier) {
-    if (!col || col === 'default') return mercs;
-    const sorted = [...mercs];
-    const mult = dir === 'asc' ? 1 : -1;
-
-    sorted.sort((a, b) => {
-      let res = 0;
-      if (col === 'name') {
-        res = a.name.localeCompare(b.name, 'ko');
-      } else if (col === 'grade') {
-        const ga = GRADE_RANKS[a.grade] || 0;
-        const gb = GRADE_RANKS[b.grade] || 0;
-        res = ga - gb;
-      } else if (col === 'recommend') {
-        const ra = REC_RANKS[a.recommend] || 0;
-        const rb = REC_RANKS[b.recommend] || 0;
-        res = ra - rb;
-      } else if (col === 'buff') {
-        const getNum = m => {
-          const v = m.tierValues ? m.tierValues[currentTier] : null;
-          if (!v) return -999999;
-          const parsed = parseFloat(v);
-          return isNaN(parsed) ? 0 : parsed;
-        };
-        res = getNum(a) - getNum(b);
-      } else if (col === 'level') {
-        res = (a.no || 0) - (b.no || 0);
-      }
-
-      if (res !== 0) return res * mult;
-      return a.name.localeCompare(b.name, 'ko');
-    });
-
-    return sorted;
-  }
-
-  function sortMountsList(mounts, col, dir) {
-    if (!col || col === 'default') col = 'no';
-    const sorted = [...mounts];
-    const mult = dir === 'asc' ? 1 : -1;
-
-    sorted.sort((a, b) => {
-      let res = 0;
-      if (col === 'no') {
-        res = (a.no || 0) - (b.no || 0);
-      } else if (col === 'name') {
-        res = a.name.localeCompare(b.name, 'ko');
-      }
-
-      if (res !== 0) return res * mult;
-      return (a.no || 0) - (b.no || 0);
-    });
-
-    return sorted;
-  }
-
-  function sortPetsList(pets, col, dir) {
-    if (!col || col === 'default') col = 'no';
-    const sorted = [...pets];
-    const mult = dir === 'asc' ? 1 : -1;
-
-    sorted.sort((a, b) => {
-      let res = 0;
-      if (col === 'no') {
-        res = (a.no || 0) - (b.no || 0);
-      } else if (col === 'name') {
-        res = a.name.localeCompare(b.name, 'ko');
-      } else if (col === 'tier') {
-        const ta = parseTierRank(a.tier);
-        const tb = parseTierRank(b.tier);
-        res = ta - tb;
-      } else if (col === 'drops') {
-        const da = (a.drops && a.drops[0]) || a.dropRaw || '';
-        const db = (b.drops && b.drops[0]) || b.dropRaw || '';
-        res = da.localeCompare(db, 'ko');
-      }
-
-      if (res !== 0) return res * mult;
-      return (a.no || 0) - (b.no || 0);
-    });
-
-    return sorted;
-  }
-
-  function updateSortSelectForTab(tab) {
-    if (!elSortSelect || !elSortWrapper) return;
-    elSortWrapper.style.display = 'flex';
+    els.contextToolbar.style.display = 'flex';
 
     let html = '';
     if (tab === 'items') {
-      html = `
-        <option value="default">기본 추천순</option>
-        <option value="tier_desc">티어 높은순 (S+ ❯ F-)</option>
-        <option value="tier_asc">티어 낮은순 (F- ❯ S+)</option>
-        <option value="usage_desc">용도 추천순 (O ❯ XX)</option>
-        <option value="name_asc">아이템 이름순 (ㄱ~ㅎ)</option>
-        <option value="name_desc">아이템 이름 역순 (ㅎ~ㄱ)</option>
-        <option value="range_asc">사거리순 (근거리 ❯ 원거리)</option>
-        <option value="drops_asc">드랍처순 (가나다)</option>
-      `;
-      if (rawItemData && rawItemData.statDefs) {
-        const popularStats = [
-          'hero_crit_dmg', 'tower_atk_mult', 'all_atk', 'projectile',
-          'hero_atk_speed', 'double_attack', 'status_bonus', 'immune_bonus', 'hero_hp'
-        ];
-        const statOptions = popularStats
-          .map(k => {
-            const s = rawItemData.statDefs[k];
-            return s ? `<option value="stat_${k}">${s.label} (${s.unit})</option>` : '';
-          })
-          .filter(Boolean)
-          .join('');
-        if (statOptions) {
-          html += `<optgroup label="주요 능력치 수치순">${statOptions}</optgroup>`;
-        }
-      }
+      const f = STATE.filters.items;
+      html += buildFilterRow('분류', 'cat', f.cat, [
+        ['all', '전체 (208)'],
+        ['weapon', '주 무기'],
+        ['sub', '보조 무기'],
+        ['helmet', '투구'],
+        ['ring', '반지'],
+        ['etc', '기타'],
+      ]);
+      html += buildFilterRow('근/원', 'range', f.range, [
+        ['all', '전체'],
+        ['근거리', '근거리'],
+        ['원거리', '원거리'],
+      ]);
+      html += buildFilterRow('등급', 'grade', f.grade, [
+        ['all', '전체'],
+        ['S', 'S등급 (S+/S/S-)'],
+        ['A', 'A등급 (A+/A/A-)'],
+        ['B', 'B등급 (B+/B/B-)'],
+        ['C', 'C등급 (C+/C/C-)'],
+        ['D', 'D등급'],
+        ['E', 'E등급'],
+        ['F', 'F등급'],
+      ]);
+      html += buildFilterRow('사용여부', 'usage', f.usage, [
+        ['all', '전체'],
+        ['O', '⭕ O (사용)'],
+        ['△', '🔺 △ (상황별)'],
+        ['X', '❌ X (미사용)'],
+      ]);
     } else if (tab === 'heroes') {
-      html = `
-        <option value="default">기본 순서</option>
-        <option value="tier_desc">티어 높은순 (SSS ❯ F)</option>
-        <option value="tier_asc">티어 낮은순 (F ❯ SSS)</option>
-        <option value="stars_desc">추천 별점 높은순 (★★★★★)</option>
-        <option value="grade_desc">등급 높은순 (신화 ❯ 일반)</option>
-        <option value="name_asc">영웅 이름순 (ㄱ~ㅎ)</option>
-        <option value="name_desc">영웅 이름 역순 (ㅎ~ㄱ)</option>
-      `;
+      const f = STATE.filters.heroes;
+      html += buildFilterRow('등급', 'grade', f.grade, [
+        ['all', '전체 (35)'],
+        ['전설', '전설'],
+        ['희귀', '희귀'],
+        ['일반', '일반'],
+      ]);
+      html += buildFilterRow('티어', 'tier', f.tier, [
+        ['all', '전체'],
+        ['SSS', 'SSS (SSS/SSS-)'],
+        ['SS', 'SS'],
+        ['S', 'S'],
+        ['A', 'A'],
+        ['B', 'B'],
+        ['C', 'C'],
+        ['D', 'D~F'],
+      ]);
     } else if (tab === 'mercenaries') {
-      html = `
-        <option value="default">기본 순서</option>
-        <option value="recommend_desc">추천도 높은순 (SSS ❯ X)</option>
-        <option value="recommend_asc">추천도 낮은순 (X ❯ SSS)</option>
-        <option value="grade_desc">등급 높은순 (신화 ❯ 일반)</option>
-        <option value="buff_desc">선택 버프 수치 높은순</option>
-        <option value="buff_asc">선택 버프 수치 낮은순</option>
-        <option value="name_asc">용병 이름순 (ㄱ~ㅎ)</option>
-        <option value="name_desc">용병 이름 역순 (ㅎ~ㄱ)</option>
-      `;
+      const f = STATE.filters.mercenaries;
+      html += buildFilterRow('추천', 'recommend', f.recommend, [
+        ['all', '전체 (35)'],
+        ['SSS', 'SSS (최고!)'],
+        ['SS', 'SS (최고!)'],
+        ['S', 'S (최고!)'],
+        ['A', 'A (자주 사용)'],
+        ['B', 'B (그럭저럭)'],
+        ['C', 'C (종종 사용)'],
+        ['J', 'J (자사)'],
+        ['X', 'X (사용안함)'],
+      ]);
+      html += buildFilterRow('등급', 'grade', f.grade, [
+        ['all', '전체'],
+        ['전설', '전설'],
+        ['희귀', '희귀'],
+        ['일반', '일반'],
+      ]);
+    } else if (tab === 'towers') {
+      const f = STATE.filters.towers;
+      html += buildFilterRow('등급', 'grade', f.grade, [
+        ['all', '전체 (46)'],
+        ['전설', '전설'],
+        ['희귀', '희귀'],
+        ['일반', '일반'],
+      ]);
+      html += buildFilterRow('영웅덱', 'deck', f.deck, [
+        ['all', '전체 타워'],
+        ['heroDeck', '영웅덱 추천 타워만'],
+      ]);
     } else if (tab === 'mounts') {
-      html = `
-        <option value="no_asc">도감 번호순 (1 ❯ 57)</option>
-        <option value="no_desc">도감 번호 역순 (57 ❯ 1)</option>
-        <option value="name_asc">탈것 이름순 (ㄱ~ㅎ)</option>
-        <option value="name_desc">탈것 이름 역순 (ㅎ~ㄱ)</option>
-      `;
-    } else if (tab === 'pets') {
-      html = `
-        <option value="no_asc">도감 번호순 (1 ❯ 26)</option>
-        <option value="no_desc">도감 번호 역순 (26 ❯ 1)</option>
-        <option value="tier_desc">티어 높은순 (S+ ❯ F-)</option>
-        <option value="tier_asc">티어 낮은순 (F- ❯ S+)</option>
-        <option value="name_asc">펫 이름순 (ㄱ~ㅎ)</option>
-        <option value="name_desc">펫 이름 역순 (ㅎ~ㄱ)</option>
-        <option value="drops_asc">획득처순 (가나다)</option>
-      `;
-    } else if (tab === 'camp') {
-      html = `
-        <option value="default">기본 순서 (구조물 ❯ 소품)</option>
-        <option value="no_asc">번호순 (오름차순)</option>
-        <option value="no_desc">번호순 (내림차순)</option>
-        <option value="level_asc">획득 레벨 낮은순 (0렙 ❯ 60렙)</option>
-        <option value="level_desc">획득 레벨 높은순 (60렙 ❯ 0렙)</option>
-        <option value="type_asc">구분순 (구조물 ❯ 소품)</option>
-        <option value="type_desc">구분순 (소품 ❯ 구조물)</option>
-        <option value="name_asc">이름순 (ㄱ~ㅎ)</option>
-        <option value="name_desc">이름 역순 (ㅎ~ㄱ)</option>
-      `;
-    }
-
-    elSortSelect.innerHTML = html;
-    syncSortSelectValue();
-  }
-
-  function syncSortSelectValue() {
-    if (!elSortSelect) return;
-    const cur = tabSortState[currentTab];
-    if (!cur || !cur.col || cur.col === 'default') {
-      elSortSelect.value = 'default';
-      return;
-    }
-    if (cur.col.startsWith('stat_')) {
-      elSortSelect.value = cur.col;
-      return;
-    }
-    const val = `${cur.col}_${cur.dir}`;
-    if (elSortSelect.querySelector(`option[value="${val}"]`)) {
-      elSortSelect.value = val;
-    }
-  }
-
-  // DOM Elements
-  let elGlobalNav;
-  let elHeroTitle;
-  let elHeroSubtitle;
-  let elSearchInput;
-  let elSearchClear;
-  let elSearchHints;
-
-  // Control Sections
-  let elItemControls;
-  let elHeroControls;
-  let elMercControls;
-  let elMountControls;
-  let elPetControls;
-  let elCampControls;
-  let elGrowthControls;
-
-  // Camp Controls
-  let elCampTypeFilter;
-  let elCampLevelSteps;
-  let elCampCommonToggleBtn;
-
-  // Growth Controls
-  let elGrowthZoomBtn;
-
-  // Item Controls
-  let elCatTabs;
-  let elAwakeningSteps;
-  let elRangeFilter;
-  let elTierFilter;
-  let elUsageFilter;
-  let elDropFilter;
-  let elTagChips;
-  let elSortSelect;
-  let elSortWrapper;
-
-  // Hero Controls
-  let elHeroLevelSteps;
-  let elHeroTierFilter;
-  let elHeroGradeFilter;
-
-  // Merc Controls
-  let elMercTierSteps;
-  let elMercGradeFilter;
-  let elMercRecFilter;
-
-  // Mount Controls
-  let elMountGuideBtn;
-
-  // Pet Controls
-  let elPetTierFilter;
-  let elPetDropFilter;
-  let elPetGuideBtn;
-
-  // Filter Toggle & Sticky & ScrollTop
-  let elFilterToggle;
-  let elFilterPanel;
-  let elFilterCount;
-  let elScrollTopBtn;
-
-  // Results
-  let elItemsGrid;
-  let elResultCount;
-  let elResultUnit;
-  let elModalOverlay;
-  let elModalContent;
-
-  // View Mode: 'table' or 'card' (Default on mobile < 768px is 'card', PC >= 768px is 'table')
-  let userExplicitViewMode = localStorage.getItem('ara_view_mode');
-  let currentViewMode = userExplicitViewMode || (window.innerWidth < 768 ? 'card' : 'table');
-  let elViewModeToggle;
-  let elAdminBtn;
-
-  document.addEventListener('DOMContentLoaded', init);
-
-  async function init() {
-    cacheDom();
-    await loadAllData();
-    setupEngine();
-    renderInitialFilters();
-    initFilterPanelState();
-    bindEvents();
-    readUrlParams();
-    updateViewToggleButtons();
-    switchTab(currentTab);
-  }
-
-  function cacheDom() {
-    elGlobalNav = document.getElementById('globalNav');
-    elHeroTitle = document.getElementById('heroTitle');
-    elHeroSubtitle = document.getElementById('heroSubtitle');
-    elSearchInput = document.getElementById('searchInput');
-    elSearchClear = document.getElementById('searchClear');
-    elSearchHints = document.getElementById('searchHints');
-
-    elFilterToggle = document.getElementById('filterToggle');
-    elFilterPanel = document.getElementById('filterPanel');
-    elFilterCount = document.getElementById('filterCount');
-    elScrollTopBtn = document.getElementById('scrollTopBtn');
-
-    elItemControls = document.getElementById('itemControlSection');
-    elHeroControls = document.getElementById('heroControlSection');
-    elMercControls = document.getElementById('mercControlSection');
-    elMountControls = document.getElementById('mountControlSection');
-    elPetControls = document.getElementById('petControlSection');
-    elCampControls = document.getElementById('campControlSection');
-    elGrowthControls = document.getElementById('growthControlSection');
-
-    // Camp
-    elCampTypeFilter = document.getElementById('campTypeFilter');
-    elCampCommonToggleBtn = document.getElementById('campCommonToggleBtn');
-
-    // Growth
-    elGrowthZoomBtn = document.getElementById('growthZoomBtn');
-
-    // Item
-    elCatTabs = document.getElementById('categoryTabs');
-    elAwakeningSteps = document.getElementById('awakeningSteps');
-    elRangeFilter = document.getElementById('rangeFilter');
-    elTierFilter = document.getElementById('tierFilter');
-    elUsageFilter = document.getElementById('usageFilter');
-    elDropFilter = document.getElementById('dropFilter');
-    elTagChips = document.getElementById('tagChips');
-    elSortSelect = document.getElementById('sortSelect');
-    elSortWrapper = document.getElementById('sortWrapper');
-
-    // Hero
-    elHeroLevelSteps = document.getElementById('heroLevelSteps');
-    elHeroTierFilter = document.getElementById('heroTierFilter');
-    elHeroGradeFilter = document.getElementById('heroGradeFilter');
-
-    // Merc
-    elMercTierSteps = document.getElementById('mercTierSteps');
-    elMercGradeFilter = document.getElementById('mercGradeFilter');
-    elMercRecFilter = document.getElementById('mercRecFilter');
-
-    // Mount
-    elMountGuideBtn = document.getElementById('mountGuideBtn');
-
-    // Pet
-    elPetTierFilter = document.getElementById('petTierFilter');
-    elPetDropFilter = document.getElementById('petDropFilter');
-    elPetGuideBtn = document.getElementById('petGuideBtn');
-
-    // Results & Modal
-    elItemsGrid = document.getElementById('itemsGrid');
-    elResultCount = document.getElementById('resultCount');
-    elResultUnit = document.getElementById('resultUnit');
-    elModalOverlay = document.getElementById('modalOverlay');
-    elModalContent = document.getElementById('modalContent');
-    elViewModeToggle = document.getElementById('viewModeToggle');
-    elAdminBtn = document.getElementById('adminBtn');
-  }
-
-  async function loadAllData() {
-    try {
-      localStorage.removeItem('underdark_live_expansion_cache');
-      localStorage.removeItem('underdark_live_expansion_cache_v2');
-      localStorage.removeItem('underdark_live_expansion_cache_v3');
-      localStorage.removeItem('underdark_items_data');
-    } catch (e) { }
-
-    // 1. Items Data
-    if (window.UNDERDARK_DATA) {
-      rawItemData = window.UNDERDARK_DATA;
-    }
-    if (!rawItemData) {
-      try {
-        const res = await fetch('data/items.json');
-        rawItemData = await res.json();
-      } catch (e) { }
-    }
-
-    // 2. Expansion Data (Heroes, Mercs, Mounts, Pets)
-    const cachedLive = window.SheetsSync ? window.SheetsSync.getCachedData() : null;
-    if (cachedLive && cachedLive.items && cachedLive.items.length && rawItemData) {
-      rawItemData = { ...rawItemData, items: cachedLive.items };
-      if (window.UNDERDARK_DATA) window.UNDERDARK_DATA.items = cachedLive.items;
-    }
-    const baseCamp = (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp) || null;
-    if (cachedLive && cachedLive.heroes && cachedLive.heroes.length) {
-      expansionData = {
-        ...cachedLive,
-        camp: baseCamp || cachedLive.camp
-      };
-    } else if (window.UNDERDARK_EXPANSION) {
-      expansionData = window.UNDERDARK_EXPANSION;
-    } else {
-      try {
-        const [hRes, mRes, mtRes, pRes, cRes] = await Promise.all([
-          fetch('data/heroes.json'),
-          fetch('data/mercenaries.json'),
-          fetch('data/mounts.json'),
-          fetch('data/pets.json'),
-          fetch('data/camp.json')
+      const f = STATE.filters.mounts;
+      html += buildFilterRow('화면보기', 'subView', f.subView, [
+        ['list', '🦌 탈것 도감 (57종)'],
+        ['subOptions', '📋 탈것 부옵션 30종 표'],
+        ['upgrade', '⬆️ 탈것 강화 확률·사료 표'],
+      ]);
+      if (f.subView === 'list') {
+        html += buildFilterRow('합성분류', 'pool', f.pool, [
+          ['all', '전체 (57종)'],
+          ['일반 합성', '일반 합성 (1~29번 · 29종)'],
+          ['고급 합성', '고급 합성 (30~57번 · 28종)'],
         ]);
-        const petJson = await pRes.json();
-        const campJson = cRes.ok ? await cRes.json() : null;
-        expansionData = {
-          heroes: await hRes.json(),
-          mercenaries: await mRes.json(),
-          mounts: (await mtRes.json()).mounts || [],
-          mountSubOptions: (await mtRes.json()).subOptions || [],
-          pets: petJson.pets || [],
-          petGuide: petJson.guide || {},
-          camp: campJson
-        };
-      } catch (e) {
-        console.warn('Could not load expansion data json', e);
       }
-    }
-
-    if (expansionData && !expansionData.camp) {
-      if (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp) {
-        expansionData.camp = window.UNDERDARK_EXPANSION.camp;
-      } else {
-        try {
-          const cRes = await fetch('data/camp.json');
-          if (cRes.ok) expansionData.camp = await cRes.json();
-        } catch (e) {
-          console.warn('Could not load camp.json fallback', e);
-        }
-      }
-    }
-
-    // Trigger silent background revalidation with Google Sheets
-    if (window.SheetsSync) {
-      setTimeout(() => {
-        triggerBackgroundSheetSync(false);
-      }, 300);
-    }
-  }
-
-  function setupEngine() {
-    if (rawItemData) {
-      searchEngine = new window.UnderdarkSearch(rawItemData);
-    }
-  }
-
-  function renderInitialFilters() {
-    if (!rawItemData) return;
-
-    // Item Categories
-    elCatTabs.innerHTML = `
-      <button class="cat-tab ${state.category === 'all' ? 'active' : ''}" data-cat="all">전체</button>
-      ${rawItemData.categories.map(c => `
-        <button class="cat-tab ${state.category === c.id ? 'active' : ''}" data-cat="${c.id}">${c.label}</button>
-      `).join('')}
-    `;
-
-    // Drop Locations
-    elDropFilter.innerHTML = `
-      <option value="all">드랍처 (전체)</option>
-      ${rawItemData.drops.map(d => `<option value="${d}">${d}</option>`).join('')}
-    `;
-
-    // Tag Chips
-    const topTags = ['처형', '스턴', '이감', '스플', '타수', '면역', '상추피', '투사체', '곡', '영공속'];
-    elTagChips.innerHTML = topTags
-      .filter(t => rawItemData.tagDefs && rawItemData.tagDefs[t])
-      .map(t => `<button class="tag-chip ${state.tags.includes(t) ? 'active' : ''}" data-tag="${t}">${t}</button>`)
-      .join('');
-
-    // Initial Sort Select Options
-    updateSortSelectForTab(currentTab);
-  }
-
-  function initFilterPanelState() {
-    if (!elFilterToggle || !elFilterPanel) return;
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      elFilterPanel.classList.add('is-collapsed');
-      elFilterToggle.classList.remove('active');
-      elFilterToggle.setAttribute('aria-expanded', 'false');
-    } else {
-      elFilterPanel.classList.remove('is-collapsed');
-      elFilterToggle.classList.add('active');
-      elFilterToggle.setAttribute('aria-expanded', 'true');
-    }
-  }
-
-  function bindEvents() {
-    // Global Navigation
-    elGlobalNav.addEventListener('click', e => {
-      const btn = e.target.closest('.g-tab');
-      if (!btn) return;
-      const tab = btn.getAttribute('data-tab');
-      switchTab(tab);
-    });
-
-    // Search input
-    let debounceTimer;
-    elSearchInput.addEventListener('input', e => {
-      state.query = e.target.value;
-      elSearchClear.classList.toggle('visible', !!state.query.trim());
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        updateUrl();
-        renderActiveView();
-      }, 120);
-    });
-
-    // Search Clear
-    elSearchClear.addEventListener('click', () => {
-      elSearchInput.value = '';
-      state.query = '';
-      elSearchClear.classList.remove('visible');
-      elSearchInput.focus();
-      updateUrl();
-      renderActiveView();
-    });
-
-    // Filter Panel Toggle (Collapsible on all devices)
-    if (elFilterToggle && elFilterPanel) {
-      elFilterToggle.addEventListener('click', () => {
-        const isCollapsed = elFilterPanel.classList.toggle('is-collapsed');
-        const isOpen = !isCollapsed;
-        elFilterToggle.setAttribute('aria-expanded', isOpen);
-        elFilterToggle.classList.toggle('active', isOpen);
-      });
-    }
-
-    // Floating Scroll To Top Button
-    if (elScrollTopBtn) {
-      window.addEventListener('scroll', () => {
-        elScrollTopBtn.classList.toggle('visible', window.scrollY > 280);
-      }, { passive: true });
-
-      elScrollTopBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
-
-    // Item Events
-    elCatTabs.addEventListener('click', e => {
-      const btn = e.target.closest('.cat-tab');
-      if (!btn) return;
-      document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.category = btn.getAttribute('data-cat');
-      updateUrl();
-      renderActiveView();
-    });
-
-    elAwakeningSteps.addEventListener('click', e => {
-      const btn = e.target.closest('.awakening-step-btn');
-      if (!btn) return;
-      document.querySelectorAll('#awakeningSteps .awakening-step-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.awakeningLevel = parseInt(btn.getAttribute('data-level'), 10);
-      updateUrl();
-      renderActiveView();
-    });
-
-    elRangeFilter.addEventListener('change', e => { state.range = e.target.value; updateUrl(); renderActiveView(); });
-    elTierFilter.addEventListener('change', e => { state.tier = e.target.value; updateUrl(); renderActiveView(); });
-    elUsageFilter.addEventListener('change', e => { state.usage = e.target.value; updateUrl(); renderActiveView(); });
-    elDropFilter.addEventListener('change', e => { state.drop = e.target.value; updateUrl(); renderActiveView(); });
-
-    elTagChips.addEventListener('click', e => {
-      const btn = e.target.closest('.tag-chip');
-      if (!btn) return;
-      const tag = btn.getAttribute('data-tag');
-      if (state.tags.includes(tag)) {
-        state.tags = state.tags.filter(t => t !== tag);
-        btn.classList.remove('active');
-      } else {
-        state.tags.push(tag);
-        btn.classList.add('active');
-      }
-      updateUrl();
-      renderActiveView();
-    });
-
-    elSortSelect.addEventListener('change', e => {
-      const val = e.target.value;
-      const cur = tabSortState[currentTab];
-      if (!cur) return;
-
-      if (val === 'default') {
-        cur.col = null;
-        cur.dir = 'desc';
-      } else if (val.startsWith('stat_')) {
-        cur.col = val;
-        cur.dir = 'desc';
-      } else {
-        const lastUnder = val.lastIndexOf('_');
-        if (lastUnder !== -1) {
-          cur.col = val.substring(0, lastUnder);
-          cur.dir = val.substring(lastUnder + 1);
-        }
-      }
-      renderActiveView();
-    });
-
-    // Data Grid Table Column Sorting Event Delegation
-    elItemsGrid.addEventListener('click', e => {
-      const th = e.target.closest('.sortable-th');
-      if (th) {
-        e.preventDefault();
-        e.stopPropagation();
-        const colKey = th.getAttribute('data-sort-col');
-        if (colKey) handleTableSortClick(colKey);
-      }
-    });
-
-    elItemsGrid.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        const th = e.target.closest('.sortable-th');
-        if (th) {
-          e.preventDefault();
-          e.stopPropagation();
-          const colKey = th.getAttribute('data-sort-col');
-          if (colKey) handleTableSortClick(colKey);
-        }
-      }
-    });
-
-    // Hero Events
-    elHeroLevelSteps.addEventListener('click', e => {
-      const btn = e.target.closest('.awakening-step-btn');
-      if (!btn) return;
-      document.querySelectorAll('#heroLevelSteps .awakening-step-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.heroLevel = btn.getAttribute('data-hlevel');
-      renderActiveView();
-    });
-
-    elHeroTierFilter.addEventListener('change', e => { state.heroTier = e.target.value; renderActiveView(); });
-    elHeroGradeFilter.addEventListener('change', e => { state.heroGrade = e.target.value; renderActiveView(); });
-
-    // Merc Events
-    elMercTierSteps.addEventListener('click', e => {
-      const btn = e.target.closest('.awakening-step-btn');
-      if (!btn) return;
-      document.querySelectorAll('#mercTierSteps .awakening-step-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.mercTier = btn.getAttribute('data-mtier');
-      renderActiveView();
-    });
-
-    elMercGradeFilter.addEventListener('change', e => { state.mercGrade = e.target.value; renderActiveView(); });
-    elMercRecFilter.addEventListener('change', e => { state.mercRec = e.target.value; renderActiveView(); });
-
-    // Mount Events
-    elMountGuideBtn.addEventListener('click', openMountGuideModal);
-
-    // Pet Events
-    if (elPetTierFilter) {
-      elPetTierFilter.addEventListener('change', e => {
-        state.petTier = e.target.value;
-        renderActiveView();
-      });
-    }
-    if (elPetDropFilter) {
-      elPetDropFilter.addEventListener('change', e => {
-        state.petDrop = e.target.value;
-        renderActiveView();
-      });
-    }
-    if (elPetGuideBtn) {
-      elPetGuideBtn.addEventListener('click', openPetGuideModal);
-    }
-
-    // Camp Events (Scroll to Section)
-    if (elCampTypeFilter) {
-      elCampTypeFilter.addEventListener('click', e => {
-        const btn = e.target.closest('.awakening-step-btn');
-        if (!btn) return;
-        elCampTypeFilter.querySelectorAll('.awakening-step-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const target = btn.getAttribute('data-scroll-to');
-        const targetId = target === 'structures' ? 'campStructuresSection' : 'campPropsSection';
-        const el = document.getElementById(targetId);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-    }
-
-    if (elCampCommonToggleBtn) {
-      elCampCommonToggleBtn.addEventListener('click', () => {
-        state.campCommonExpanded = !state.campCommonExpanded;
-        const box = document.getElementById('campCommonDashboard');
-        if (box) {
-          box.classList.toggle('is-collapsed', !state.campCommonExpanded);
-        }
-        elCampCommonToggleBtn.classList.toggle('active', state.campCommonExpanded);
-        elCampCommonToggleBtn.setAttribute('aria-expanded', state.campCommonExpanded ? 'true' : 'false');
-      });
-    }
-
-    // Growth Events
-    if (elGrowthZoomBtn) {
-      elGrowthZoomBtn.addEventListener('click', openGrowthModal);
-    }
-
-    if (elAdminBtn) {
-      elAdminBtn.addEventListener('click', openAdminModal);
-    }
-
-    // Keyboard & Modal
-    window.addEventListener('keydown', e => {
-      if (e.key === '/' && document.activeElement !== elSearchInput) {
-        e.preventDefault();
-        elSearchInput.focus();
-        elSearchInput.select();
-      } else if (e.key === 'Escape' && elModalOverlay.classList.contains('active')) {
-        closeModal();
-      }
-    });
-
-    elModalOverlay.addEventListener('click', e => {
-      if (e.target === elModalOverlay || e.target.closest('.modal-close-btn')) {
-        closeModal();
-      }
-    });
-
-    // Prevent background scrolling while modal is open without removing scrollbar
-    elModalOverlay.addEventListener('wheel', e => {
-      if (!e.target.closest('.modal-content')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    elModalOverlay.addEventListener('touchmove', e => {
-      if (!e.target.closest('.modal-content')) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    // View Mode Toggle (Table vs Card)
-    if (elViewModeToggle) {
-      elViewModeToggle.addEventListener('click', e => {
-        const btn = e.target.closest('.view-btn');
-        if (!btn) return;
-        const mode = btn.getAttribute('data-mode');
-        if (mode && mode !== currentViewMode) {
-          currentViewMode = mode;
-          userExplicitViewMode = mode;
-          localStorage.setItem('ara_view_mode', mode);
-          updateViewToggleButtons();
-          renderActiveView();
-        }
-      });
-    }
-
-    // Auto-adapt on resize if user hasn't explicitly chosen
-    window.addEventListener('resize', () => {
-      if (!userExplicitViewMode) {
-        const autoMode = window.innerWidth < 768 ? 'card' : 'table';
-        if (autoMode !== currentViewMode) {
-          currentViewMode = autoMode;
-          updateViewToggleButtons();
-          renderActiveView();
-        }
-      }
-    });
-  }
-
-  function updateViewToggleButtons() {
-    if (!elViewModeToggle) return;
-    elViewModeToggle.querySelectorAll('.view-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-mode') === currentViewMode);
-    });
-  }
-
-  // Switch Tab
-  function switchTab(tab) {
-    currentTab = tab;
-    document.querySelectorAll('.g-tab').forEach(b => {
-      b.classList.toggle('active', b.getAttribute('data-tab') === tab);
-    });
-
-    // Hide all controls
-    elItemControls.style.display = 'none';
-    elHeroControls.style.display = 'none';
-    elMercControls.style.display = 'none';
-    elMountControls.style.display = 'none';
-    if (elPetControls) elPetControls.style.display = 'none';
-    if (elCampControls) elCampControls.style.display = 'none';
-    if (elGrowthControls) elGrowthControls.style.display = 'none';
-
-    const stickySearch = document.querySelector('.search-sticky');
-    const resultsMeta = document.querySelector('.results-meta');
-
-    // Show selected controls & customize hero banner
-    if (tab === 'items') {
-      if (stickySearch) stickySearch.style.display = '';
-      if (resultsMeta) resultsMeta.style.display = '';
-      if (elSortWrapper) elSortWrapper.style.display = 'flex';
-      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
-      elHeroTitle.textContent = '아이템 도감 & 능력치 검색';
-      elHeroSubtitle.textContent = '이름, 초성, 능력 문장 뿐만 아니라 세부 수치 조건으로 자유롭게 검색하세요.';
-      elSearchInput.placeholder = '검색어 입력 (예: 빛단, ㅅㅁㅍㅍ, 처형, 치피>=100, 투사체>2)';
-      elItemControls.style.display = 'block';
-      elResultUnit.textContent = '아이템';
-      renderItemSearchHints();
-    } else if (tab === 'heroes') {
-      if (stickySearch) stickySearch.style.display = '';
-      if (resultsMeta) resultsMeta.style.display = '';
-      if (elSortWrapper) elSortWrapper.style.display = 'flex';
-      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
-      elHeroTitle.textContent = '영웅 도감 & 영덱 공략';
-      elHeroSubtitle.textContent = '모든 영웅의 기본 능력과 3·6·9·12·15 레벨별 추가 능력, 티어 평가를 확인하세요.';
-      elSearchInput.placeholder = '영웅 이름, 별칭, 초성 검색 (예: 오크, 정불갑, 용싶해, 아그니)';
-      elHeroControls.style.display = 'block';
-      elResultUnit.textContent = '명의 영웅';
-      renderHeroSearchHints();
-    } else if (tab === 'mercenaries') {
-      if (stickySearch) stickySearch.style.display = '';
-      if (resultsMeta) resultsMeta.style.display = '';
-      if (elSortWrapper) elSortWrapper.style.display = 'flex';
-      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
-      elHeroTitle.textContent = '지원용병 도감 & 추천';
-      elHeroSubtitle.textContent = '지원용병의 등급별(B~SSS) 공격력/공속/치명타 버프 수치와 추천도를 확인하세요.';
-      elSearchInput.placeholder = '지원용병 이름, 능력 검색 (예: 저승사자, 닌자, 세이렌, 토르)';
-      elMercControls.style.display = 'block';
-      elResultUnit.textContent = '명의 지원용병';
-      renderMercSearchHints();
-    } else if (tab === 'mounts') {
-      if (stickySearch) stickySearch.style.display = '';
-      if (resultsMeta) resultsMeta.style.display = '';
-      if (elSortWrapper) elSortWrapper.style.display = 'flex';
-      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
-      elHeroTitle.textContent = '탈것 도감 & 부옵션 가이드';
-      elHeroSubtitle.textContent = '총 57종의 탈것 고유 능력과 평가 코멘트, 뽑기 및 30가지 부옵션 정보입니다.';
-      elSearchInput.placeholder = '탈것 이름, 능력 검색 (예: 아기 백룡, 검은 악마, 거대슬라임)';
-      elMountControls.style.display = 'block';
-      elResultUnit.textContent = '종의 탈것';
-      renderMountSearchHints();
     } else if (tab === 'pets') {
-      if (stickySearch) stickySearch.style.display = '';
-      if (resultsMeta) resultsMeta.style.display = '';
-      if (elSortWrapper) elSortWrapper.style.display = 'flex';
-      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
-      elHeroTitle.textContent = '펫 도감 & 등급·옵션 세팅 가이드';
-      elHeroSubtitle.textContent = '총 26종 펫의 고유 기본 능력과 드랍처, 등급별 해금 옵션 및 타워/영덱 종결 세팅 정보입니다.';
-      elSearchInput.placeholder = '펫 이름, 초성, 능력 검색 (예: 용암슬라임, 쉐도우, ㅇㅇㅅㄹㅇ)';
-      if (elPetControls) elPetControls.style.display = 'block';
-      elResultUnit.textContent = '종의 펫';
-      renderPetSearchHints();
+      const f = STATE.filters.pets;
+      html += buildFilterRow('화면보기', 'subView', f.subView, [
+        ['list', '🐾 펫 도감 (26종)'],
+        ['guide', '🗺️ 스테이지별 드랍 & 육성 가이드'],
+      ]);
+      if (f.subView === 'list') {
+        html += buildFilterRow('펫 등급', 'grade', f.grade, [
+          ['all', '전체 (26종)'],
+          ['S', 'S등급 (S+/S/S-)'],
+          ['A', 'A등급 (A+/A/A-)'],
+          ['B', 'B등급 (B+/B/B-)'],
+          ['C', 'C등급 (C+/C/C-)'],
+          ['D', 'D~F등급'],
+        ]);
+      }
     } else if (tab === 'camp') {
-      if (stickySearch) stickySearch.style.display = '';
-      if (resultsMeta) resultsMeta.style.display = '';
-      if (elSortWrapper) elSortWrapper.style.display = 'flex';
-      if (elViewModeToggle) elViewModeToggle.style.display = 'inline-flex';
-      elHeroTitle.textContent = '야영지 구조물 & 소품 도감';
-      elHeroSubtitle.textContent = '야영지 구조물(10종)과 소품(34종)의 계정 레벨별 획득 조건, 고유 능력 및 공통 등급·부옵·랜덤옵 정보입니다.';
-      elSearchInput.placeholder = '구조물/소품 이름, 초성, 능력 검색 (예: 화로, 묘지, 삼각 플라스크, ㅂㅅ, 원거리)';
-      if (elCampControls) elCampControls.style.display = 'block';
-      elResultUnit.textContent = '개 항목';
-      renderCampSearchHints();
-    } else if (tab === 'growth') {
-      if (stickySearch) stickySearch.style.display = 'none';
-      if (resultsMeta) resultsMeta.style.display = 'none';
-      if (elGrowthControls) elGrowthControls.style.display = 'block';
-      elHeroTitle.textContent = '언더다크 성장 가이드';
-      elHeroSubtitle.textContent = '언더다크 성장에 필요한 전체 요구치와 성장 가이드 차트입니다.';
-    }
-
-    updateSortSelectForTab(tab);
-    updateUrl();
-    renderActiveView();
-  }
-
-  function renderItemSearchHints() {
-    elSearchHints.innerHTML = `
-      <span class="search-hint-label">⚡ 빠른 검색:</span>
-      <button type="button" class="search-hint-tag" data-q="치피>=100">치피>=100</button>
-      <button type="button" class="search-hint-tag" data-q="투사체>=3">투사체>=3</button>
-      <button type="button" class="search-hint-tag" data-q="이감>=20">이감>=20</button>
-      <button type="button" class="search-hint-tag" data-q="처형 원거리">처형 원거리</button>
-      <button type="button" class="search-hint-tag" data-q="빛단">빛단</button>
-      <button type="button" class="search-hint-tag" data-q="ㅅㅁㅍㅍ">ㅅㅁㅍㅍ</button>
-    `;
-    bindHintTags();
-  }
-
-  function renderHeroSearchHints() {
-    elSearchHints.innerHTML = `
-      <span class="search-hint-label">⚡ 빠른 검색:</span>
-      <button type="button" class="search-hint-tag" data-q="오크">오크 (SSS)</button>
-      <button type="button" class="search-hint-tag" data-q="아그니">아그니</button>
-      <button type="button" class="search-hint-tag" data-q="정불갑">정불갑</button>
-      <button type="button" class="search-hint-tag" data-q="용싶해">용싶해</button>
-      <button type="button" class="search-hint-tag" data-q="스턴">스턴</button>
-      <button type="button" class="search-hint-tag" data-q="곡괭이">곡괭이</button>
-    `;
-    bindHintTags();
-  }
-
-  function renderMercSearchHints() {
-    elSearchHints.innerHTML = `
-      <span class="search-hint-label">⚡ 빠른 검색:</span>
-      <button type="button" class="search-hint-tag" data-q="저승사자">저승사자 (자사)</button>
-      <button type="button" class="search-hint-tag" data-q="세이렌">세이렌 (처형)</button>
-      <button type="button" class="search-hint-tag" data-q="발키리">발키리</button>
-      <button type="button" class="search-hint-tag" data-q="서큐비스">서큐비스</button>
-    `;
-    bindHintTags();
-  }
-
-  function renderMountSearchHints() {
-    elSearchHints.innerHTML = `
-      <span class="search-hint-label">⚡ 빠른 검색:</span>
-      <button type="button" class="search-hint-tag" data-q="아기 백룡">아기 백룡 (종결)</button>
-      <button type="button" class="search-hint-tag" data-q="검은 악마">검은 악마 (4배)</button>
-      <button type="button" class="search-hint-tag" data-q="고대 백룡">고대 백룡 (4배모드)</button>
-      <button type="button" class="search-hint-tag" data-q="곡괭이">곡괭이</button>
-    `;
-    bindHintTags();
-  }
-
-  function renderPetSearchHints() {
-    elSearchHints.innerHTML = `
-      <span class="search-hint-label">⚡ 빠른 검색:</span>
-      <button type="button" class="search-hint-tag" data-q="용암슬라임">용암 슬라임</button>
-      <button type="button" class="search-hint-tag" data-q="쉐도우">쉐도우 (S)</button>
-      <button type="button" class="search-hint-tag" data-q="포포">포포 (A+)</button>
-      <button type="button" class="search-hint-tag" data-q="공격 속도">공격 속도</button>
-      <button type="button" class="search-hint-tag" data-q="치명타">치명타</button>
-      <button type="button" class="search-hint-tag" data-q="타워">타워 강화</button>
-      <button type="button" class="search-hint-tag" data-q="스테이지">스테이지 펫</button>
-    `;
-    bindHintTags();
-  }
-
-  function renderCampSearchHints() {
-    elSearchHints.innerHTML = `
-      <span class="search-hint-label">⚡ 빠른 검색:</span>
-      <button type="button" class="search-hint-tag" data-q="화로">화로</button>
-      <button type="button" class="search-hint-tag" data-q="묘지">묘지</button>
-      <button type="button" class="search-hint-tag" data-q="삼각 플라스크">삼각 플라스크</button>
-      <button type="button" class="search-hint-tag" data-q="사파이어">사파이어</button>
-      <button type="button" class="search-hint-tag" data-q="알에서 깬 병아리">알에서 깬 병아리</button>
-      <button type="button" class="search-hint-tag" data-q="주 무기">주 무기 드랍</button>
-      <button type="button" class="search-hint-tag" data-q="보조 무기">보조 무기 드랍</button>
-      <button type="button" class="search-hint-tag" data-q="투구">투구 드랍</button>
-      <button type="button" class="search-hint-tag" data-q="기타">기타 드랍</button>
-      <button type="button" class="search-hint-tag" data-q="붉은 보석">붉은 보석 획득</button>
-    `;
-    bindHintTags();
-  }
-
-  function bindHintTags() {
-    elSearchHints.querySelectorAll('.search-hint-tag').forEach(tag => {
-      tag.addEventListener('click', () => {
-        const q = tag.getAttribute('data-q');
-        elSearchInput.value = q;
-        state.query = q;
-        elSearchClear.classList.add('visible');
-        updateUrl();
-        renderActiveView();
-      });
-    });
-  }
-
-  function updateFilterCount() {
-    if (!elFilterCount) return;
-    let count = 0;
-    if (currentTab === 'items') {
-      if (state.category !== 'all') count++;
-      if (state.awakeningLevel > 0) count++;
-      if (state.range !== 'all') count++;
-      if (state.tier !== 'all') count++;
-      if (state.usage !== 'all') count++;
-      if (state.drop !== 'all') count++;
-      if (state.tags && state.tags.length > 0) count += state.tags.length;
-    } else if (currentTab === 'heroes') {
-      if (state.heroTier !== 'all') count++;
-      if (state.heroGrade !== 'all') count++;
-      if (state.heroLevel !== 'base') count++;
-    } else if (currentTab === 'mercenaries') {
-      if (state.mercTier !== 'SSS') count++;
-      if (state.mercGrade !== 'all') count++;
-      if (state.mercRec !== 'all') count++;
-    } else if (currentTab === 'pets') {
-      if (state.petTier !== 'all') count++;
-      if (state.petDrop !== 'all') count++;
-    } else if (currentTab === 'camp') {
-      if (state.campType !== 'all') count++;
-      if (state.campLevel !== 'all') count++;
-    }
-
-    if (count > 0) {
-      elFilterCount.textContent = count;
-      elFilterCount.removeAttribute('hidden');
-    } else {
-      elFilterCount.setAttribute('hidden', '');
-    }
-  }
-
-  function renderActiveView() {
-    updateFilterCount();
-    if (currentTab === 'items') {
-      renderItemsView();
-    } else if (currentTab === 'heroes') {
-      renderHeroesView();
-    } else if (currentTab === 'mercenaries') {
-      renderMercenariesView();
-    } else if (currentTab === 'mounts') {
-      renderMountsView();
-    } else if (currentTab === 'pets') {
-      renderPetsView();
-    } else if (currentTab === 'camp') {
-      renderCampView();
-    } else if (currentTab === 'growth') {
-      renderGrowthView();
-    }
-  }
-
-  // -------------------------------------------------------------
-  // 1. RENDER ITEMS (DATA GRID TABLE)
-  // -------------------------------------------------------------
-  function renderItemsView() {
-    if (!searchEngine) return;
-    const curSort = tabSortState.items;
-    if (curSort.col && curSort.col.startsWith('stat_')) {
-      state.sortBy = curSort.col.replace('stat_', '');
-    } else {
-      state.sortBy = 'default';
-    }
-    let items = searchEngine.search(state);
-    if (curSort.col && !curSort.col.startsWith('stat_')) {
-      items = sortItemsList(items, curSort.col, curSort.dir);
-    }
-    elResultCount.textContent = items.length;
-
-    if (items.length === 0) {
-      elItemsGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🔍</div>
-          <div class="empty-title">일치하는 아이템이 없습니다.</div>
-          <p>검색어나 필터 조건을 변경해보세요.</p>
-        </div>
-      `;
-      return;
-    }
-
-    const currentAwak = state.awakeningLevel;
-
-    if (currentViewMode === 'card') {
-      const cardsHtml = items.map(item => {
-        const imgHtml = item.img
-          ? `<img src="${item.img}" alt="${item.name}" class="card-img" loading="lazy">`
-          : `<div class="card-img-placeholder">⚔️</div>`;
-
-        const rangeBadge = item.range
-          ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '';
-        const tierBadge = item.tier
-          ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '';
-        const usageBadge = item.usage
-          ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : '';
-
-        let displayAbilities = item.abilities || [];
-        let isAwakenedVariant = false;
-        let noAwakeningNotice = '';
-
-        if (currentAwak > 0) {
-          if (item.awakening && item.awakening[currentAwak]) {
-            displayAbilities = item.awakening[currentAwak];
-            isAwakenedVariant = true;
-          } else if (item.awakeningNote) {
-            noAwakeningNotice = `<div class="ability-line" style="border-left-color: var(--accent-gold); color: var(--accent-gold); font-size: 0.8rem; background: #fef3c7;">${item.awakeningNote}</div>`;
-          } else {
-            noAwakeningNotice = `<div class="ability-line" style="border-left-color: var(--text-dim); color: var(--text-muted); font-size: 0.8rem;"><span style="opacity: 0.8;">⚠️ ${currentAwak}각성 정보없음 (기본 능력)</span></div>`;
-          }
-        }
-
-        const abilitiesHtml = displayAbilities.map(line => {
-          const highlighted = line.replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-          return `<div class="ability-line ${isAwakenedVariant ? 'awakening-changed' : ''}">${highlighted}</div>`;
-        }).join('');
-
-        let statsChipsHtml = '';
-        if (item.stats) {
-          const chips = [];
-          Object.entries(item.stats).forEach(([k, vals]) => {
-            let v = vals[currentAwak];
-            if (v === null || v === undefined) {
-              for (let lv = currentAwak; lv >= 0; lv--) {
-                if (vals[lv] !== null && vals[lv] !== undefined) { v = vals[lv]; break; }
-              }
-            }
-            if (v !== null && v !== undefined && rawItemData.statDefs[k]) {
-              const def = rawItemData.statDefs[k];
-              chips.push(`<span class="stat-chip">${def.label}: <b>+${v}${def.unit}</b></span>`);
-            }
-          });
-          if (chips.length > 0) statsChipsHtml = `<div class="card-stats-row">${chips.slice(0, 3).join('')}</div>`;
-        }
-
-        const dropsHtml = (item.drops || []).map(d => `<span class="drop-item">${d}</span>`).join('');
-
-        return `
-          <div class="item-card" data-item-id="${item.id}">
-            <div class="card-header">
-              <div class="card-img-wrapper">${imgHtml}</div>
-              <div class="card-title-area">
-                <div class="card-name-row">
-                  <span class="card-name" title="${item.name}">${item.name}</span>
-                  ${tierBadge}
-                  ${usageBadge}
-                </div>
-                <div class="card-subinfo">
-                  ${rangeBadge}
-                  ${item.aliases && item.aliases.length ? `<span class="card-aliases">(${item.aliases.join(', ')})</span>` : ''}
-                </div>
-              </div>
-            </div>
-            <div class="card-abilities">
-              ${noAwakeningNotice}
-              ${abilitiesHtml}
-            </div>
-            ${statsChipsHtml}
-            <div class="card-footer">
-              <div class="card-drops">${dropsHtml || '-'}</div>
-              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
-    } else {
-      const rowsHtml = items.map(item => {
-        const imgHtml = item.img
-          ? `<img src="${item.img}" alt="${item.name}" class="table-thumb-img" loading="lazy">`
-          : `<div class="table-thumb-placeholder">⚔️</div>`;
-
-        const rangeBadge = item.range
-          ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : '-';
-        const tierBadge = item.tier
-          ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : '-';
-        const usageBadge = item.usage
-          ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : '-';
-
-        let displayAbilities = item.abilities || [];
-        let isAwakenedVariant = false;
-        let noAwakeningNotice = '';
-
-        if (currentAwak > 0) {
-          if (item.awakening && item.awakening[currentAwak]) {
-            displayAbilities = item.awakening[currentAwak];
-            isAwakenedVariant = true;
-          } else if (item.awakeningNote) {
-            noAwakeningNotice = `<div style="color: var(--accent-gold); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem;">${item.awakeningNote}</div>`;
-          } else {
-            noAwakeningNotice = `<div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.25rem;">⚠️ ${currentAwak}각성 정보없음 (기본 능력)</div>`;
-          }
-        }
-
-        const abilitiesHtml = displayAbilities.map(line => {
-          const highlighted = line.replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-          return `<div style="${isAwakenedVariant ? 'color: #1d4ed8; font-weight: 600;' : ''}">${highlighted}</div>`;
-        }).join('');
-
-        let statsChipsHtml = '';
-        if (item.stats) {
-          const chips = [];
-          Object.entries(item.stats).forEach(([k, vals]) => {
-            let v = vals[currentAwak];
-            if (v === null || v === undefined) {
-              for (let lv = currentAwak; lv >= 0; lv--) {
-                if (vals[lv] !== null && vals[lv] !== undefined) { v = vals[lv]; break; }
-              }
-            }
-            if (v !== null && v !== undefined && rawItemData.statDefs[k]) {
-              const def = rawItemData.statDefs[k];
-              chips.push(`<span class="stat-chip">${def.label}: <b>+${v}${def.unit}</b></span>`);
-            }
-          });
-          if (chips.length > 0) statsChipsHtml = chips.slice(0, 3).join('');
-        }
-
-        const dropsHtml = (item.drops || []).map(d => `<span class="drop-item">${d}</span>`).join('');
-
-        return `
-          <tr class="data-row item-row" data-item-id="${item.id}">
-            <td style="width: 58px; text-align: center;">
-              <div class="table-thumb-wrapper">${imgHtml}</div>
-            </td>
-            <td>
-              <div class="table-item-name">${item.name}</div>
-              ${item.aliases && item.aliases.length ? `<div class="table-item-aliases">${item.aliases.join(', ')}</div>` : ''}
-            </td>
-            <td style="text-align: center;">${tierBadge}</td>
-            <td style="text-align: center;">${usageBadge}</td>
-            <td style="text-align: center;">${rangeBadge}</td>
-            <td class="table-ability-block">
-              ${noAwakeningNotice}
-              ${abilitiesHtml}
-            </td>
-            <td>${statsChipsHtml || '-'}</td>
-            <td>${dropsHtml || '-'}</td>
-          </tr>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `
-        <div class="data-table-card">
-          <div class="data-table-wrapper">
-            <table class="data-grid-table">
-              <thead>
-                <tr>
-                  <th style="width: 58px; text-align: center;">사진</th>
-                  ${renderTh('name', '아이템명', 'min-width: 140px;')}
-                  ${renderTh('tier', '티어', 'width: 80px; text-align: center;', true)}
-                  ${renderTh('usage', '용도', 'width: 80px; text-align: center;', true)}
-                  ${renderTh('range', '사거리', 'width: 85px; text-align: center;', true)}
-                  <th style="min-width: 280px;">능력 및 ${currentAwak > 0 ? currentAwak + '각성 효과' : '기본 효과'}</th>
-                  <th style="min-width: 160px;">주요 수치</th>
-                  ${renderTh('drops', '드랍처', 'min-width: 130px;')}
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-
-    elItemsGrid.querySelectorAll('.item-row, .item-card').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-item-id');
-        const it = rawItemData.items.find(x => x.id === id);
-        if (it) openItemModal(it);
-      });
-    });
-  }
-
-  // -------------------------------------------------------------
-  // 2. RENDER HEROES (DATA GRID TABLE)
-  // -------------------------------------------------------------
-  function renderHeroesView() {
-    if (!expansionData || !expansionData.heroes) return;
-
-    let heroes = expansionData.heroes;
-    if (searchEngine) {
-      heroes = searchEngine.searchHeroes(heroes, {
-        query: state.query,
-        tier: state.heroTier,
-        grade: state.heroGrade,
-      });
-    }
-
-    const hl = state.heroLevel;
-    const curSort = tabSortState.heroes;
-    heroes = sortHeroesList(heroes, curSort.col, curSort.dir, hl);
-
-    elResultCount.textContent = heroes.length;
-
-    if (heroes.length === 0) {
-      elItemsGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🦸</div>
-          <div class="empty-title">일치하는 영웅이 없습니다.</div>
-          <p>검색어나 티어 필터를 변경해보세요.</p>
-        </div>
-      `;
-      return;
-    }
-
-    if (currentViewMode === 'card') {
-      const cardsHtml = heroes.map(hero => {
-        const imgHtml = hero.img
-          ? `<img src="${hero.img}" alt="${hero.name}" class="card-img" loading="lazy">`
-          : `<div class="card-img-placeholder">🦸</div>`;
-
-        const tierBadge = hero.tier
-          ? `<span class="tier-badge tier-${hero.tier}">${hero.tier}</span>` : '';
-        const gradeBadge = hero.grade
-          ? `<span class="badge-tag">${hero.grade}</span>` : '';
-
-        let extraHtml = '';
-        if (hl !== 'base') {
-          const lvInfo = hero.levels ? (hero.levels[hl] || (hl === '15' ? (hero.levels['16'] || hero.levels['17'] || hero.levels['18']) : null)) : null;
-          if (lvInfo) {
-            const filledStars = (lvInfo.stars || '').replace(/[^★]/g, '');
-            const starsBadge = filledStars
-              ? `<span style="color: #d97706; font-size: 0.88rem; font-weight: 800; letter-spacing: 1px;">${filledStars}</span>`
-              : '';
-
-            extraHtml = `
-              <div class="ability-line awakening-changed">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
-                  <b>${lvInfo.level}레벨 능력</b>
-                  ${starsBadge}
-                </div>
-                <div>${lvInfo.ability}</div>
-              </div>
-            `;
-          }
-        }
-
-        return `
-          <div class="item-card hero-card" data-hero-id="${hero.id}">
-            <div class="card-header">
-              <div class="card-img-wrapper">${imgHtml}</div>
-              <div class="card-title-area">
-                <div class="card-name-row">
-                  <span class="card-name">${hero.name}</span>
-                  ${tierBadge}
-                  ${gradeBadge}
-                </div>
-                ${hero.aliases && hero.aliases.length ? `<div class="card-aliases">별칭: ${hero.aliases.join(', ')}</div>` : ''}
-              </div>
-            </div>
-            <div class="card-abilities">
-              <div class="ability-line">
-                <b style="color: var(--accent-secondary);">기본 능력:</b> ${hero.ability || '정보 없음'}
-              </div>
-              ${extraHtml}
-            </div>
-            ${hero.comment ? `
-              <div style="font-size: 0.82rem; color: var(--text-muted); background: #f8fafc; padding: 0.5rem 0.65rem; border-radius: 6px; border-left: 3px solid var(--accent-primary); line-height: 1.45;">
-                ${hero.comment}
-              </div>
-            ` : ''}
-            <div class="card-footer">
-              <span style="font-size: 0.78rem; color: var(--text-dim);">${hero.grade} 등급 영웅</span>
-              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
-    } else {
-      const rowsHtml = heroes.map(hero => {
-        const imgHtml = hero.img
-          ? `<img src="${hero.img}" alt="${hero.name}" class="table-thumb-img" loading="lazy">`
-          : `<div class="table-thumb-placeholder">🦸</div>`;
-
-        const tierBadge = hero.tier
-          ? `<span class="tier-badge tier-${hero.tier}">${hero.tier}</span>` : '-';
-        const gradeBadge = hero.grade
-          ? `<span class="badge-tag">${hero.grade}</span>` : '-';
-
-        let extraHtml = '-';
-        let starsHtml = '-';
-
-        if (hl !== 'base') {
-          const lvInfo = hero.levels ? (hero.levels[hl] || (hl === '15' ? (hero.levels['16'] || hero.levels['17'] || hero.levels['18']) : null)) : null;
-          if (lvInfo) {
-            extraHtml = `<div style="color: #1d4ed8; font-weight: 600; line-height: 1.45;">${lvInfo.ability}</div>`;
-            const filledStars = (lvInfo.stars || '').replace(/[^★]/g, '');
-            if (filledStars) {
-              starsHtml = `<span style="color: #d97706; font-size: 0.95rem; font-weight: 800; letter-spacing: 1px;">${filledStars}</span>`;
-            }
-          } else {
-            extraHtml = `<span style="color: var(--text-dim); font-size: 0.8rem;">해당 레벨 능력 없음</span>`;
-          }
-        }
-
-        return `
-          <tr class="data-row hero-row" data-hero-id="${hero.id}">
-            <td style="width: 58px; text-align: center;">
-              <div class="table-thumb-wrapper">${imgHtml}</div>
-            </td>
-            <td>
-              <div class="table-item-name">${hero.name}</div>
-              ${hero.aliases && hero.aliases.length ? `<div class="table-item-aliases">${hero.aliases.join(', ')}</div>` : ''}
-            </td>
-            <td style="text-align: center;">${tierBadge}</td>
-            <td style="text-align: center; white-space: nowrap;">${starsHtml}</td>
-            <td style="text-align: center;">${gradeBadge}</td>
-            <td class="table-ability-block">${hero.ability || '정보 없음'}</td>
-            <td class="table-ability-block">${extraHtml}</td>
-            <td style="font-size: 0.82rem; color: #475569; max-width: 200px; line-height: 1.45;">
-              ${hero.comment || '-'}
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `
-        <div class="data-table-card">
-          <div class="data-table-wrapper">
-            <table class="data-grid-table">
-              <thead>
-                <tr>
-                  <th style="width: 58px; text-align: center;">사진</th>
-                  ${renderTh('name', '영웅명', 'min-width: 130px;')}
-                  ${renderTh('tier', '티어', 'width: 80px; text-align: center;', true)}
-                  ${renderTh('stars', '추천', 'width: 90px; text-align: center;', true)}
-                  ${renderTh('grade', '등급', 'width: 80px; text-align: center;', true)}
-                  <th style="min-width: 250px;">기본 고유 능력</th>
-                  <th style="min-width: 250px;">선택 레벨(${hl === 'base' ? '추가' : hl + '레벨'}) 능력</th>
-                  <th style="min-width: 160px;">평가 & 코멘트</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-
-    elItemsGrid.querySelectorAll('.hero-row, .hero-card').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-hero-id');
-        const h = expansionData.heroes.find(x => x.id === id);
-        if (h) openHeroModal(h);
-      });
-    });
-  }
-
-  // -------------------------------------------------------------
-  // 3. RENDER MERCENARIES (DATA GRID TABLE)
-  // -------------------------------------------------------------
-  function renderMercenariesView() {
-    if (!expansionData || !expansionData.mercenaries) return;
-
-    let mercs = expansionData.mercenaries;
-    if (searchEngine) {
-      mercs = searchEngine.searchMercenaries(mercs, {
-        query: state.query,
-        grade: state.mercGrade,
-        recommend: state.mercRec,
-      });
-    }
-
-    const currentTier = state.mercTier;
-    const curSort = tabSortState.mercenaries;
-    mercs = sortMercenariesList(mercs, curSort.col, curSort.dir, currentTier);
-
-    elResultCount.textContent = mercs.length;
-
-    if (mercs.length === 0) {
-      elItemsGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🛡️</div>
-          <div class="empty-title">일치하는 지원용병이 없습니다.</div>
-          <p>검색어나 추천 등급 필터를 변경해보세요.</p>
-        </div>
-      `;
-      return;
-    }
-
-    if (currentViewMode === 'card') {
-      const cardsHtml = mercs.map(merc => {
-        const imgHtml = merc.img
-          ? `<img src="${merc.img}" alt="${merc.name}" class="card-img" loading="lazy">`
-          : `<div class="card-img-placeholder">🛡️</div>`;
-
-        const gradeBadge = `<span class="badge-tag">${merc.grade}</span>`;
-        const recBadge = merc.recommend
-          ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '';
-
-        const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
-        const abilityText = formatMercAbility(merc.ability, tierVal);
-        const buffValText = formatMercBuffValue(merc.ability, tierVal);
-
-        return `
-          <div class="item-card merc-card" data-merc-id="${merc.id}">
-            <div class="card-header">
-              <div class="card-img-wrapper">${imgHtml}</div>
-              <div class="card-title-area">
-                <div class="card-name-row">
-                  <span class="card-name">${merc.name}</span>
-                  ${recBadge}
-                  ${gradeBadge}
-                </div>
-                <div class="card-subinfo">
-                  <span>버프 수치: <b style="color: #2563eb;">${buffValText}</b></span>
-                  <span style="margin-left: 0.5rem; color: var(--text-dim);">(${getMercLevelReq(currentTier)})</span>
-                </div>
-              </div>
-            </div>
-            <div class="card-abilities">
-              <div class="ability-line">
-                ${abilityText}
-              </div>
-            </div>
-            <div class="card-footer">
-              <span style="font-size: 0.78rem; color: var(--text-dim);">${currentTier} 등급</span>
-              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
-    } else {
-      const rowsHtml = mercs.map(merc => {
-        const imgHtml = merc.img
-          ? `<img src="${merc.img}" alt="${merc.name}" class="table-thumb-img" loading="lazy">`
-          : `<div class="table-thumb-placeholder">🛡️</div>`;
-
-        const gradeBadge = `<span class="badge-tag">${merc.grade}</span>`;
-        const recBadge = merc.recommend
-          ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : '-';
-
-        const tierVal = merc.tierValues ? merc.tierValues[currentTier] : null;
-        const abilityText = formatMercAbility(merc.ability, tierVal);
-        const buffValText = formatMercBuffValue(merc.ability, tierVal);
-
-        return `
-          <tr class="data-row merc-row" data-merc-id="${merc.id}">
-            <td style="width: 58px; text-align: center;">
-              <div class="table-thumb-wrapper">${imgHtml}</div>
-            </td>
-            <td>
-              <div class="table-item-name">${merc.name}</div>
-            </td>
-            <td style="text-align: center;">${gradeBadge}</td>
-            <td style="text-align: center;">${recBadge}</td>
-            <td style="text-align: center;">
-              <span style="font-weight: 800; color: #2563eb; font-size: 0.95rem;">
-                ${buffValText}
-              </span>
-            </td>
-            <td class="table-ability-block">${abilityText}</td>
-            <td style="text-align: center; font-size: 0.8rem; color: #64748b;">
-              ${getMercLevelReq(currentTier)}
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `
-        <div class="data-table-card">
-          <div class="data-table-wrapper">
-            <table class="data-grid-table">
-              <thead>
-                <tr>
-                  <th style="width: 58px; text-align: center;">사진</th>
-                  ${renderTh('name', '용병명', 'min-width: 130px;')}
-                  ${renderTh('grade', '기본 등급', 'width: 85px; text-align: center;', true)}
-                  ${renderTh('recommend', '추천도', 'width: 85px; text-align: center;', true)}
-                  ${renderTh('buff', `선택 (${currentTier}) 버프`, 'width: 125px; text-align: center;', true)}
-                  <th style="min-width: 280px;">고유 능력</th>
-                  ${renderTh('level', '필요 레벨', 'width: 90px; text-align: center;', true)}
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-
-    elItemsGrid.querySelectorAll('.merc-row, .merc-card').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-merc-id');
-        const m = expansionData.mercenaries.find(x => x.id === id);
-        if (m) openMercModal(m);
-      });
-    });
-  }
-
-  function getMercLevelReq(tier) {
-    const map = { B: '5렙', A: '9렙', S: '13렙', SS: '17렙', SSS: '20렙' };
-    return map[tier] || '';
-  }
-
-  function formatMercAbility(ability, tierVal) {
-    if (!ability) return '';
-    let text = ability;
-
-    text = text.replace(/영웅이 공격할 때 공격할 때/g, '영웅이 공격할 때')
-      .replace(/1%의 확률로 세 번/g, 'N%의 확률로 세 번')
-      .replace(/공격할 때 1%의 확률로/g, '공격할 때 N%의 확률로');
-
-    if (tierVal === null || tierVal === undefined) {
-      return text.replace(/\bN%\b/g, 'N%').replace(/\bN\b/g, 'N');
-    }
-
-    if (text.includes('1+N배')) {
-      return text.replace('1+N배', `<b class="stat-number">${tierVal}배</b>`);
-    }
-    if (text.includes('N배')) {
-      return text.replace('N배', `<b class="stat-number">${tierVal}배</b>`);
-    }
-    if (text.includes('N개')) {
-      return text.replace('N개', `<b class="stat-number">${tierVal}개</b>`);
-    }
-    if (text.includes('N 증가') || text.includes('N 상승')) {
-      return text.replace(/N(?=\s*(증가|상승))/, `<b class="stat-number">+${tierVal}</b>`);
-    }
-    if (text.includes('N%')) {
-      if (/N%(의\s*확률|\s*확률)/.test(text)) {
-        return text.replace(/N%(?=(\s*의)?\s*확률)/, `<b class="stat-number">${tierVal}%</b>`);
+      const f = STATE.filters.camp;
+      html += buildFilterRow('화면보기', 'subView', f.subView, [
+        ['list', '⛺ 야영지 도감 (55종)'],
+        ['common', '📊 야영지 등급·부옵션·랜덤옵션 표'],
+      ]);
+      if (f.subView === 'list') {
+        html += buildFilterRow('분류', 'type', f.type, [
+          ['all', '전체 (55)'],
+          ['structure', '구조물 (10)'],
+          ['prop', '소품 (34)'],
+          ['background', '배경 (11)'],
+        ]);
+        html += buildFilterRow('레벨', 'level', f.level, [
+          ['all', '전체'],
+          ['기본', '기본'],
+          ['20레벨', '20레벨'],
+          ['40레벨', '40레벨'],
+          ['60레벨', '60레벨'],
+        ]);
       }
-      return text.replace('N%', `<b class="stat-number">+${tierVal}%</b>`);
+    } else if (tab === 'relics') {
+      const f = STATE.filters.relics;
+      html += buildFilterRow('구분', 'subType', f.subType, [
+        ['relic', '🔮 유물 (5종)'],
+        ['rune', '💠 룬 (9종)'],
+        ['skin', '👗 영웅 스킨 (74종)'],
+        ['relicGrade', '📊 유물 등급별 수치표'],
+      ]);
     }
 
-    return text.replace(/\bN\b/g, `<b class="stat-number">+${tierVal}%</b>`);
+    els.contextToolbar.innerHTML = html;
   }
 
-  function formatMercBuffValue(ability, tierVal) {
-    if (tierVal === null || tierVal === undefined || tierVal === '-') return '-';
-    const text = ability || '';
-    if (text.includes('1+N배') || text.includes('N배')) return `${tierVal}배`;
-    if (text.includes('N개')) return `${tierVal}개`;
-    if (text.includes('N 증가') || text.includes('N 상승')) return `+${tierVal}`;
-    if (/N%(의\s*확률|\s*확률)/.test(text) || text.includes('세 번 공격')) return `${tierVal}%`;
-    return `+${tierVal}%`;
-  }
-
-  // -------------------------------------------------------------
-  // 4. RENDER MOUNTS (DATA GRID TABLE)
-  // -------------------------------------------------------------
-  function renderMountsView() {
-    if (!expansionData || !expansionData.mounts) return;
-
-    let mounts = expansionData.mounts;
-    if (searchEngine) {
-      mounts = searchEngine.searchMounts(mounts, { query: state.query });
-    }
-
-    const curSort = tabSortState.mounts;
-    mounts = sortMountsList(mounts, curSort.col, curSort.dir);
-
-    elResultCount.textContent = mounts.length;
-
-    if (mounts.length === 0) {
-      elItemsGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🐎</div>
-          <div class="empty-title">일치하는 탈것이 없습니다.</div>
-        </div>
-      `;
-      return;
-    }
-
-    if (currentViewMode === 'card') {
-      const cardsHtml = mounts.map(mount => {
-        const imgHtml = mount.img
-          ? `<img src="${mount.img}" alt="${mount.name}" class="card-img" loading="lazy">`
-          : `<div class="card-img-placeholder">🐎</div>`;
-
-        const abilHighlighted = (mount.ability || '')
-          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-
-        return `
-          <div class="item-card mount-card">
-            <div class="card-header">
-              <div class="card-img-wrapper">${imgHtml}</div>
-              <div class="card-title-area">
-                <div class="card-name-row">
-                  <span class="card-name">${mount.name}</span>
-                  <span class="badge-tag" style="font-family: monospace;">#${String(mount.no).padStart(2, '0')}</span>
-                </div>
-              </div>
-            </div>
-            <div class="card-abilities">
-              <div class="ability-line">
-                <b style="color: var(--accent-secondary);">고유 능력:</b><br>${abilHighlighted}
-              </div>
-            </div>
-            ${mount.comment ? `
-              <div style="font-size: 0.82rem; color: var(--text-muted); background: #f8fafc; padding: 0.5rem 0.65rem; border-radius: 6px; border-left: 3px solid var(--accent-gold); line-height: 1.45;">
-                ${mount.comment}
-              </div>
-            ` : ''}
-          </div>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
-    } else {
-      const rowsHtml = mounts.map(mount => {
-        const imgHtml = mount.img
-          ? `<img src="${mount.img}" alt="${mount.name}" class="table-thumb-img" loading="lazy">`
-          : `<div class="table-thumb-placeholder">🐎</div>`;
-
-        const abilHighlighted = (mount.ability || '')
-          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-
-        return `
-          <tr class="data-row mount-row">
-            <td style="width: 58px; text-align: center;">
-              <div class="table-thumb-wrapper">${imgHtml}</div>
-            </td>
-            <td style="text-align: center;">
-              <span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(mount.no).padStart(2, '0')}</span>
-            </td>
-            <td>
-              <div class="table-item-name">${mount.name}</div>
-            </td>
-            <td class="table-ability-block">${abilHighlighted}</td>
-            <td style="font-size: 0.83rem; color: #475569; line-height: 1.45;">
-              ${mount.comment || '-'}
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `
-        <div class="data-table-card">
-          <div class="data-table-wrapper">
-            <table class="data-grid-table">
-              <thead>
-                <tr>
-                  <th style="width: 58px; text-align: center;">사진</th>
-                  ${renderTh('no', '번호', 'width: 75px; text-align: center;', true)}
-                  ${renderTh('name', '탈것 이름', 'min-width: 140px;')}
-                  <th style="min-width: 280px;">고유 능력</th>
-                  <th style="min-width: 220px;">유저 평가 & 코멘트</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  // -------------------------------------------------------------
-  // MODALS
-  // -------------------------------------------------------------
-  function openItemModal(item) {
-    const currentAwak = state.awakeningLevel;
-    const imgHtml = item.img
-      ? `<img src="${item.img}" alt="${item.name}" style="width: 72px; height: 72px; border-radius: 12px; object-fit: cover;">`
-      : `<div style="font-size: 2.5rem;">⚔️</div>`;
-
-    const hasAnyAwakening = (item.awakening && Object.keys(item.awakening).length > 0) || !!item.awakeningNote;
-    let awakeningSectionHtml = '';
-
-    if (!hasAnyAwakening) {
-      awakeningSectionHtml = `
-        <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 1.25rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
-          <div style="font-size: 1.6rem; margin-bottom: 0.35rem;">ℹ️</div>
-          각성 정보가 없습니다.
-        </div>
-      `;
-    } else {
-      let tableRows = '';
-      for (let lv = 1; lv <= 5; lv++) {
-        const lines = item.awakening && item.awakening[lv];
-        const isCurrent = lv === currentAwak;
-        let text = '';
-        if (lines && lines.length) {
-          text = lines.join('<br>');
-        } else if (item.awakeningNote) {
-          text = `<span style="color: var(--accent-gold);">${item.awakeningNote}</span>`;
-        } else {
-          text = `<span style="color: var(--text-dim);">각성 정보가 없습니다.</span>`;
-        }
-        tableRows += `<tr class="${isCurrent ? 'highlighted' : ''}"><th>${lv}각성</th><td>${text}</td></tr>`;
-      }
-      awakeningSectionHtml = `<table class="awakening-table"><tbody>${tableRows}</tbody></table>`;
-    }
-
-    const dropsHtml = (item.drops || []).map(d => `<span class="drop-item" style="cursor: pointer;" onclick="window.filterByDrop('${d}')">${d} 🔍</span>`).join('');
-
-    elModalContent.innerHTML = `
-      <div class="modal-header" data-modal-item-id="${item.id}">
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          ${imgHtml}
-          <div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">${item.name}</h2>
-              ${item.tier ? `<span class="tier-badge tier-${item.tier}">${item.grade || item.tier}</span>` : ''}
-              ${item.usage ? `<span class="usage-badge usage-${item.usage}">${item.usageLabel || item.usage}</span>` : ''}
-            </div>
-            <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem; font-size: 0.85rem; color: var(--text-muted);">
-              ${item.range ? `<span class="badge-tag badge-range ${item.range}">${item.range}</span>` : ''}
-              ${item.aliases && item.aliases.length ? `<span>별칭: ${item.aliases.join(', ')}</span>` : ''}
-            </div>
-          </div>
-        </div>
-        <button class="modal-close-btn">&times;</button>
+  function buildFilterRow(label, filterKey, activeVal, options) {
+    const chips = options.map(([val, text]) => {
+      const cls = val === activeVal ? 'filter-chip active' : 'filter-chip';
+      return `<button type="button" class="${cls}" data-fkey="${escapeHtml(filterKey)}" data-fval="${escapeHtml(val)}">${escapeHtml(text)}</button>`;
+    }).join('');
+    return `
+      <div class="filter-row">
+        <span class="filter-label">${escapeHtml(label)}</span>
+        <div class="chip-scroll">${chips}</div>
       </div>
-      <div class="modal-body">
-        <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.5rem;">기본 능력 (0각성)</h4>
-          <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-            ${item.abilities.map(a => `<div class="ability-line">${a}</div>`).join('')}
-          </div>
+    `;
+  }
+
+  function renderQuickChips() {
+    const list = QUICK_CHIPS_BY_TAB[STATE.tab] || [];
+    if (!list.length) {
+      els.quickChipsBar.style.display = 'none';
+      return;
+    }
+    els.quickChipsBar.style.display = 'flex';
+    const curQ = STATE.query.trim();
+    els.quickChipsBar.innerHTML = `
+      <span class="quick-chip-hint">⚡ 빠른 검색칩:</span>
+      ${list.map(c => {
+        const isActive = curQ === c.q;
+        return `<button type="button" class="quick-chip ${isActive ? 'active' : ''}" data-qchip="${escapeHtml(c.q)}">${escapeHtml(c.label)}</button>`;
+      }).join('')}
+    `;
+  }
+
+  function renderCrossCategoryBar() {
+    const q = STATE.query.trim();
+    if (!q) {
+      els.crossMatchBar.hidden = true;
+      els.crossMatchBar.innerHTML = '';
+      return;
+    }
+    const counts = Search.countAllCategories(DB, q);
+    if (!counts) {
+      els.crossMatchBar.hidden = true;
+      return;
+    }
+    const labels = [
+      ['items', '⚔️ 장비'],
+      ['heroes', '🦸 영웅'],
+      ['mercenaries', '🛡️ 용병'],
+      ['towers', '🏰 타워'],
+      ['mounts', '🦌 탈것'],
+      ['pets', '🐾 펫'],
+      ['camp', '⛺ 야영지'],
+      ['relics', '🔮 유물·룬·스킨'],
+    ];
+    els.crossMatchBar.hidden = false;
+    els.crossMatchBar.innerHTML = labels.map(([tabKey, label]) => {
+      const cnt = counts[tabKey] || 0;
+      const cls = tabKey === STATE.tab ? 'cross-match-pill active' : 'cross-match-pill';
+      return `<button type="button" class="${cls}" data-jump-tab="${tabKey}">${label} <strong>${cnt}</strong></button>`;
+    }).join('');
+  }
+
+  // =========================================================================
+  // Filtering & Sorting Pipeline
+  // =========================================================================
+  function getFilteredEntries() {
+    const tokens = Search.parseQueryTokens(STATE.query);
+    const tab = STATE.tab;
+    let list = [];
+
+    if (tab === 'items') {
+      const f = STATE.filters.items;
+      list = (DB.items || []).filter(it => {
+        if (f.cat !== 'all' && it.cat !== f.cat) return false;
+        if (f.range !== 'all' && it.range !== f.range) return false;
+        if (f.grade !== 'all') {
+          const g = String(it.grade || '').trim().toUpperCase();
+          if (!g.startsWith(f.grade)) return false;
+        }
+        if (f.usage !== 'all') {
+          const uArr = Array.isArray(it.usage) ? it.usage : [String(it.usage || '')];
+          if (!uArr.includes(f.usage)) return false;
+        }
+        return Search.matchEntry(it, tokens);
+      });
+    } else if (tab === 'heroes') {
+      const f = STATE.filters.heroes;
+      list = (DB.heroes || []).filter(h => {
+        if (f.grade !== 'all' && h.grade !== f.grade) return false;
+        if (f.tier !== 'all') {
+          const ht = String(h.tier || '').trim().toUpperCase();
+          if (f.tier === 'SSS' && !ht.startsWith('SSS')) return false;
+          if (f.tier === 'SS' && ht !== 'SS') return false;
+          if (f.tier === 'S' && ht !== 'S') return false;
+          if (f.tier === 'A' && !ht.startsWith('A')) return false;
+          if (f.tier === 'B' && !ht.startsWith('B')) return false;
+          if (f.tier === 'C' && !ht.startsWith('C')) return false;
+          if (f.tier === 'D' && !['D', 'E', 'F'].some(x => ht.startsWith(x))) return false;
+        }
+        return Search.matchEntry(h, tokens);
+      });
+    } else if (tab === 'mercenaries') {
+      const f = STATE.filters.mercenaries;
+      list = (DB.mercenaries || []).filter(m => {
+        if (f.grade !== 'all' && m.grade !== f.grade) return false;
+        if (f.recommend !== 'all') {
+          const rec = String(m.recommend || '').trim().toUpperCase();
+          if (rec !== f.recommend) return false;
+        }
+        return Search.matchEntry(m, tokens);
+      });
+    } else if (tab === 'towers') {
+      const f = STATE.filters.towers;
+      list = (DB.towers || []).filter(t => {
+        if (f.grade !== 'all' && t.grade !== f.grade) return false;
+        if (f.deck === 'heroDeck' && !t.heroDeckRec) return false;
+        return Search.matchEntry(t, tokens);
+      });
+    } else if (tab === 'mounts') {
+      const f = STATE.filters.mounts;
+      list = ((DB.mounts && DB.mounts.mounts) || []).filter(m => {
+        if (f.pool !== 'all' && m.poolType !== f.pool) return false;
+        return Search.matchEntry(m, tokens);
+      });
+    } else if (tab === 'pets') {
+      const f = STATE.filters.pets;
+      list = ((DB.pets && DB.pets.pets) || []).filter(p => {
+        if (f.grade !== 'all') {
+          const pg = String(p.grade || '').trim().toUpperCase();
+          if (f.grade === 'D') {
+            if (!['D', 'E', 'F'].some(x => pg.startsWith(x))) return false;
+          } else if (!pg.startsWith(f.grade)) {
+            return false;
+          }
+        }
+        return Search.matchEntry(p, tokens);
+      });
+    } else if (tab === 'camp') {
+      const f = STATE.filters.camp;
+      list = ((DB.camp && DB.camp.items) || []).filter(c => {
+        if (f.type !== 'all' && c.type !== f.type) return false;
+        if (f.level !== 'all' && c.level !== f.level) return false;
+        return Search.matchEntry(c, tokens);
+      });
+    } else if (tab === 'relics') {
+      const f = STATE.filters.relics;
+      const combined = [
+        ...(DB.relics || []).map(r => ({ ...r, _kind: 'relic', _kindLabel: '유물' })),
+        ...(DB.runes || []).map(r => ({ ...r, _kind: 'rune', _kindLabel: '룬' })),
+        ...(DB.skins || []).map(s => ({ ...s, _kind: 'skin', _kindLabel: '스킨' })),
+      ];
+      let activeSub = (f.subType && f.subType !== 'all' && f.subType !== 'relicGrade') ? f.subType : 'relic';
+      list = combined.filter(e => e._kind === activeSub && Search.matchEntry(e, tokens));
+      if (!list.length && tokens.length > 0) {
+        for (const cand of ['relic', 'rune', 'skin']) {
+          const candMatches = combined.filter(e => e._kind === cand && Search.matchEntry(e, tokens));
+          if (candMatches.length > 0) {
+            f.subType = cand;
+            list = candMatches;
+            renderContextToolbar();
+            break;
+          }
+        }
+      }
+    }
+
+    // Sort
+    const sortBy = STATE.sortBy;
+    list.sort((a, b) => {
+      if (sortBy === 'name') {
+        return String(a.name).localeCompare(String(b.name), 'ko');
+      }
+      if (sortBy === 'tier') {
+        const diff = tierRankScore(a) - tierRankScore(b);
+        if (diff !== 0) return diff;
+      }
+      if (sortBy === 'grade') {
+        const ga = a.gradeRank !== undefined ? a.gradeRank : tierRankScore(a);
+        const gb = b.gradeRank !== undefined ? b.gradeRank : tierRankScore(b);
+        if (ga !== gb) return ga - gb;
+      }
+      if (a.no !== undefined && b.no !== undefined && a.no !== b.no) {
+        return a.no - b.no;
+      }
+      return (a.officialId || a.no || 0) - (b.officialId || b.no || 0);
+    });
+
+    return list;
+  }
+
+  // =========================================================================
+  // Stage Renderers (Card Grid, Data Table, Reference Sub-views)
+  // =========================================================================
+  function renderStage() {
+    renderContextToolbar();
+    renderQuickChips();
+    renderCrossCategoryBar();
+
+    const tab = STATE.tab;
+    els.resultsCategoryTitle.textContent = TAB_TITLES[tab] || '도감';
+
+    if (tab === 'growth') {
+      renderGrowthCalculatorStage();
+      return;
+    }
+
+    // Handle specialized reference sub-views
+    if (tab === 'mounts' && STATE.filters.mounts.subView === 'subOptions') {
+      renderMountSubOptionsStage();
+      return;
+    }
+    if (tab === 'mounts' && STATE.filters.mounts.subView === 'upgrade') {
+      renderMountUpgradeStage();
+      return;
+    }
+    if (tab === 'pets' && STATE.filters.pets.subView === 'guide') {
+      renderPetGuideStage();
+      return;
+    }
+    if (tab === 'camp' && STATE.filters.camp.subView === 'common') {
+      renderCampCommonStage();
+      return;
+    }
+    if (tab === 'relics' && STATE.filters.relics.subType === 'relicGrade') {
+      renderRelicGradeTableStage();
+      return;
+    }
+
+    const entries = getFilteredEntries();
+    els.resultsCountBadge.textContent = `${entries.length}개`;
+    els.activeFilterSummary.textContent = STATE.query ? `검색어: "${STATE.query}"` : '';
+
+    if (!entries.length) {
+      els.contentStage.innerHTML = `
+        <div class="empty-state">
+          <h3>조건에 맞는 항목이 없습니다 🔍</h3>
+          <p style="margin-top:6px;">검색어나 필터를 초기화해 보세요. (초성 검색 예: <code>ㅂㄷ</code>, 수치 검색 예: <code>치피>=60</code>)</p>
         </div>
-        <div>
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold);">각성 단계별 변화</h4>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">현재 선택: ${currentAwak}각성</span>
-          </div>
-          ${awakeningSectionHtml}
-        </div>
-        ${item.comment ? `
+      `;
+      return;
+    }
+
+    if (STATE.viewMode === 'table') {
+      renderTableView(tab, entries);
+    } else {
+      renderCardGridView(tab, entries);
+    }
+  }
+
+  function renderMercTopBanner() {
+    return `
+      <div class="modal-section" style="margin-bottom:14px;padding:12px 16px;">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px;">
           <div>
-            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem;">공략 코멘트</h4>
-            <div style="background: #f8fafc; border: 1px solid var(--border-glass); border-left: 3px solid var(--accent-primary); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.875rem; color: var(--text-main);">
-              ${item.comment}
+            <strong>📌 추천도 기준:</strong>
+            <span class="badge badge-tier-0" style="margin-left:4px;">SSS / SS / S: 최고!</span>
+            <span class="badge badge-tier-1">A: 자주 사용함</span>
+            <span class="badge badge-tier-2">B: 그럭저럭 좋음</span>
+            <span class="badge">C: 종종 사용</span>
+            <span class="badge">J: 자사</span>
+            <span class="badge">X: 사용안함</span>
+          </div>
+          <div style="color:var(--text-secondary);">
+            <strong>⚔️ 등급별 필요 레벨 & 모든 공격력 증가:</strong>
+            B(5Lv, <strong>+10%</strong>) · A(9Lv, <strong>+20%</strong>) · S(13Lv, <strong>+30%</strong>) · SS(17Lv, <strong style="color:var(--accent-teal);">+40%</strong>) · SSS(20Lv, <strong style="color:var(--accent-amber);">+50%</strong>)
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCardGridView(tab, entries) {
+    const cardsHtml = entries.map(entry => {
+      if (tab === 'items') return renderItemCard(entry);
+      if (tab === 'heroes') return renderHeroCard(entry);
+      if (tab === 'mercenaries') return renderMercCard(entry);
+      if (tab === 'towers') return renderTowerCard(entry);
+      if (tab === 'mounts') return renderMountCard(entry);
+      if (tab === 'pets') return renderPetCard(entry);
+      if (tab === 'camp') return renderCampCard(entry);
+      if (tab === 'relics') return renderRelicRuneSkinCard(entry);
+      return '';
+    }).join('');
+
+    const prefixHtml = tab === 'mercenaries' ? renderMercTopBanner() : '';
+    els.contentStage.innerHTML = `${prefixHtml}<div class="card-grid">${cardsHtml}</div>`;
+  }
+
+  function renderDropBadges(arr) {
+    return arr.map(d => `<span class="badge badge-drop">${escapeHtml(d)}</span>`).join('');
+  }
+
+  function renderCompactDropCell(dropsArr, fallbackStr, maxShow = 6) {
+    const arr = Array.isArray(dropsArr) && dropsArr.length
+      ? dropsArr
+      : String(fallbackStr || '').split(/,\s*/).filter(Boolean);
+    if (!arr.length) return '<span style="color:var(--text-muted);">-</span>';
+    const fullTxt = arr.join(', ');
+    if (arr.length <= maxShow && fullTxt.length <= 28) {
+      return `<div class="drop-cell-wrap"><div class="drop-badges-inline">${renderDropBadges(arr)}</div></div>`;
+    }
+    const shortArr = arr.slice(0, maxShow);
+    const restCnt = arr.length - maxShow;
+    return `
+      <div class="drop-cell-wrap has-more" title="${escapeHtml(fullTxt)} (클릭하여 펼치기)">
+        <span class="drop-short"><span class="drop-badges-inline">${renderDropBadges(shortArr)}<button type="button" class="drop-more-btn" data-toggle-drop="expand">+${restCnt > 0 ? restCnt + '개' : '더보기'}</button></span></span>
+        <span class="drop-full" hidden><span class="drop-badges-inline">${renderDropBadges(arr)}<button type="button" class="drop-more-btn" data-toggle-drop="collapse">접기</button></span></span>
+      </div>
+    `;
+  }
+
+  function renderItemCard(it) {
+    const awkLv = STATE.globalAwk;
+    const awkObj = (it.awakening && it.awakening[awkLv]) || { lines: it.abilities || [] };
+    const lines = awkObj.lines && awkObj.lines.length ? awkObj.lines : (it.abilities || []);
+    const usageStr = Array.isArray(it.usage) && it.usage.length ? it.usage.join('/') : '';
+    const tags = it.tags || [];
+    const dropsArr = (it.drops && it.drops.length) ? it.drops : (it.officialStages || []);
+
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(it.id)}" data-open-tab="items">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${it.img ? `<img src="${escapeHtml(it.img)}" alt="${escapeHtml(it.name)}" loading="lazy" />` : '⚔️'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(it.name)}</h3>
+              <span class="card-id">No.${it.no || it.officialId}</span>
             </div>
+            <div class="card-badges">
+              <span class="badge">${escapeHtml(it.catLabel)}</span>
+              ${it.range ? `<span class="badge">${escapeHtml(it.range)}</span>` : ''}
+              ${it.grade ? `<span class="badge ${tierBadgeClass(it.grade)}">등급 ${escapeHtml(it.grade)}</span>` : ''}
+              ${usageStr ? `<span class="badge ${tierBadgeClass(usageStr)}">사용 ${escapeHtml(usageStr)}</span>` : ''}
+              ${awkLv !== '0' ? `<span class="badge badge-awk">★${awkLv}성 기준</span>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div class="card-abilities">
+          ${lines.map((l, idx) => `<div class="ability-line ${idx === 0 && it.explain ? 'explain-line' : ''}">• ${escapeHtml(l)}</div>`).join('')}
+        </div>
+
+        ${tags.length ? `
+          <div class="card-badges" style="margin-top:2px;">
+            ${tags.map(t => `<span class="badge badge-rare">${escapeHtml(t)}</span>`).join('')}
           </div>
         ` : ''}
-        <div>
-          <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.4rem;">획득처 / 드랍</h4>
-          <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">${dropsHtml || '획득처 정보 없음'}</div>
-        </div>
-      </div>
-    `;
 
-    showModal();
+        ${it.comment ? `<div class="card-comment">💬 ${escapeHtml(it.comment)}</div>` : ''}
+
+        <div class="card-footer">
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;" title="${escapeHtml(dropsArr.join(', '))}">
+            <span>📍 드랍:</span>
+            ${dropsArr.length ? renderCompactDropCell(dropsArr, '', 5) : '<span class="badge badge-drop">-</span>'}
+          </div>
+          <span style="flex-shrink:0;">상세 · 계산기 ›</span>
+        </div>
+      </article>
+    `;
   }
 
-  function openHeroModal(hero) {
-    const imgHtml = hero.img
-      ? `<img src="${hero.img}" alt="${hero.name}" style="width: 72px; height: 72px; border-radius: 12px; object-fit: cover;">`
-      : `<div style="font-size: 2.5rem;">🦸</div>`;
+  function renderHeroCard(h) {
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(h.id)}" data-open-tab="heroes">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${h.img ? `<img src="${escapeHtml(h.img)}" alt="${escapeHtml(h.name)}" loading="lazy" />` : '🦸'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(h.name)}</h3>
+              <span class="card-id">#${h.officialId}</span>
+            </div>
+            <div class="card-badges">
+              <span class="badge ${h.grade === '전설' ? 'badge-legend' : 'badge-rare'}">${escapeHtml(h.grade)}</span>
+              ${h.tier ? `<span class="badge ${tierBadgeClass(h.tier)}">${escapeHtml(h.tier)}</span>` : ''}
+              ${h.skins && h.skins.length ? `<span class="badge badge-level">스킨 ${h.skins.length}종</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="card-abilities">
+          <div class="ability-line">${escapeHtml(h.ability)}</div>
+        </div>
+        ${h.comment ? `<div class="card-comment">💬 ${escapeHtml(h.comment)}</div>` : ''}
+        <div class="card-footer">
+          <span>${h.aliases && h.aliases.length ? `별칭: ${escapeHtml(h.aliases.join(', '))}` : `사거리 ${h.specs?.range || '-'} · 공속 ${h.specs?.aspd || '-'}`}</span>
+          <span>특성 · 스킨 보기 ›</span>
+        </div>
+      </article>
+    `;
+  }
 
-    let levelRows = '';
-    const sortedLevels = Object.values(hero.levels || {}).sort((a, b) => a.level - b.level);
-    sortedLevels.forEach(lv => {
-      const filledStars = (lv.stars || '').replace(/[^★]/g, '');
-      const starsBadge = filledStars
-        ? `<span style="color: #d97706; font-size: 0.88rem; font-weight: 800; letter-spacing: 1px;">${filledStars}</span>`
-        : '';
+  function renderMercCard(m) {
+    const tv = m.tierValues || {};
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(m.id)}" data-open-tab="mercenaries">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${m.img ? `<img src="${escapeHtml(m.img)}" alt="${escapeHtml(m.name)}" loading="lazy" />` : '🛡️'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(m.name)}</h3>
+              <span class="card-id">#${m.officialId}</span>
+            </div>
+            <div class="card-badges">
+              <span class="badge ${m.grade === '전설' ? 'badge-legend' : (m.grade === '희귀' ? 'badge-rare' : '')}">${escapeHtml(m.grade)}</span>
+              ${m.recommend ? `<span class="badge ${tierBadgeClass(m.recommend)}">추천 ${escapeHtml(m.recommend)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="card-abilities">
+          <div class="ability-line explain-line">${escapeHtml(m.templateKo || m.ability)}</div>
+          <div class="ability-line" style="font-size:12px;">
+            B(5Lv): <strong>${escapeHtml(tv.B || '-')}</strong> ·
+            A(9Lv): <strong>${escapeHtml(tv.A || '-')}</strong> ·
+            S(13Lv): <strong>${escapeHtml(tv.S || '-')}</strong> ·
+            SS(17Lv): <strong>${escapeHtml(tv.SS || '-')}</strong> ·
+            SSS(20Lv): <strong style="color:var(--accent-amber);">${escapeHtml(tv.SSS || '-')}</strong>
+          </div>
+        </div>
+      </article>
+    `;
+  }
 
-      levelRows += `
+  function renderTowerCard(t) {
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(t.id)}" data-open-tab="towers">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${t.img ? `<img src="${escapeHtml(t.img)}" alt="${escapeHtml(t.name)}" loading="lazy" />` : '🏰'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(t.name)}</h3>
+              <span class="card-id">#${t.officialId}</span>
+            </div>
+            <div class="card-badges">
+              <span class="badge ${t.grade === '전설' ? 'badge-legend' : (t.grade === '희귀' ? 'badge-rare' : '')}">${escapeHtml(t.grade)}</span>
+              ${t.heroDeckRec ? `<span class="badge ${tierBadgeClass(t.heroDeckRec)}">추천: ${escapeHtml(t.heroDeckRec)}</span>` : ''}
+              <span class="badge badge-level">추가버프 ${t.waveBuffs?.length || 0}종</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-abilities">
+          <div class="ability-line">${escapeHtml(t.ability)}</div>
+        </div>
+        ${t.comment ? `<div class="card-comment">💬 ${escapeHtml(t.comment)}</div>` : ''}
+        <div class="card-footer">
+          <span>공격력 ${t.specs?.atk} · 공속 ${t.specs?.aspd} · 사거리 ${t.specs?.range}</span>
+          <span>웨이브 버프 보기 ›</span>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderMountCard(m) {
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(m.id)}" data-open-tab="mounts">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${m.img ? `<img src="${escapeHtml(m.img)}" alt="${escapeHtml(m.name)}" loading="lazy" />` : '🦌'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(m.name)}</h3>
+              <span class="card-id">No.${m.no}</span>
+            </div>
+            <div class="card-badges">
+              <span class="badge ${m.poolType === '고급 합성' ? 'badge-legend' : 'badge-rare'}">${escapeHtml(m.poolType)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-abilities">
+          <div class="ability-line">${escapeHtml(m.ability)}</div>
+        </div>
+        ${m.comment ? `<div class="card-comment">💬 ${escapeHtml(m.comment)}</div>` : ''}
+      </article>
+    `;
+  }
+
+  function renderPetCard(p) {
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(p.id)}" data-open-tab="pets">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${p.img ? `<img src="${escapeHtml(p.img)}" alt="${escapeHtml(p.name)}" loading="lazy" />` : '🐾'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(p.name)}</h3>
+              <span class="card-id">종류 #${p.no}</span>
+            </div>
+            <div class="card-badges">
+              ${p.grade ? `<span class="badge ${tierBadgeClass(p.grade)}">펫 등급 ${escapeHtml(p.grade)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="card-abilities">
+          ${(p.effects && p.effects.length ? p.effects : [p.ability]).map(ef => `<div class="ability-line">• ${escapeHtml(ef)}</div>`).join('')}
+        </div>
+        <div class="card-footer">
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+            <span>📍 드랍:</span>
+            ${renderCompactDropCell(p.drops, p.dropRaw, 5)}
+          </div>
+          <span style="flex-shrink:0;">상세 ›</span>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderCampCard(c) {
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(c.id)}" data-open-tab="camp">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${c.img ? `<img src="${escapeHtml(c.img)}" alt="${escapeHtml(c.name)}" loading="lazy" />` : '⛺'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(c.name)}</h3>
+              <span class="card-id">#${c.officialId}</span>
+            </div>
+            <div class="card-badges">
+              <span class="badge">${escapeHtml(c.typeName)}</span>
+              <span class="badge badge-level">레벨: ${escapeHtml(c.level)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-abilities">
+          <div class="ability-line">${escapeHtml(c.ability)}</div>
+          ${c.quest ? `<div class="ability-line" style="font-size:12px;color:var(--text-muted);">🔓 해금 조건: ${escapeHtml(c.quest)}</div>` : ''}
+        </div>
+        ${c.comment ? `<div class="card-comment">💬 ${escapeHtml(c.comment)}</div>` : ''}
+      </article>
+    `;
+  }
+
+  function renderRelicRuneSkinCard(e) {
+    return `
+      <article class="db-card" data-open-id="${escapeHtml(e.id)}" data-open-tab="relics">
+        <div class="card-top">
+          <div class="card-icon-box">
+            ${e.img ? `<img src="${escapeHtml(e.img)}" alt="${escapeHtml(e.name)}" loading="lazy" />` : '🔮'}
+          </div>
+          <div class="card-head-info">
+            <div class="card-title-row">
+              <h3 class="card-title">${escapeHtml(e.name)}</h3>
+              <span class="card-id">#${e.officialId}</span>
+            </div>
+            <div class="card-badges">
+              <span class="badge badge-rare">${escapeHtml(e._kindLabel)}</span>
+              ${e.heroName ? `<span class="badge badge-level">${escapeHtml(e.heroName)} 전용</span>` : ''}
+              ${e.coolTime ? `<span class="badge">쿨타임 ${e.coolTime}초</span>` : ''}
+              ${e.recommend ? `<span class="badge ${tierBadgeClass(e.recommend)}">${escapeHtml(e.recommend)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="card-abilities">
+          <div class="ability-line">${escapeHtml(e.ability)}</div>
+        </div>
+        ${e.comment ? `<div class="card-comment">💬 ${escapeHtml(e.comment)}</div>` : ''}
+      </article>
+    `;
+  }
+
+  // =========================================================================
+  // High-Density Table Renderer (Tailored per Category — Matching User Excels)
+  // =========================================================================
+  const COMMENT_TH_HTML = '<span class="th-comment-wrap"><img src="assets/comment_by_ara2.png" class="th-comment-icon" alt="" />코멘트</span>';
+
+  function renderTableView(tab, entries) {
+    let headHtml = '';
+    let rowsHtml = '';
+
+    if (tab === 'items') {
+      const awkLv = STATE.globalAwk;
+      headHtml = `
         <tr>
-          <th>${lv.level}레벨</th>
+          <th style="width:55px;text-align:center;">순번</th>
+          <th>아이템명 (별칭)</th>
+          <th>분류 / 근·원</th>
+          <th>고유 능력 (${awkLv === '0' ? '0각성 기본' : `★${awkLv}각성`})</th>
+          <th>주요 옵션</th>
+          <th style="text-align:center;">사용여부</th>
+          <th style="text-align:center;">등급</th>
+          <th>${COMMENT_TH_HTML}</th>
+          <th>드랍</th>
+        </tr>
+      `;
+      rowsHtml = entries.map(it => {
+        const lines = (it.awakening && it.awakening[awkLv]?.lines) || it.abilities || [];
+        const dropsTxt = (it.drops && it.drops.length) ? it.drops.join(', ') : (it.officialStages || []).join(', ');
+        const usageStr = Array.isArray(it.usage) && it.usage.length ? it.usage.join('/') : '-';
+        const tags = it.tags || [];
+        return `
+          <tr data-open-id="${escapeHtml(it.id)}" data-open-tab="items">
+            <td style="text-align:center;font-weight:700;color:var(--text-muted);">${it.no || '-'}</td>
+            <td>
+              <div class="tbl-item-cell">
+                ${it.img ? `<img class="tbl-icon" src="${escapeHtml(it.img)}" alt="" loading="lazy" />` : ''}
+                <div>
+                  <strong>${escapeHtml(it.name)}</strong>
+                  ${it.aliases?.length ? `<div class="card-id">(${escapeHtml(it.aliases.join(', '))})</div>` : ''}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge">${escapeHtml(it.catLabel)}</span>
+              ${it.range ? `<span class="badge">${escapeHtml(it.range)}</span>` : ''}
+            </td>
+            <td>${lines.map((l, idx) => `<div style="${idx === 0 && it.explain ? 'color:var(--accent-teal);font-weight:600;' : ''}">• ${escapeHtml(l)}</div>`).join('')}</td>
+            <td>
+              ${tags.length ? tags.map(t => `<span class="badge badge-rare" style="margin:1px;">${escapeHtml(t)}</span>`).join(' ') : '<span style="color:var(--text-muted);">-</span>'}
+            </td>
+            <td style="text-align:center;">
+              <span class="badge ${tierBadgeClass(usageStr)}">${escapeHtml(usageStr)}</span>
+            </td>
+            <td style="text-align:center;">
+              ${it.grade ? `<span class="badge ${tierBadgeClass(it.grade)}">${escapeHtml(it.grade)}</span>` : '-'}
+            </td>
+            <td style="color:var(--accent-amber);font-size:12px;max-width:240px;">
+              ${it.comment ? `💬 ${escapeHtml(it.comment)}` : ''}
+            </td>
+            <td style="font-size:12px;color:var(--text-secondary);">
+              ${renderCompactDropCell((it.drops && it.drops.length) ? it.drops : it.officialStages, '', 5)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } else if (tab === 'heroes') {
+      headHtml = `
+        <tr>
+          <th style="width:70px;text-align:center;">등급</th>
+          <th style="width:75px;text-align:center;">티어</th>
+          <th>영웅 (별칭)</th>
+          <th>능력</th>
+          <th>레벨별 추가능력 (Lv.3 / 6 / 9 / 12 / 15) · 별점(★☆)</th>
+          <th>${COMMENT_TH_HTML}</th>
+        </tr>
+      `;
+      rowsHtml = entries.map(h => {
+        const traits = (h.traits || []).filter(t => t.text);
+        return `
+          <tr data-open-id="${escapeHtml(h.id)}" data-open-tab="heroes">
+            <td style="text-align:center;">
+              <span class="badge ${h.grade === '전설' ? 'badge-legend' : (h.grade === '희귀' ? 'badge-rare' : '')}">${escapeHtml(h.grade)}</span>
+            </td>
+            <td style="text-align:center;">
+              ${h.tier ? `<span class="badge ${tierBadgeClass(h.tier)}">${escapeHtml(h.tier)}</span>` : '-'}
+            </td>
+            <td>
+              <div class="tbl-item-cell">
+                ${h.img ? `<img class="tbl-icon" src="${escapeHtml(h.img)}" alt="" loading="lazy" />` : ''}
+                <div>
+                  <strong>${escapeHtml(h.name)}</strong>
+                  ${h.aliases?.length ? `<div class="card-id">(${escapeHtml(h.aliases.join(', '))})</div>` : ''}
+                </div>
+              </div>
+            </td>
+            <td style="max-width:250px;white-space:pre-line;">${escapeHtml(h.ability)}</td>
+            <td style="max-width:400px;font-size:12px;">
+              ${traits.length ? traits.map(tr => `
+                <div style="margin-bottom:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                  <span class="badge badge-level" style="padding:1px 5px;font-size:11px;">${tr.unlockLevel}Lv</span>
+                  <span>${escapeHtml(tr.text)}</span>
+                  ${tr.star ? `<span style="color:var(--accent-amber);font-size:11.5px;font-weight:700;">${escapeHtml(tr.star)}</span>` : ''}
+                </div>
+              `).join('') : '<span style="color:var(--text-muted);">-</span>'}
+            </td>
+            <td style="color:var(--accent-amber);font-size:12px;max-width:270px;white-space:pre-line;">${escapeHtml(h.comment || '')}</td>
+          </tr>
+        `;
+      }).join('');
+    } else if (tab === 'mercenaries') {
+      headHtml = `
+        <tr>
+          <th style="width:75px;text-align:center;">등급</th>
+          <th style="width:75px;text-align:center;">추천</th>
+          <th>영웅</th>
+          <th>능력</th>
+          <th style="text-align:center;">B (5Lv)</th>
+          <th style="text-align:center;">A (9Lv)</th>
+          <th style="text-align:center;">S (13Lv)</th>
+          <th style="text-align:center;">SS (17Lv)</th>
+          <th style="text-align:center;">SSS (20Lv)</th>
+        </tr>
+      `;
+      rowsHtml = entries.map(m => {
+        const tv = m.tierValues || {};
+        return `
+          <tr data-open-id="${escapeHtml(m.id)}" data-open-tab="mercenaries">
+            <td style="text-align:center;"><span class="badge ${m.grade === '전설' ? 'badge-legend' : (m.grade === '희귀' ? 'badge-rare' : '')}">${escapeHtml(m.grade)}</span></td>
+            <td style="text-align:center;"><span class="badge ${tierBadgeClass(m.recommend)}">${escapeHtml(m.recommend || '-')}</span></td>
+            <td>
+              <div class="tbl-item-cell">
+                ${m.img ? `<img class="tbl-icon" src="${escapeHtml(m.img)}" alt="" loading="lazy" />` : ''}
+                <div>
+                  <strong>${escapeHtml(m.name)}</strong>
+                </div>
+              </div>
+            </td>
+            <td>${escapeHtml(m.templateKo || m.ability)}</td>
+            <td style="text-align:center;font-weight:600;">${escapeHtml(tv.B || '-')}</td>
+            <td style="text-align:center;font-weight:600;">${escapeHtml(tv.A || '-')}</td>
+            <td style="text-align:center;font-weight:600;">${escapeHtml(tv.S || '-')}</td>
+            <td style="text-align:center;font-weight:700;color:var(--accent-teal);">${escapeHtml(tv.SS || '-')}</td>
+            <td style="text-align:center;font-weight:800;color:var(--accent-amber);">${escapeHtml(tv.SSS || '-')}</td>
+          </tr>
+        `;
+      }).join('');
+    } else if (tab === 'towers') {
+      headHtml = `
+        <tr>
+          <th style="width:70px;text-align:center;">등급</th>
+          <th>타워</th>
+          <th>능력</th>
+          <th>레벨별 추가 버프 선택 (Lv.0 / 1 / 4 / 8 / 12 / 16 & 횟수)</th>
+          <th style="width:85px;text-align:center;">추천</th>
+          <th>${COMMENT_TH_HTML}</th>
+        </tr>
+      `;
+      rowsHtml = entries.map(t => {
+        const wBuffs = t.waveBuffs || [];
+        return `
+          <tr data-open-id="${escapeHtml(t.id)}" data-open-tab="towers">
+            <td style="text-align:center;">
+              <span class="badge ${t.grade === '전설' ? 'badge-legend' : (t.grade === '희귀' ? 'badge-rare' : '')}">${escapeHtml(t.grade)}</span>
+            </td>
+            <td>
+              <div class="tbl-item-cell">
+                ${t.img ? `<img class="tbl-icon" src="${escapeHtml(t.img)}" alt="" loading="lazy" />` : ''}
+                <div>
+                  <strong>${escapeHtml(t.name)}</strong>
+                </div>
+              </div>
+            </td>
+            <td style="max-width:250px;">${escapeHtml(t.ability)}</td>
+            <td style="max-width:360px;font-size:12px;">
+              ${wBuffs.map(bf => `
+                <div style="margin-bottom:2px;">
+                  <span class="badge badge-level" style="padding:1px 5px;font-size:11px;">${bf.towerLv}Lv</span>
+                  <span>${escapeHtml(bf.text)}</span>
+                  <span style="color:var(--text-muted);font-size:11px;">(${bf.maxPickCount}회)</span>
+                </div>
+              `).join('')}
+            </td>
+            <td style="text-align:center;">
+              ${t.heroDeckRec ? `<span class="badge ${tierBadgeClass(t.heroDeckRec)}">${escapeHtml(t.heroDeckRec)}</span>` : '-'}
+            </td>
+            <td style="color:var(--accent-amber);font-size:12px;max-width:240px;">${escapeHtml(t.comment || '')}</td>
+          </tr>
+        `;
+      }).join('');
+    } else if (tab === 'mounts') {
+      headHtml = `
+        <tr>
+          <th style="width:60px;text-align:center;">숫자</th>
+          <th style="width:110px;text-align:center;">합성 분류</th>
+          <th>이름</th>
+          <th>능력</th>
+          <th>${COMMENT_TH_HTML}</th>
+        </tr>
+      `;
+      rowsHtml = entries.map(m => `
+        <tr data-open-id="${escapeHtml(m.id)}" data-open-tab="mounts">
+          <td style="text-align:center;font-weight:700;color:var(--text-muted);">${m.no}</td>
+          <td style="text-align:center;"><span class="badge ${m.poolType === '고급 합성' ? 'badge-legend' : 'badge-rare'}">${escapeHtml(m.poolType)}</span></td>
           <td>
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.35rem;">
-              <span>${lv.ability}</span>
-              ${starsBadge}
+            <div class="tbl-item-cell">
+              ${m.img ? `<img class="tbl-icon" src="${escapeHtml(m.img)}" alt="" loading="lazy" />` : ''}
+              <div>
+                <strong>${escapeHtml(m.name)}</strong>
+              </div>
             </div>
           </td>
+          <td><strong>${escapeHtml(m.ability)}</strong></td>
+          <td style="color:var(--accent-amber);font-size:12.5px;">${escapeHtml(m.comment || '')}</td>
         </tr>
-      `;
-    });
-
-    elModalContent.innerHTML = `
-      <div class="modal-header">
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          ${imgHtml}
-          <div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">${hero.name}</h2>
-              ${hero.tier ? `<span class="tier-badge tier-${hero.tier}">${hero.tier}</span>` : ''}
-              <span class="badge-tag">${hero.grade}</span>
-            </div>
-            ${hero.aliases && hero.aliases.length ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem;">별칭: ${hero.aliases.join(', ')}</div>` : ''}
-          </div>
-        </div>
-        <button class="modal-close-btn">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.4rem;">기본 고유 능력</h4>
-          <div class="ability-line">${hero.ability || '기본 능력 정보 없음'}</div>
-        </div>
-        <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.4rem;">레벨별 추가 능력 & 평가</h4>
-          <table class="awakening-table">
-            <tbody>
-              ${levelRows || '<tr><td colspan="2" style="text-align: center; color: var(--text-dim);">레벨 정보가 없습니다.</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-        ${hero.comment ? `
-          <div>
-            <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.3rem;">영덱 공략 & 평가 코멘트</h4>
-            <div style="background: #f8fafc; border: 1px solid var(--border-glass); border-left: 3px solid var(--accent-primary); padding: 0.75rem 0.9rem; border-radius: 6px; font-size: 0.875rem; line-height: 1.6; color: var(--text-main);">
-              ${hero.comment}
-            </div>
-          </div>
-        ` : ''}
-      </div>
-    `;
-
-    showModal();
-  }
-
-  function openMercModal(merc) {
-    const imgHtml = merc.img
-      ? `<img src="${merc.img}" alt="${merc.name}" style="width: 72px; height: 72px; border-radius: 12px; object-fit: cover;">`
-      : `<div style="font-size: 2.5rem;">🛡️</div>`;
-
-    const tiers = ['B', 'A', 'S', 'SS', 'SSS'];
-    const reqs = ['5레벨', '9레벨', '13레벨', '17레벨', '20레벨'];
-    let rows = '';
-
-    tiers.forEach((t, i) => {
-      const val = merc.tierValues ? merc.tierValues[t] : '-';
-      const buffVal = formatMercBuffValue(merc.ability, val);
-      rows += `
+      `).join('');
+    } else if (tab === 'pets') {
+      headHtml = `
         <tr>
-          <th>${t} 등급<br><span style="font-size: 0.7rem; color: var(--text-dim); font-weight: 400;">(${reqs[i]})</span></th>
-          <td style="font-weight: 700; color: var(--accent-secondary); font-size: 1rem;">
-            ${buffVal}
-          </td>
+          <th style="width:65px;text-align:center;">종류</th>
+          <th>펫</th>
+          <th>기본 능력</th>
+          <th>드랍</th>
+          <th style="width:90px;text-align:center;">펫 등급</th>
         </tr>
       `;
-    });
-
-    elModalContent.innerHTML = `
-      <div class="modal-header">
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          ${imgHtml}
-          <div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">${merc.name}</h2>
-              ${merc.recommend ? `<span class="usage-badge usage-${merc.recommend}">${merc.recommend}</span>` : ''}
-              <span class="badge-tag">${merc.grade}</span>
+      rowsHtml = entries.map(p => `
+        <tr data-open-id="${escapeHtml(p.id)}" data-open-tab="pets">
+          <td style="text-align:center;font-weight:700;color:var(--text-muted);">${p.no}</td>
+          <td>
+            <div class="tbl-item-cell">
+              ${p.img ? `<img class="tbl-icon" src="${escapeHtml(p.img)}" alt="" loading="lazy" />` : ''}
+              <div>
+                <strong>${escapeHtml(p.name)}</strong>
+              </div>
             </div>
-          </div>
-        </div>
-        <button class="modal-close-btn">&times;</button>
+          </td>
+          <td style="max-width:360px;">
+            ${(p.effects && p.effects.length ? p.effects : [p.ability]).map(ef => `<div>• ${escapeHtml(ef)}</div>`).join('')}
+          </td>
+          <td style="font-size:12px;color:var(--text-secondary);">
+            ${renderCompactDropCell(p.drops, p.dropRaw, 6)}
+          </td>
+          <td style="text-align:center;">
+            ${p.grade ? `<span class="badge ${tierBadgeClass(p.grade)}">${escapeHtml(p.grade)}</span>` : '-'}
+          </td>
+        </tr>
+      `).join('');
+    } else if (tab === 'camp') {
+      headHtml = `
+        <tr>
+          <th style="width:85px;text-align:center;">분류</th>
+          <th>종류</th>
+          <th style="width:85px;text-align:center;">레벨</th>
+          <th>능력</th>
+          <th>${COMMENT_TH_HTML}</th>
+        </tr>
+      `;
+      rowsHtml = entries.map(c => `
+        <tr data-open-id="${escapeHtml(c.id)}" data-open-tab="camp">
+          <td style="text-align:center;"><span class="badge">${escapeHtml(c.typeName)}</span></td>
+          <td>
+            <div class="tbl-item-cell">
+              ${c.img ? `<img class="tbl-icon" src="${escapeHtml(c.img)}" alt="" loading="lazy" />` : ''}
+              <div>
+                <strong>${escapeHtml(c.name)}</strong>
+              </div>
+            </div>
+          </td>
+          <td style="text-align:center;"><span class="badge badge-level">${escapeHtml(c.level)}</span></td>
+          <td>
+            <strong>${escapeHtml(c.ability)}</strong>
+            ${c.rewardGem ? `<span class="badge badge-rare" style="margin-left:6px;">💎 붉은 보석 ${c.rewardGem.toLocaleString()}개</span>` : ''}
+          </td>
+          <td style="color:var(--accent-amber);font-size:12.5px;">${c.comment ? `💬 ${escapeHtml(c.comment)}` : ''}</td>
+        </tr>
+      `).join('');
+    } else if (tab === 'relics') {
+      const subType = STATE.filters.relics.subType || 'relic';
+      if (subType === 'relic') {
+        headHtml = `
+          <tr>
+            <th>유물명</th>
+            <th style="width:90px;text-align:center;">쿨타임</th>
+            <th style="width:120px;text-align:center;">획득처</th>
+            <th>효과 (전설 · 신화 · 초월)</th>
+            <th style="width:85px;text-align:center;">추천</th>
+            <th>${COMMENT_TH_HTML}</th>
+          </tr>
+        `;
+        rowsHtml = entries.map(e => `
+          <tr data-open-id="${escapeHtml(e.id)}" data-open-tab="relics">
+            <td>
+              <div class="tbl-item-cell">
+                ${e.img ? `<img class="tbl-icon" src="${escapeHtml(e.img)}" alt="" loading="lazy" />` : ''}
+                <div>
+                  <strong>${escapeHtml(e.name)}</strong>
+                </div>
+              </div>
+            </td>
+            <td style="text-align:center;"><span class="badge">${e.coolTime ? `${e.coolTime}초` : '-'}</span></td>
+            <td style="text-align:center;font-size:12px;">${escapeHtml(e.acquisition || '-')}</td>
+            <td><strong>${escapeHtml(e.ability)}</strong></td>
+            <td style="text-align:center;">
+              ${e.recommend ? `<span class="badge ${tierBadgeClass(e.recommend)}">${escapeHtml(e.recommend)}</span>` : '-'}
+            </td>
+            <td style="color:var(--accent-amber);font-size:12px;">${escapeHtml(e.comment || '')}</td>
+          </tr>
+        `).join('');
+      } else if (subType === 'rune') {
+        headHtml = `
+          <tr>
+            <th>룬 이름</th>
+            <th>2세트 효과</th>
+            <th>4세트 효과</th>
+            <th>${COMMENT_TH_HTML}</th>
+          </tr>
+        `;
+        rowsHtml = entries.map(e => `
+          <tr data-open-id="${escapeHtml(e.id)}" data-open-tab="relics">
+            <td>
+              <div class="tbl-item-cell">
+                ${e.img ? `<img class="tbl-icon" src="${escapeHtml(e.img)}" alt="" loading="lazy" />` : ''}
+                <div>
+                  <strong>${escapeHtml(e.name)}</strong>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge badge-level">2세트</span> ${escapeHtml(e.set2 || '-')}</td>
+            <td><span class="badge badge-legend">4세트</span> <strong>${escapeHtml(e.set4 || e.ability || '-')}</strong></td>
+            <td style="color:var(--accent-amber);font-size:12px;">${escapeHtml(e.comment || '')}</td>
+          </tr>
+        `).join('');
+      } else {
+        headHtml = `
+          <tr>
+            <th>대상 영웅</th>
+            <th>스킨명</th>
+            <th>착용/보유 능력치</th>
+            <th style="width:100px;text-align:center;">구분</th>
+            <th>${COMMENT_TH_HTML}</th>
+          </tr>
+        `;
+        rowsHtml = entries.map(e => `
+          <tr data-open-id="${escapeHtml(e.id)}" data-open-tab="relics">
+            <td><span class="badge badge-level">${escapeHtml(e.heroName || '-')}</span></td>
+            <td>
+              <div class="tbl-item-cell">
+                ${e.img ? `<img class="tbl-icon" src="${escapeHtml(e.img)}" alt="" loading="lazy" />` : ''}
+                <div>
+                  <strong>${escapeHtml(e.name)}</strong>
+                </div>
+              </div>
+            </td>
+            <td><strong>${escapeHtml(e.ability)}</strong></td>
+            <td style="text-align:center;"><span class="badge">${escapeHtml(e.purchaseType || '스킨')}</span></td>
+            <td style="color:var(--accent-amber);font-size:12px;">${escapeHtml(e.comment || '')}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    const prefixHtml = tab === 'mercenaries' ? renderMercTopBanner() : '';
+    els.contentStage.innerHTML = `
+      ${prefixHtml}
+      <div class="table-wrap">
+        <table class="db-table">
+          <thead>${headHtml}</thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
       </div>
-      <div class="modal-body">
-        <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.4rem;">버프 능력</h4>
-          <div class="ability-line">${formatMercAbility(merc.ability, null)}</div>
-        </div>
-        <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.4rem;">등급별 수치 상세 (필요 레벨)</h4>
-          <table class="awakening-table">
+    `;
+  }
+
+  // =========================================================================
+  // Reference Sub-Views (Mount Sub-Options, Upgrade, Pet Guide, Camp Common, Growth)
+  // =========================================================================
+  function renderMountSubOptionsStage() {
+    const subsObj = (DB.mounts && DB.mounts.subOptions) || {};
+    const heroSubs = subsObj.hero || [];
+    const towerSubs = subsObj.tower || [];
+    const commonSubs = subsObj.common || [];
+    const totalCnt = heroSubs.length + towerSubs.length + commonSubs.length;
+    els.resultsCountBadge.textContent = `${totalCnt}종`;
+
+    const buildSec = (title, badgeCls, list) => `
+      <div class="modal-section">
+        <h3 class="modal-sec-title">${title} (${list.length}종)</h3>
+        <div class="table-wrap">
+          <table class="db-table">
+            <thead>
+              <tr><th style="width:70px;">No</th><th>부옵션 효과</th><th style="width:140px;">등장 슬롯 범위</th></tr>
+            </thead>
             <tbody>
-              ${rows}
+              ${list.map(s => `
+                <tr>
+                  <td><strong>#${s.no}</strong></td>
+                  <td><strong>${escapeHtml(s.name)}</strong></td>
+                  <td><span class="badge ${badgeCls}">${escapeHtml(s.range)}번 슬롯</span></td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </div>
       </div>
     `;
 
-    showModal();
-  }
-
-  function openMountGuideModal() {
-    const rawSub = (expansionData && expansionData.mountSubOptions) || {};
-    const towerList = Array.isArray(rawSub.tower) ? rawSub.tower : [];
-    const heroList = Array.isArray(rawSub.hero) ? rawSub.hero : [];
-    const commonList = Array.isArray(rawSub.common) ? rawSub.common : [];
-
-    function renderBadge(rng) {
-      if (!rng) return '-';
-      if (rng === '4') {
-        return `<span class="subopt-badge rank-special">★ 4강 전용</span>`;
-      } else if (rng === '3~4' || rng === '2~4') {
-        return `<span class="subopt-badge rank-mid">${rng}강</span>`;
-      }
-      return `<span class="subopt-badge rank-all">${rng}강</span>`;
-    }
-
-    function renderTableRows(items) {
-      if (!items || !items.length) {
-        return `<tr><td colspan="3" style="text-align: center; color: var(--text-dim); padding: 1rem;">등록된 옵션 정보가 없습니다.</td></tr>`;
-      }
-      return items.map(item => {
-        const highlightedName = item.name.replace(/(\d+(?:\.\d+)?%?)/g, '<b class="stat-number">$1</b>');
-        return `
-          <tr>
-            <td style="width: 50px; text-align: center; font-weight: 700; color: var(--text-dim); font-size: 0.8rem;">#${item.no}</td>
-            <td style="font-size: 0.875rem; color: var(--text-main); line-height: 1.45;">${highlightedName}</td>
-            <td style="width: 95px; text-align: center;">${renderBadge(item.range)}</td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    const towerRows = renderTableRows(towerList);
-    const heroRows = renderTableRows(heroList);
-    const commonRows = renderTableRows(commonList);
-
-    elModalContent.innerHTML = `
-      <div class="modal-header">
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
-          <div style="font-size: 2rem;">🐎</div>
-          <div>
-            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">탈것 뽑기 & 부옵션 가이드</h2>
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">일반/고급 뽑기 확률 및 30종 부옵션 정보</div>
-          </div>
-        </div>
-        <button class="modal-close-btn">&times;</button>
-      </div>
-
-      <div class="modal-body" style="gap: 1rem;">
-        <!-- Top Sub-tabs Switcher -->
-        <div class="mount-modal-subnav" id="mountModalSubnav">
-          <button class="mount-modal-subtab active" data-view="normal" type="button">
-            <span>🎲</span> 일반 뽑기 (25종)
-          </button>
-          <button class="mount-modal-subtab" data-view="advanced" type="button">
-            <span>🌟</span> 고급 뽑기 (57종)
-          </button>
-          <button class="mount-modal-subtab" data-view="subopts" type="button">
-            <span>✨</span> 부옵션 가이드 (30종)
-          </button>
-        </div>
-
-        <!-- 1. 일반 뽑기 뷰 -->
-        <div class="mount-subview" id="mountViewNormal">
-          <!-- 기본 뽑기 및 승급 규칙 -->
-          <div class="mount-guide-card">
-            <div class="mount-guide-header">
-              <h4 class="mount-guide-title">
-                <span>🐎</span> 탈것 뽑기 & 승급 기본 규칙
-              </h4>
-              <span class="mount-guide-tag">기본 규칙</span>
-            </div>
-            <ul class="mount-guide-list">
-              <li>같은 종류 <b>신급 펫 2개</b> = <b>일반 등급 탈것 1개</b></li>
-              <li>같은 종류 <b>동일 등급 일반 탈것 2개</b> = <b>상위 등급 탈것 1개</b></li>
-              <li>등급 단계: 일반(4강) ➔ 레어(8강) ➔ 유니크(12강) ➔ 엘리트(16강) ➔ 미스테리(20강) ➔ 에픽(24강) ➔ 전설(28강) ➔ 신화(32강)</li>
-              <li><b style="color: var(--accent-gold);">★ 미스테리 등급(20강)부터 부옵션 +1강 활성화</b> (강화 레벨 x 10 푸른다이아 소모)</li>
-            </ul>
-          </div>
-
-          <!-- 탈것 일반 뽑기 확률 (탈것일반합성확률.png) -->
-          <div class="mount-guide-card">
-            <div class="mount-guide-header">
-              <h4 class="mount-guide-title">
-                <span>🎲</span> 탈것 일반 뽑기 확률표
-              </h4>
-              <span class="mount-guide-tag">총 25종 (각 4.00%)</span>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-              일반 신급 펫 뽑기 시 총 <b>25종</b>의 일반 탈것이 각각 <b>4.00%</b> 동일 확률로 등장합니다.
-            </p>
-            <div class="mount-img-frame">
-              <img src="assets/mounts/mount_combine_normal.png" alt="탈것 일반 뽑기 확률표" loading="lazy" style="max-height: 440px; object-fit: contain;">
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. 고급 뽑기 뷰 -->
-        <div class="mount-subview" id="mountViewAdvanced" style="display: none;">
-          <!-- 고급 탈것 뽑기 대상 펫 (고급탈것조합펫.png) -->
-          <div class="mount-guide-card">
-            <div class="mount-guide-header">
-              <h4 class="mount-guide-title">
-                <span>✨</span> 고급 탈것 뽑기 대상 펫
-              </h4>
-              <span class="mount-guide-tag" style="color: #d97706; background: #fffbeb; border-color: #fde68a;">총 10종 펫</span>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-              아래의 <b>10종 펫</b>을 재료로 사용하면 전 종류(총 57종)의 탈것이 등장하는 <b>고급 탈것 뽑기</b>가 진행됩니다.
-            </p>
-            <div class="mount-img-frame" style="background: #1e293b; padding: 1rem;">
-              <img src="assets/mounts/mount_combine_adv_pets.png" alt="고급 탈것 뽑기 대상 펫 10종" loading="lazy" style="max-width: 440px; width: 100%; image-rendering: -webkit-optimize-contrast;">
-            </div>
-          </div>
-
-          <!-- 고급 탈것 뽑기 확률 (탈것고급합성확률.png) -->
-          <div class="mount-guide-card">
-            <div class="mount-guide-header">
-              <h4 class="mount-guide-title">
-                <span>🌟</span> 고급 탈것 뽑기 확률표
-              </h4>
-              <span class="mount-guide-tag" style="color: #9333ea; background: #faf5ff; border-color: #f3e8ff;">전체 57종 (각 1.75%)</span>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-              고급 탈것 뽑기 대상 펫을 사용한 뽑기 시 전체 <b>57종</b>의 모든 탈것이 각각 <b>1.75%</b> 동일 확률로 등장합니다.
-            </p>
-            <div class="mount-img-frame">
-              <img src="assets/mounts/mount_combine_adv.png" alt="탈것 고급 뽑기 확률표" loading="lazy" style="max-height: 480px; object-fit: contain;">
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. 부옵션 가이드 뷰 -->
-        <div class="mount-subview" id="mountViewSubopts" style="display: none;">
-          <!-- 부옵션 안내 카드 -->
-          <div class="mount-guide-card">
-            <div class="mount-guide-header">
-              <h4 class="mount-guide-title">
-                <span>💎</span> 부옵션 활성화 및 강화 규칙
-              </h4>
-              <span class="mount-guide-tag" style="color: #059669; background: #ecfdf5; border-color: #a7f3d0;">부옵션 규칙</span>
-            </div>
-            <ul class="mount-guide-list">
-              <li><b style="color: var(--accent-gold);">★ 미스테리 등급(20강)부터 부옵션 +1강 활성화</b> (강화 레벨 x 10 푸른다이아 소모)</li>
-              <li>미스테리(20강) ➔ 에픽(24강) ➔ 전설(28강) ➔ 신화(32강) 승급 시 추가 부옵션이 해금됩니다.</li>
-              <li>총 <b>30종의 고유 부옵션</b>(타워 11종 / 영웅 7종 / 공통 12종) 풀에서 확률에 따라 부여됩니다.</li>
-            </ul>
-          </div>
-
-          <!-- Sub-options 3-Category Nav -->
-          <div>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold);">▶ 부옵션 분류 선택</h4>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">총 30개 옵션</span>
-            </div>
-            <div class="subopt-nav" id="suboptNav">
-              <button class="subopt-tab active" data-subtab="all" type="button">📋 전체 3개 카테고리 (30)</button>
-              <button class="subopt-tab" data-subtab="tower" type="button">🏹 타워 관련 (${towerList.length})</button>
-              <button class="subopt-tab" data-subtab="hero" type="button">🦸 영웅 관련 (${heroList.length})</button>
-              <button class="subopt-tab" data-subtab="common" type="button">⚔️ 타워 · 영웅 공통 (${commonList.length})</button>
-            </div>
-          </div>
-
-          <!-- 1. 타워 관련 섹션 -->
-          <div class="subopt-section" id="subSectionTower">
-            <div class="subopt-section-header">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 1.1rem;">🏹</span>
-                <span style="font-weight: 800; color: #00f5d4; font-size: 1rem;">1. 타워 관련 부옵션</span>
-              </div>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">${towerList.length}개 항목</span>
-            </div>
-            <table class="awakening-table" style="margin-top: 0;">
-              <thead>
-                <tr style="background: rgba(0, 245, 212, 0.08);">
-                  <th style="width: 50px;">번호</th>
-                  <th>옵션 내용</th>
-                  <th style="width: 95px;">변동옵</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${towerRows}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- 2. 영웅 관련 섹션 -->
-          <div class="subopt-section" id="subSectionHero">
-            <div class="subopt-section-header">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 1.1rem;">🦸</span>
-                <span style="font-weight: 800; color: #c77dff; font-size: 1rem;">2. 영웅 관련 부옵션</span>
-              </div>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">${heroList.length}개 항목</span>
-            </div>
-            <table class="awakening-table" style="margin-top: 0;">
-              <thead>
-                <tr style="background: rgba(157, 78, 221, 0.1);">
-                  <th style="width: 50px;">번호</th>
-                  <th>옵션 내용</th>
-                  <th style="width: 95px;">변동옵</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${heroRows}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- 3. 타워 · 영웅 공통 섹션 -->
-          <div class="subopt-section" id="subSectionCommon">
-            <div class="subopt-section-header">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 1.1rem;">⚔️</span>
-                <span style="font-weight: 800; color: #ffd166; font-size: 1rem;">3. 타워 · 영웅 공통 부옵션</span>
-              </div>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">${commonList.length}개 항목</span>
-            </div>
-            <table class="awakening-table" style="margin-top: 0;">
-              <thead>
-                <tr style="background: rgba(255, 209, 102, 0.1);">
-                  <th style="width: 50px;">번호</th>
-                  <th>옵션 내용</th>
-                  <th style="width: 95px;">변동옵</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${commonRows}
-              </tbody>
-            </table>
+    els.contentStage.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        ${buildSec('🦸 영웅 계열 탈것 부옵션', 'badge-tier-0', heroSubs)}
+        ${buildSec('🏰 타워 계열 탈것 부옵션', 'badge-rare', towerSubs)}
+        ${buildSec('🌟 공통 계열 탈것 부옵션', 'badge-legend', commonSubs)}
+        <div class="modal-section">
+          <h3 class="modal-sec-title">🖼️ 탈것 부옵션 참고표</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">
+            <img src="assets/mount_1.png" alt="탈것 가이드 1" style="max-width:100%;border-radius:10px;border:1px solid var(--border-subtle);" loading="lazy" />
+            <img src="assets/mount_2.png" alt="탈것 가이드 2" style="max-width:100%;border-radius:10px;border:1px solid var(--border-subtle);" loading="lazy" />
           </div>
         </div>
       </div>
     `;
-
-    // Bind top sub-tabs (일반 뽑기 / 고급 뽑기 / 부옵션 가이드)
-    const mainTabs = elModalContent.querySelectorAll('.mount-modal-subtab');
-    const viewNormal = elModalContent.querySelector('#mountViewNormal');
-    const viewAdv = elModalContent.querySelector('#mountViewAdvanced');
-    const viewSubopts = elModalContent.querySelector('#mountViewSubopts');
-    const modalBody = elModalContent.querySelector('.modal-body');
-
-    mainTabs.forEach(tabBtn => {
-      tabBtn.addEventListener('click', () => {
-        const view = tabBtn.getAttribute('data-view');
-        mainTabs.forEach(t => t.classList.toggle('active', t === tabBtn));
-
-        viewNormal.style.display = view === 'normal' ? 'flex' : 'none';
-        viewAdv.style.display = view === 'advanced' ? 'flex' : 'none';
-        viewSubopts.style.display = view === 'subopts' ? 'flex' : 'none';
-
-        if (modalBody) modalBody.scrollTop = 0;
-      });
-    });
-
-    // Bind category filter tabs (inside subopts view)
-    const subTabs = elModalContent.querySelectorAll('.subopt-tab');
-    const secTower = elModalContent.querySelector('#subSectionTower');
-    const secHero = elModalContent.querySelector('#subSectionHero');
-    const secCommon = elModalContent.querySelector('#subSectionCommon');
-
-    subTabs.forEach(tabBtn => {
-      tabBtn.addEventListener('click', () => {
-        const target = tabBtn.getAttribute('data-subtab');
-        subTabs.forEach(t => t.classList.toggle('active', t === tabBtn));
-
-        if (target === 'all') {
-          secTower.style.display = 'block';
-          secHero.style.display = 'block';
-          secCommon.style.display = 'block';
-        } else if (target === 'tower') {
-          secTower.style.display = 'block';
-          secHero.style.display = 'none';
-          secCommon.style.display = 'none';
-        } else if (target === 'hero') {
-          secTower.style.display = 'none';
-          secHero.style.display = 'block';
-          secCommon.style.display = 'none';
-        } else if (target === 'common') {
-          secTower.style.display = 'none';
-          secHero.style.display = 'none';
-          secCommon.style.display = 'block';
-        }
-      });
-    });
-
-    showModal(true);
   }
 
-  // -------------------------------------------------------------
-  // 5. RENDER PETS (DATA GRID TABLE)
-  // -------------------------------------------------------------
-  function renderPetsView() {
-    if (!expansionData || !expansionData.pets) return;
-    let pets = searchEngine
-      ? searchEngine.searchPets(expansionData.pets, {
-        query: state.query,
-        tier: state.petTier,
-        drop: state.petDrop,
-      })
-      : expansionData.pets;
-
-    const curSort = tabSortState.pets;
-    pets = sortPetsList(pets, curSort.col, curSort.dir);
-
-    elResultCount.textContent = pets.length;
-
-    if (pets.length === 0) {
-      elItemsGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🐾</div>
-          <div class="empty-title">일치하는 펫이 없습니다.</div>
-          <p>검색어나 티어, 드랍처 조건을 변경해보세요.</p>
-        </div>
-      `;
-      return;
-    }
-
-    if (currentViewMode === 'card') {
-      const cardsHtml = pets.map(pet => {
-        const imgHtml = pet.img
-          ? `<img src="${pet.img}" alt="${pet.name}" class="card-img" loading="lazy">`
-          : `<div class="card-img-placeholder">🐾</div>`;
-
-        const tierChar = (pet.tier || 'F').charAt(0);
-        const tierBadge = `<span class="tier-badge tier-${tierChar}">${pet.tier}</span>`;
-        const noBadge = `<span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(pet.no).padStart(2, '0')}</span>`;
-
-        const abilHighlighted = (pet.ability || '')
-          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-
-        const dropsHtml = (pet.drops || [])
-          .map(d => `<span class="drop-item">📍 ${d}</span>`)
-          .join('');
-
-        return `
-          <div class="item-card pet-card" data-pet-id="${pet.id}">
-            <div class="card-header">
-              <div class="card-img-wrapper">${imgHtml}</div>
-              <div class="card-title-area">
-                <div class="card-name-row">
-                  <span class="card-name">${pet.name}</span>
-                  ${tierBadge}
-                  ${noBadge}
-                </div>
-              </div>
-            </div>
-            <div class="card-abilities">
-              <div class="ability-line">
-                ${abilHighlighted}
-              </div>
-            </div>
-            <div class="card-footer">
-              <div class="card-drops">${dropsHtml || '-'}</div>
-              <span style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 700;">상세보기 ❯</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `<div class="items-grid">${cardsHtml}</div>`;
-    } else {
-      const rowsHtml = pets.map(pet => {
-        const imgHtml = pet.img
-          ? `<img src="${pet.img}" alt="${pet.name}" class="table-thumb-img" loading="lazy">`
-          : `<div class="table-thumb-placeholder">🐾</div>`;
-
-        const tierChar = (pet.tier || 'F').charAt(0);
-        const tierBadge = `<span class="tier-badge tier-${tierChar}">${pet.tier}</span>`;
-        const noBadge = `<span class="badge-tag" style="font-family: monospace; font-size: 0.8rem;">#${String(pet.no).padStart(2, '0')}</span>`;
-
-        const abilHighlighted = (pet.ability || '')
-          .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-
-        const dropsHtml = (pet.drops || [])
-          .map(d => `<span class="drop-item">📍 ${d}</span>`)
-          .join('');
-
-        return `
-          <tr class="data-row pet-row" data-pet-id="${pet.id}">
-            <td style="width: 58px; text-align: center;">
-              <div class="table-thumb-wrapper">${imgHtml}</div>
-            </td>
-            <td style="text-align: center;">${noBadge}</td>
-            <td>
-              <div class="table-item-name">${pet.name}</div>
-            </td>
-            <td style="text-align: center;">${tierBadge}</td>
-            <td class="table-ability-block">${abilHighlighted}</td>
-            <td>${dropsHtml || '-'}</td>
-          </tr>
-        `;
-      }).join('');
-
-      elItemsGrid.innerHTML = `
-        <div class="data-table-card">
-          <div class="data-table-wrapper">
-            <table class="data-grid-table">
-              <thead>
-                <tr>
-                  <th style="width: 58px; text-align: center;">사진</th>
-                  ${renderTh('no', '도감 No', 'width: 80px; text-align: center;', true)}
-                  ${renderTh('name', '펫 이름', 'min-width: 140px;')}
-                  ${renderTh('tier', '티어', 'width: 80px; text-align: center;', true)}
-                  <th style="min-width: 280px;">기본 고유 능력</th>
-                  ${renderTh('drops', '획득 / 드랍처', 'min-width: 180px;')}
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-
-    // Bind click event for both table row and card
-    elItemsGrid.querySelectorAll('.pet-row, .pet-card').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-pet-id');
-        const pet = expansionData.pets.find(p => p.id === id);
-        if (pet) openPetModal(pet);
-      });
-    });
-  }
-
-  function openPetModal(pet) {
-    const imgHtml = pet.img
-      ? `<img src="${pet.img}" alt="${pet.name}" style="width: 68px; height: 68px; border-radius: 12px; object-fit: cover; background: #f8fafc; border: 1px solid #e2e8f0;">`
-      : `<div style="font-size: 2.5rem;">🐾</div>`;
-
-    const tierChar = (pet.tier || 'F').charAt(0);
-    const tierBadge = `<span class="tier-badge tier-${tierChar}" style="font-size: 0.85rem; padding: 0.25rem 0.6rem;">${pet.tier}</span>`;
-    const noBadge = `<span class="badge-tag" style="background: #eff6ff; color: #1d4ed8; font-size: 0.8rem; font-weight: 800; border: 1px solid #bfdbfe;">#${String(pet.no).padStart(2, '0')}</span>`;
-
-    const abilHighlighted = (pet.ability || '')
-      .replace(/(\d+(?:\.\d+)?%?|\b\d+배\b|\b\d+개\b)/g, '<span class="stat-number">$1</span>');
-
-    const dropsHtml = (pet.drops || [])
-      .map(d => `<span class="drop-item" style="font-size: 0.82rem; padding: 0.25rem 0.6rem;">📍 ${d}</span>`)
-      .join('');
-
-    elModalContent.innerHTML = `
-      <div class="modal-header">
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          ${imgHtml}
-          <div>
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
-              ${noBadge}
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0;">${pet.name}</h2>
-              ${tierBadge}
-            </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">
-              언더다크 펫 도감 · No.${pet.no}
-            </div>
-          </div>
-        </div>
-        <button class="modal-close-btn" aria-label="닫기">✕</button>
-      </div>
-
-      <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
-        <!-- 기본 고유 능력 -->
-        <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-gold); margin-bottom: 0.5rem;">
-            ⚡ 기본 고유 능력
-          </h4>
-          <div style="background: #fef3c7; border: 1px solid #fde68a; border-left: 4px solid var(--accent-gold); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);">
-            ${abilHighlighted}
-          </div>
-        </div>
-
-        <!-- 획득처 -->
-        <div>
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.5rem;">
-            🗺️ 획득 및 드랍처
-          </h4>
-          <div style="background: #f8fafc; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-glass);">
-            <div class="drops-container" style="flex-wrap: wrap; gap: 0.4rem;">
-              ${dropsHtml || '<span style="color: var(--text-dim);">획득처 정보가 없습니다.</span>'}
-            </div>
-          </div>
-        </div>
-
-        <!-- 펫 시스템 안내 -->
-        <div style="background: #f8fafc; border: 1px solid var(--border-glass); border-radius: 10px; padding: 1rem;">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
-            <div>
-              <div style="font-weight: 700; color: var(--accent-primary); font-size: 0.95rem; margin-bottom: 0.25rem;">
-                💡 펫 시스템 & 추천 세팅 정보
-              </div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
-                펫의 <b>8개 등급 목록</b>, <b>부옵션(5종)</b>, <b>랜덤옵션(12종) 풀</b> 및 타워/영덱 종결 추천 조합을 확인하세요.
-              </div>
-            </div>
-            <button id="modalPetGuideBtn" class="btn-primary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">
-              📖 펫 시스템 가이드 보기
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const guideBtn = elModalContent.querySelector('#modalPetGuideBtn');
-    if (guideBtn) {
-      guideBtn.addEventListener('click', () => {
-        openPetGuideModal();
-      });
-    }
-
-    showModal();
-  }
-
-  function openPetGuideModal() {
-    const guide = (expansionData && expansionData.petGuide) || {};
-    const grades = guide.grades || ['일반', '레어', '유니크', '엘리트', '미스터리', '에픽', '전설', '신'];
-    const subOpts = guide.subOptions || [];
-    const randomOpts = guide.randomOptions || [];
-    const buildTower = guide.buildTower || {};
-    const buildHero = guide.buildHero || {};
-
-    const towerRandRows = (buildTower.randomOptions || []).map(o => `
-      <li style="margin-bottom: 0.35rem; color: var(--text-main);">${o}</li>
-    `).join('');
-
-    const heroRandRows = (buildHero.randomOptions || []).map(o => `
-      <li style="margin-bottom: 0.35rem; color: var(--text-main);">${o}</li>
-    `).join('');
-
-    const gradeColorMap = {
-      '일반': { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
-      '레어': { color: '#c2410c', bg: '#ffedd5', border: '#fed7aa' },
-      '유니크': { color: '#1d4ed8', bg: '#dbeafe', border: '#bfdbfe' },
-      '엘리트': { color: '#c2410c', bg: '#ffedd5', border: '#fed7aa' },
-      '미스터리': { color: '#0f766e', bg: '#ccfbf1', border: '#99f6e4' },
-      '에픽': { color: '#7e22ce', bg: '#f3e8ff', border: '#e9d5ff' },
-      '전설': { color: '#b91c1c', bg: '#fee2e2', border: '#fecaca' },
-      '신': { color: '#b45309', bg: '#fef3c7', border: '#fde68a' }
-    };
-
-    const horizontalGradesHtml = grades.map((g, idx) => {
-      const style = gradeColorMap[g] || { color: '#334155', bg: '#f1f5f9', border: '#cbd5e1' };
-      const arrow = idx < grades.length - 1 ? `<span style="color: var(--text-dim); font-size: 0.85rem; user-select: none;">➔</span>` : '';
-      return `
-        <div style="display: flex; align-items: center; gap: 0.45rem;">
-          <span style="font-weight: 800; font-size: 0.9rem; color: ${style.color}; background: ${style.bg}; border: 1px solid ${style.border}; padding: 0.35rem 0.85rem; border-radius: 8px; box-shadow: ${style.glow || 'none'}; white-space: nowrap;">
-            ${g}
-          </span>
-          ${arrow}
-        </div>
-      `;
-    }).join('');
-
-    const subListHtml = subOpts.map(s => `
-      <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0.65rem; border-radius: 6px; background: #f0fdfa; border-left: 3px solid #0d9488; font-size: 0.83rem; line-height: 1.45;">
-        <span style="font-weight: 800; color: #0d9488; min-width: 18px;">${s.no}.</span>
-        <span style="color: var(--text-main); font-weight: 600;">${s.name}</span>
-      </div>
-    `).join('');
-
-    const randListHtml = randomOpts.map(r => `
-      <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.45rem 0.65rem; border-radius: 6px; background: ${r.category === '타워' ? '#f0fdfa' : '#faf5ff'}; border-left: 3px solid ${r.category === '타워' ? '#0d9488' : '#7e22ce'}; font-size: 0.82rem; line-height: 1.45;">
-        <span style="font-weight: 800; color: ${r.category === '타워' ? '#0d9488' : '#7e22ce'}; min-width: 22px;">${r.no}.</span>
-        <span style="color: var(--text-main);">${r.name}</span>
-      </div>
-    `).join('');
-
-    elModalContent.innerHTML = `
-      <div class="modal-header">
-        <div>
-          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-            <span>🐾</span> 펫 시스템 & 종결 추천 세팅 정보
-          </h2>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-            엑셀 H열 우측의 추천 조합, 등급 목록, 부옵션 풀, 랜덤옵션 풀 정보입니다.
-          </p>
-        </div>
-        <button class="modal-close-btn" aria-label="닫기">✕</button>
-      </div>
-
-      <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.5rem;">
-        
-        <!-- 1. 추천 조합 (타워 vs 영덱) -->
-        <div>
-          <h4 style="font-size: 1rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>⭐</span> 추천 조합 (타워 추천 세팅 vs 영덱 추천 세팅)
-          </h4>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-            
-            <!-- 타워 추천 세팅 -->
-            <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 1rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
-                <span style="font-size: 1.25rem;">🏹</span>
-                <span style="font-weight: 800; color: #0f766e; font-size: 1.05rem;">타워 추천 세팅</span>
-              </div>
-              <div style="font-size: 0.85rem; margin-bottom: 0.75rem; background: #ccfbf1; padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #0d9488;">
-                <b style="color: var(--text-main);">부옵:</b> <span style="color: #0f766e; font-weight: 700;">${buildTower.subOption || '타워의 공격 속도가 n% 상승합니다.'}</span>
-              </div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 700;">랜덤옵 4종:</div>
-              <ul style="font-size: 0.85rem; margin: 0; padding-left: 1.2rem; line-height: 1.6;">
-                ${towerRandRows}
-              </ul>
-            </div>
-
-            <!-- 영덱 추천 세팅 -->
-            <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px; padding: 1rem;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
-                <span style="font-size: 1.25rem;">🦸</span>
-                <span style="font-weight: 800; color: #7e22ce; font-size: 1.05rem;">영덱 추천 세팅</span>
-              </div>
-              <div style="font-size: 0.85rem; margin-bottom: 0.75rem; background: #f3e8ff; padding: 0.5rem 0.75rem; border-radius: 6px; border-left: 3px solid #7e22ce;">
-                <b style="color: var(--text-main);">부옵:</b> <span style="color: #7e22ce; font-weight: 700;">${buildHero.subOption || '영웅의 공격 속도가 n% 증가합니다.'}</span>
-              </div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 700;">랜덤옵 4종:</div>
-              <ul style="font-size: 0.85rem; margin: 0; padding-left: 1.2rem; line-height: 1.6;">
-                ${heroRandRows}
-              </ul>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 2. 등급 목록 (가로로 색깔 입혀서 글자로 표시) -->
-        <div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
-            <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
-              <span>🎖️</span> 펫 등급 단계 (${grades.length}단계)
-            </h4>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">일반 ➔ 신 (순차 승급)</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; background: #f8fafc; border: 1px solid var(--border-glass); padding: 0.75rem 0.85rem; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-            ${horizontalGradesHtml}
-          </div>
-        </div>
-
-        <!-- 3. 부옵 (5종) & 랜덤옵 (12종) 풀 -->
-        <div>
-          <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
-            <span>📋</span> 부옵션 (5종) & 랜덤옵션 (12종) 풀
-          </h4>
-          
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-            
-            <!-- 부옵 (5종) -->
-            <div style="background: #ffffff; border: 1px solid var(--border-glass); border-radius: 10px; padding: 0.9rem; box-shadow: var(--shadow-sm);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #0f766e;">🎯 부옵 (${subOpts.length})</h5>
-                <span style="font-size: 0.72rem; color: var(--text-muted);">고정 5종 풀</span>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 0.45rem;">
-                ${subListHtml}
-              </div>
-            </div>
-
-            <!-- 랜덤옵 (12종) -->
-            <div style="background: #ffffff; border: 1px solid var(--border-glass); border-radius: 10px; padding: 0.9rem; box-shadow: var(--shadow-sm);">
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem;">
-                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: #7e22ce;">🎲 랜덤옵 (${randomOpts.length})</h5>
-                <span style="font-size: 0.72rem; color: var(--text-muted);">랜덤 12종 풀</span>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 0.45rem;">
-                ${randListHtml}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 3. 참고사항 -->
-        <div class="mount-tip-box" style="margin: 0;">
-          <h4 style="color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 0.4rem;">📌 중요 참고사항</h4>
-          <ul style="font-size: 0.85rem; line-height: 1.6; margin: 0; padding-left: 1.2rem; color: var(--text-muted);">
-            <li>협동 던전 1·2, 일일 던전(일반/협동), 길드 던전 1·2(일반/협동)의 펫 획득 정보는 시트에 미표기되어 있습니다.</li>
-          </ul>
-        </div>
-
-      </div>
-    `;
-
-    showModal(true);
-  }
-
-  // -------------------------------------------------------------
-  // 6. RENDER CAMP (STRUCTURES & PROPS)
-  // -------------------------------------------------------------
-  function formatCampAbility(text) {
-    if (!text) return '';
-    return text
-      .replace(/(\[[^\]]+\])/g, '<span class="camp-kw-badge">$1</span>')
-      .replace(/(\d+(?:\.\d+)?%)/g, '<span class="stat-highlight">$1</span>')
-      .replace(/(\d+마리|\d+개)/g, '<span class="stat-highlight">$1</span>');
-  }
-
-  function renderCampLevelBadge(level) {
-    const lv = level ?? 0;
-    const styleMap = {
-      0: { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: '0' },
-      20: { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: '20' },
-      40: { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', label: '40' },
-      60: { color: '#d97706', bg: '#fffbeb', border: '#fde68a', label: '60' },
-    };
-    const st = styleMap[lv] || { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1', label: `${lv}` };
-    return `<span class="camp-level-badge" style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;font-size:0.82rem;font-weight:800;padding:0.2rem 0.55rem;border-radius:6px;color:${st.color};background:${st.bg};border:1px solid ${st.border};white-space:nowrap;">${st.label}</span>`;
-  }
-
-  function sortCampList(list, col, dir) {
-    const sorted = [...list];
-    sorted.sort((a, b) => {
-      let cmp = 0;
-      if (col === 'no') {
-        cmp = a.no - b.no;
-      } else if (col === 'level') {
-        cmp = ((a.level ?? 0) - (b.level ?? 0)) || (a.no - b.no);
-      } else if (col === 'type') {
-        if (a.type !== b.type) {
-          cmp = a.type === 'structure' ? -1 : 1;
-        } else {
-          cmp = a.no - b.no;
-        }
-      } else if (col === 'name') {
-        cmp = a.name.localeCompare(b.name, 'ko');
-      } else if (col === 'ability') {
-        cmp = (a.ability || '').localeCompare(b.ability || '', 'ko');
-      } else {
-        cmp = a.no - b.no;
-      }
-      return dir === 'desc' ? -cmp : cmp;
-    });
-    return sorted;
-  }
-
-  function renderCampCommonDashboard(common) {
-    const grades = common.grades || ['일반', '레어', '유니크', '엘리트', '미스터리', '에픽', '전설', '신'];
-    const subOpts = common.subOptions || [];
-    const randOpts = common.randomOptions || [];
-
-    const gradeColorMap = {
-      '일반': { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' },
-      '레어': { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-      '유니크': { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-      '엘리트': { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-      '미스터리': { color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
-      '에픽': { color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff' },
-      '전설': { color: '#e11d48', bg: '#fff1f2', border: '#fecdd3' },
-      '신': { color: '#b45309', bg: '#fef3c7', border: '#fde68a' }
-    };
-
-    const gradesHtml = grades.map((g, idx) => {
-      const st = gradeColorMap[g] || { color: '#475569', bg: '#f1f5f9', border: '#cbd5e1' };
-      const arrow = idx < grades.length - 1 ? `<span class="camp-step-arrow">➔</span>` : '';
-      return `
-        <div class="camp-grade-step">
-          <span class="camp-grade-badge" style="color: ${st.color}; background: ${st.bg}; border-color: ${st.border};">
-            <small class="camp-grade-num">${idx + 1}</small>${g}
-          </span>
-          ${arrow}
-        </div>
-      `;
-    }).join('');
-
-    // Separate hero vs tower options for readability
-    const heroSubs = subOpts.filter(o => o.includes('영웅'));
-    const towerSubs = subOpts.filter(o => o.includes('타워'));
-
-    const heroRands = randOpts.filter(o => o.includes('영웅'));
-    const towerRands = randOpts.filter(o => o.includes('타워'));
-
-    const isCollapsedClass = state.campCommonExpanded ? '' : 'is-collapsed';
-
-    return `
-      <section id="campCommonDashboard" class="camp-common-dashboard ${isCollapsedClass}">
-        <div class="camp-common-header">
-          <div class="camp-common-title-wrap">
-            <span class="camp-common-icon">✨</span>
-            <div>
-              <h3 class="camp-common-title">구조물 & 소품 공통 적용 안내</h3>
-              <p class="camp-common-desc">
-                아래 <strong>등급 (8단계)</strong>, <strong>부옵션 (8종)</strong>, <strong>랜덤옵션 (12종)</strong>은 야영지 구조물과 소품 전체에 동일하게 적용되는 공통 사항입니다.<br>
-                <span style="color: var(--accent-secondary); font-weight: 700;">📌 레벨 안내: 계정 레벨(0 · 20 · 40 · 60)에 따라 구조물과 소품의 획득이 가능해집니다.</span>
-              </p>
-            </div>
-          </div>
-          <button type="button" class="btn-outline btn-sm" id="inlineCampCommonToggle" title="접기 / 펼치기">
-            ${state.campCommonExpanded ? '공통 정보 접기 ▲' : '공통 정보 펼치기 ▼'}
-          </button>
-        </div>
-
-        <div class="camp-common-cards-grid">
-          <!-- 1. 등급 (8단계) -->
-          <div class="camp-common-card camp-grades-card">
-            <div class="common-card-head">
-              <span class="head-icon">🎖️</span>
-              <h4 class="head-title">적용 등급 (${grades.length}단계)</h4>
-              <span class="head-tag">일반 ➔ 신</span>
-            </div>
-            <div class="camp-grades-flow">
-              ${gradesHtml}
-            </div>
-          </div>
-
-          <!-- 2. 부옵션 (8종) -->
-          <div class="camp-common-card camp-subs-card">
-            <div class="common-card-head">
-              <span class="head-icon">⚡</span>
-              <h4 class="head-title">부옵션 (${subOpts.length}종)</h4>
-              <span class="head-tag">영웅 5종 · 타워 3종</span>
-            </div>
-            <div class="camp-options-columns">
-              <div class="camp-opt-group">
-                <span class="camp-group-label hero">🦸 영웅 부옵 (${heroSubs.length})</span>
-                <div class="camp-chips-list">
-                  ${heroSubs.map((o, i) => `<div class="camp-opt-chip hero"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
-                </div>
-              </div>
-              <div class="camp-opt-group">
-                <span class="camp-group-label tower">🏰 타워 부옵 (${towerSubs.length})</span>
-                <div class="camp-chips-list">
-                  ${towerSubs.map((o, i) => `<div class="camp-opt-chip tower"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. 랜덤옵션 (12종) -->
-          <div class="camp-common-card camp-rands-card">
-            <div class="common-card-head">
-              <span class="head-icon">🎲</span>
-              <h4 class="head-title">랜덤옵션 (${randOpts.length}종)</h4>
-              <span class="head-tag">영웅 7종 · 타워 5종</span>
-            </div>
-            <div class="camp-options-columns">
-              <div class="camp-opt-group">
-                <span class="camp-group-label hero">🦸 영웅 랜덤옵 (${heroRands.length})</span>
-                <div class="camp-chips-list">
-                  ${heroRands.map((o, i) => `<div class="camp-opt-chip hero"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
-                </div>
-              </div>
-              <div class="camp-opt-group">
-                <span class="camp-group-label tower">🏰 타워 랜덤옵 (${towerRands.length})</span>
-                <div class="camp-chips-list">
-                  ${towerRands.map((o, i) => `<div class="camp-opt-chip tower"><span class="chip-num">${i + 1}</span><span>${formatCampAbility(o)}</span></div>`).join('')}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    `;
-  }
-
-  function renderCampTableView(items, typeLabel = '항목') {
-    if (!items || items.length === 0) {
-      return `
-        <div class="empty-state" style="padding: 1.5rem; background: #ffffff; border-radius: 12px; border: 1px dashed var(--border-subtle);">
-          <div class="empty-icon" style="font-size: 1.8rem;">🔍</div>
-          <div class="empty-title" style="font-size: 0.95rem;">검색된 ${typeLabel}이 없습니다</div>
-        </div>
-      `;
-    }
-    return `
-      <div class="table-responsive-wrapper">
-        <table class="data-grid-table camp-table">
+  function renderMountUpgradeStage() {
+    const up = (DB.mounts && DB.mounts.upgradeTable) || [];
+    els.resultsCountBadge.textContent = `${up.length}단계`;
+    els.contentStage.innerHTML = `
+      <div class="table-wrap">
+        <table class="db-table">
           <thead>
-            <tr>
-              ${renderTh('no', 'No', 'width: 60px;', true)}
-              ${renderTh('type', '구분', 'width: 90px;', true)}
-              ${renderTh('name', '이름', 'width: 170px;')}
-              ${renderTh('level', '레벨', 'width: 85px;', true)}
-              <th style="width: 80px;" class="text-center">사진</th>
-              ${renderTh('ability', '고유 능력')}
-            </tr>
+            <tr><th>강화 레벨</th><th>성공 확률 (%)</th><th>필요 사료량</th><th>기본 공격력 보너스 (%)</th><th>기본 체력 보너스 (%)</th></tr>
           </thead>
           <tbody>
-            ${items.map(item => `
-              <tr class="camp-table-row clickable-row" data-camp-id="${item.id}" tabindex="0" role="button" title="클릭하여 상세 정보 보기">
-                <td class="text-center font-mono font-bold text-subtle">${item.no}</td>
-                <td class="text-center">
-                  <span class="camp-type-badge type-${item.type}">
-                    ${item.type === 'structure' ? '구조물' : '소품'}
-                  </span>
-                </td>
-                <td class="font-bold camp-name-cell">
-                  <div class="camp-name-text">${item.name}</div>
-                </td>
-                <td class="text-center">${renderCampLevelBadge(item.level)}</td>
-                <td class="text-center">
-                  <div class="camp-img-box">
-                    <img src="${item.img || ''}" alt="${item.name}" loading="lazy">
-                  </div>
-                </td>
-                <td class="camp-ability-cell">${formatCampAbility(item.ability)}</td>
+            ${up.map(r => `
+              <tr>
+                <td><strong>+${r.level}강</strong></td>
+                <td><span class="badge badge-rare">${r.successRate}%</span></td>
+                <td>${r.needFeed}개</td>
+                <td>+${r.atkBonus}%</td>
+                <td>+${r.hpBonus}%</td>
               </tr>
             `).join('')}
           </tbody>
@@ -3036,581 +1399,808 @@
     `;
   }
 
-  function renderCampCardView(items, typeLabel = '항목') {
-    if (!items || items.length === 0) {
-      return `
-        <div class="empty-state" style="padding: 1.5rem; background: #ffffff; border-radius: 12px; border: 1px dashed var(--border-subtle);">
-          <div class="empty-icon" style="font-size: 1.8rem;">🔍</div>
-          <div class="empty-title" style="font-size: 0.95rem;">검색된 ${typeLabel}이 없습니다</div>
-        </div>
-      `;
-    }
-    return `
-      <div class="camp-cards-grid">
-        ${items.map(item => `
-          <div class="camp-card ${item.type === 'structure' ? 'is-structure' : 'is-prop'}" data-camp-id="${item.id}" tabindex="0" role="button" title="클릭하여 상세 정보 보기">
-            <div class="camp-card-header">
-              <div style="display: inline-flex; align-items: center; gap: 0.35rem;">
-                <span class="camp-type-badge type-${item.type}">
-                  ${item.type === 'structure' ? '구조물' : '소품'}
-                </span>
-                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">레벨</span>
-                ${renderCampLevelBadge(item.level)}
-              </div>
-              <span class="camp-card-no">#${item.no}</span>
+  function renderPetGuideStage() {
+    const guide = (DB.pets && DB.pets.guide) || {};
+    const subOpts = guide.subOptions || [];
+    const randOpts = guide.randomOptions || [];
+    const bHero = guide.buildHero || {};
+    const bTower = guide.buildTower || {};
+    els.resultsCountBadge.textContent = '육성 · 옵션 가이드';
+
+    els.contentStage.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="modal-section">
+          <h3 class="modal-sec-title">🏆 펫 종결 추천 세팅 (영웅덱 vs 타워덱)</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;">
+            <div style="padding:14px;border-radius:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);">
+              <div style="font-weight:900;font-size:15px;color:var(--accent-amber);margin-bottom:8px;">🦸 ${escapeHtml(bHero.title || '영웅덱 추천 세팅')}</div>
+              <div style="margin-bottom:8px;"><strong>추천 주옵션(부옵):</strong> <span class="badge badge-tier-0">${escapeHtml(bHero.subOption || '')}</span></div>
+              <div style="font-weight:700;font-size:12.5px;margin-bottom:4px;">추천 랜덤옵션 (4줄):</div>
+              ${(bHero.randomOptions || []).map(ro => `<div style="font-size:13px;">• ${escapeHtml(ro)}</div>`).join('')}
             </div>
-            <div class="camp-card-img-wrap">
-              <img src="${item.img || ''}" alt="${item.name}" loading="lazy">
-            </div>
-            <div class="camp-card-body">
-              <h3 class="camp-card-title">${item.name}</h3>
-              <div class="camp-card-ability">${formatCampAbility(item.ability)}</div>
+            <div style="padding:14px;border-radius:12px;background:var(--bg-elevated);border:1px solid var(--border-subtle);">
+              <div style="font-weight:900;font-size:15px;color:var(--accent-teal);margin-bottom:8px;">🏰 ${escapeHtml(bTower.title || '타워덱 추천 세팅')}</div>
+              <div style="margin-bottom:8px;"><strong>추천 주옵션(부옵):</strong> <span class="badge badge-rare">${escapeHtml(bTower.subOption || '')}</span></div>
+              <div style="font-weight:700;font-size:12.5px;margin-bottom:4px;">추천 랜덤옵션 (4줄):</div>
+              ${(bTower.randomOptions || []).map(ro => `<div style="font-size:13px;">• ${escapeHtml(ro)}</div>`).join('')}
             </div>
           </div>
-        `).join('')}
+        </div>
+
+        <div class="modal-section">
+          <h3 class="modal-sec-title">📌 펫 기본 부옵션 목록 (${subOpts.length}종)</h3>
+          <div class="table-wrap">
+            <table class="db-table">
+              <thead><tr><th style="width:70px;">No</th><th style="width:100px;">계열</th><th>옵션 효과</th></tr></thead>
+              <tbody>
+                ${subOpts.map(s => `
+                  <tr>
+                    <td>#${s.no}</td>
+                    <td><span class="badge ${s.category === '영웅' ? 'badge-tier-0' : 'badge-rare'}">${escapeHtml(s.category)}</span></td>
+                    <td><strong>${escapeHtml(s.name)}</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3 class="modal-sec-title">🎲 펫 랜덤 옵션 목록 (${randOpts.length}종)</h3>
+          <div class="table-wrap">
+            <table class="db-table">
+              <thead><tr><th style="width:70px;">No</th><th style="width:100px;">계열</th><th>랜덤 옵션 효과</th></tr></thead>
+              <tbody>
+                ${randOpts.map(r => `
+                  <tr>
+                    <td>#${r.no}</td>
+                    <td><span class="badge ${r.category === '영웅' ? 'badge-tier-0' : 'badge-rare'}">${escapeHtml(r.category)}</span></td>
+                    <td><strong>${escapeHtml(r.name)}</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     `;
   }
 
-  function renderCampView() {
-    let camp = (expansionData && expansionData.camp) || (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp);
-    if (!camp) {
-      fetch('data/camp.json?v=20261028_2')
-        .then(r => r.json())
-        .then(data => {
-          if (!expansionData) expansionData = {};
-          expansionData.camp = data;
-          if (window.UNDERDARK_EXPANSION) window.UNDERDARK_EXPANSION.camp = data;
-          renderActiveView();
-        })
-        .catch(e => console.warn('Failed to load camp.json', e));
+  function renderCampCommonStage() {
+    const common = (DB.camp && DB.camp.common) || {};
+    const combos = common.recommendCombos || [];
+    const subOpts = common.subOptions || [];
+    const randOpts = common.randomOptions || [];
+    const tips = common.tips || [];
+    els.resultsCountBadge.textContent = '종합 가이드';
 
-      elItemsGrid.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">⏳</div>
-          <div class="empty-title">야영지 데이터를 불러오는 중입니다...</div>
+    els.contentStage.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="modal-section">
+          <h3 class="modal-sec-title">⛺ 야영지 추천 세팅 조합 (구조물 + 소품)</h3>
+          <div class="table-wrap">
+            <table class="db-table">
+              <thead><tr><th>구분/목적</th><th>추천 구조물 (2종)</th><th>추천 소품 세팅</th><th>핵심 팁</th></tr></thead>
+              <tbody>
+                ${combos.map(c => `
+                  <tr>
+                    <td><strong>${escapeHtml(c.mode)}</strong></td>
+                    <td><span class="badge badge-legend">${escapeHtml(c.structure)}</span></td>
+                    <td style="white-space:pre-line;">${escapeHtml(c.prop)}</td>
+                    <td style="color:var(--accent-amber);">${escapeHtml(c.note || '')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
         </div>
-      `;
-      return;
-    }
 
-    const curSort = tabSortState.camp || { col: 'no', dir: 'asc' };
-    const structures = camp.structures || [];
-    const props = camp.props || [];
+        <div class="modal-section">
+          <h3 class="modal-sec-title">📌 야영지 주옵션 (옵션 8종) 추천 및 중요도</h3>
+          <div class="table-wrap">
+            <table class="db-table">
+              <thead><tr><th>주옵션 (기본 옵션)</th><th><span class="th-comment-wrap"><img src="assets/comment_by_ara2.png" class="th-comment-icon" alt="" />추천 세팅 / 코멘트</span></th><th>중요도</th></tr></thead>
+              <tbody>
+                ${subOpts.map(s => {
+                  const optText = typeof s === 'string' ? s : (s.option || '');
+                  const recText = typeof s === 'object' ? (s.recommend || '') : '';
+                  const starText = typeof s === 'object' ? (s.stars || '') : '';
+                  return `
+                    <tr>
+                      <td><strong>${escapeHtml(optText)}</strong></td>
+                      <td style="color:var(--accent-amber);">${escapeHtml(recText)}</td>
+                      <td><span class="badge ${starText.includes('★') ? 'badge-tier-0' : ''}">${escapeHtml(starText || '-')}</span></td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-    // Filter structures & props separately
-    let filteredStructures = searchEngine && searchEngine.searchCamp
-      ? searchEngine.searchCamp(structures, { query: state.query, type: 'structure' })
-      : structures;
+        <div class="modal-section">
+          <h3 class="modal-sec-title">🎲 야영지 부옵션 (랜덤옵 12종) 추천 및 중요도</h3>
+          <div class="table-wrap">
+            <table class="db-table">
+              <thead><tr><th>부옵션 (랜덤 옵션)</th><th><span class="th-comment-wrap"><img src="assets/comment_by_ara2.png" class="th-comment-icon" alt="" />추천 대상 / 코멘트</span></th><th>중요도</th></tr></thead>
+              <tbody>
+                ${randOpts.map(r => {
+                  const optText = typeof r === 'string' ? r : (r.option || '');
+                  const recText = typeof r === 'object' ? (r.recommend || '') : '';
+                  const starText = typeof r === 'object' ? (r.stars || '') : '';
+                  return `
+                    <tr>
+                      <td><strong>${escapeHtml(optText)}</strong></td>
+                      <td style="color:var(--accent-amber);">${escapeHtml(recText)}</td>
+                      <td><span class="badge ${starText.includes('★★★★') ? 'badge-tier-0' : 'badge-rare'}">${escapeHtml(starText || '-')}</span></td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-    let filteredProps = searchEngine && searchEngine.searchCamp
-      ? searchEngine.searchCamp(props, { query: state.query, type: 'prop' })
-      : props;
-
-    // Sort items
-    filteredStructures = sortCampList(filteredStructures, curSort.col, curSort.dir);
-    filteredProps = sortCampList(filteredProps, curSort.col, curSort.dir);
-
-    elResultCount.textContent = filteredStructures.length + filteredProps.length;
-    elResultUnit.textContent = `개 항목 (구조물 ${filteredStructures.length} · 소품 ${filteredProps.length})`;
-
-    if (elCampTypeFilter) {
-      const structBadge = elCampTypeFilter.querySelector('[data-scroll-to="structures"] .badge-count');
-      const propBadge = elCampTypeFilter.querySelector('[data-scroll-to="props"] .badge-count');
-      if (structBadge) structBadge.textContent = filteredStructures.length;
-      if (propBadge) propBadge.textContent = filteredProps.length;
-    }
-
-    // Common info dashboard HTML
-    const commonHtml = renderCampCommonDashboard(camp.common || {});
-
-    // Render separate sections for structures and props
-    elItemsGrid.innerHTML = `
-      <div class="camp-view-wrapper">
-        ${commonHtml}
-
-        <!-- 1. 구조물 섹션 -->
-        <section id="campStructuresSection" class="camp-section">
-          <div class="camp-section-header">
-            <div class="camp-section-title-wrap">
-              <span class="camp-section-icon">🏛️</span>
-              <h3 class="camp-section-title">야영지 구조물</h3>
-              <span class="camp-section-count badge-structure">${filteredStructures.length}종</span>
+        ${tips.length ? `
+          <div class="modal-section">
+            <h3 class="modal-sec-title">💡 야영지 신급 제작 & 옵션 핵심 팁</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              ${tips.map(t => `<div class="card-comment" style="white-space:pre-line;font-size:13px;">${escapeHtml(t)}</div>`).join('')}
             </div>
-            <span class="camp-section-desc">몬스터 처치 보상 및 고유 패시브 효과를 제공하는 설치형 야영지 구조물</span>
           </div>
-          <div class="camp-section-body">
-            ${currentViewMode === 'table' ? renderCampTableView(filteredStructures, '구조물') : renderCampCardView(filteredStructures, '구조물')}
-          </div>
-        </section>
-
-        <!-- 2. 소품 섹션 -->
-        <section id="campPropsSection" class="camp-section">
-          <div class="camp-section-header">
-            <div class="camp-section-title-wrap">
-              <span class="camp-section-icon">🏺</span>
-              <h3 class="camp-section-title">야영지 소품</h3>
-              <span class="camp-section-count badge-prop">${filteredProps.length}종</span>
-            </div>
-            <span class="camp-section-desc">영웅/타워 능력치 버프 및 부위별 아이템 드랍 확률을 증가시키는 소품</span>
-          </div>
-          <div class="camp-section-body">
-            ${currentViewMode === 'table' ? renderCampTableView(filteredProps, '소품') : renderCampCardView(filteredProps, '소품')}
-          </div>
-        </section>
+        ` : ''}
       </div>
     `;
-
-    // Bind item click events for modal
-    const allItems = [...structures, ...props];
-    elItemsGrid.querySelectorAll('[data-camp-id]').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.getAttribute('data-camp-id');
-        const item = allItems.find(x => x.id === id);
-        if (item) openCampModal(item);
-      });
-      el.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          const id = el.getAttribute('data-camp-id');
-          const item = allItems.find(x => x.id === id);
-          if (item) openCampModal(item);
-        }
-      });
-    });
-
-    // Bind common toggle inside view if clicked
-    const inlineToggle = elItemsGrid.querySelector('#inlineCampCommonToggle');
-    if (inlineToggle) {
-      inlineToggle.addEventListener('click', () => {
-        state.campCommonExpanded = !state.campCommonExpanded;
-        const box = document.getElementById('campCommonDashboard');
-        if (box) box.classList.toggle('is-collapsed', !state.campCommonExpanded);
-        if (elCampCommonToggleBtn) {
-          elCampCommonToggleBtn.classList.toggle('active', state.campCommonExpanded);
-          elCampCommonToggleBtn.setAttribute('aria-expanded', state.campCommonExpanded ? 'true' : 'false');
-        }
-        inlineToggle.textContent = state.campCommonExpanded ? '공통 정보 접기 ▲' : '공통 정보 펼치기 ▼';
-      });
-    }
   }
 
-  function openCampModal(item) {
-    const isStructure = item.type === 'structure';
-    const typeLabel = isStructure ? '구조물' : '소품';
-    const lv = item.level ?? 0;
-
-    elModalContent.innerHTML = `
-      <div class="modal-header">
-        <div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
-            <span class="camp-type-badge type-${item.type}">${typeLabel}</span>
-            ${renderCampLevelBadge(lv)}
-            <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">#${item.no}</span>
-          </div>
-          <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin: 0;">${item.name}</h2>
-        </div>
-        <button class="modal-close-btn" aria-label="닫기">✕</button>
+  function renderRelicGradeTableStage() {
+    const rGrades = DB.relicGrades || [];
+    els.resultsCountBadge.textContent = `${rGrades.length}등급`;
+    els.contentStage.innerHTML = `
+      <div class="table-wrap">
+        <table class="db-table">
+          <thead>
+            <tr><th>등급</th><th>최대 강화</th><th>강화 골드</th><th>판매 골드</th><th>신화/전설 조각 비용</th></tr>
+          </thead>
+          <tbody>
+            ${rGrades.map(g => `
+              <tr>
+                <td><strong>${escapeHtml(g.Tmp)}</strong></td>
+                <td>+${escapeHtml(g.Upgrade_Max)}강</td>
+                <td>${escapeHtml(g.Upgrade_Gold)} G</td>
+                <td>${escapeHtml(g.Sell_Gold)} G</td>
+                <td>조각9: ${escapeHtml(g.Piece_9)} / 조각10: ${escapeHtml(g.Piece_10)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       </div>
+    `;
+  }
 
-      <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
-        <div style="display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid var(--border-glass); border-radius: 12px; padding: 1.5rem;">
-          <img src="${item.img || ''}" alt="${item.name}" style="max-width: 140px; max-height: 140px; object-fit: contain; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.12));">
-        </div>
-
-        <div style="background: #ffffff; border: 1px solid var(--border-glass); border-radius: 10px; padding: 1.1rem; box-shadow: var(--shadow-sm);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.45rem;">
-            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">고유 능력</span>
-            <span style="font-size: 0.8rem; font-weight: 700; color: var(--accent-secondary);">획득 조건: 계정 레벨 ${lv === 0 ? '0 (기본)' : `${lv} 이상`}</span>
-          </div>
-          <div style="font-size: 1rem; font-weight: 600; line-height: 1.6; color: var(--text-main);">
-            ${formatCampAbility(item.ability)}
-          </div>
-        </div>
-
-        <div class="mount-tip-box" style="margin: 0;">
-          <h4 style="color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 0.4rem;">💡 야영지 공통 옵션 적용</h4>
-          <p style="font-size: 0.85rem; line-height: 1.55; margin: 0; color: var(--text-muted);">
-            본 항목(${item.name})은 계정 레벨 <strong>${lv}레벨</strong>부터 획득 가능하며, <strong>일반 ~ 신 (8단계 등급)</strong> 승급 및 공통 <strong>부옵션 (8종)</strong> · <strong>랜덤옵션 (12종)</strong> 풀이 동일하게 적용됩니다.
+  function renderGrowthCalculatorStage() {
+    const costs = (DB.growth && DB.growth.heroTowerCosts) || [];
+    els.contentStage.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div class="modal-section">
+          <h3 class="modal-sec-title">🧮 공식 장비 주옵션 & 각성 시뮬레이터 (3.5.0 공식 수식)</h3>
+          <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;">
+            공식 수식: <code>q = 0.9 + 0.2*(품질/100)</code>, <code>s = q * (등급기본 + 레벨당증가*(레벨-1))</code> (반지는 <code>s*0.3</code>, 신등급 각성 보너스 0~400% 적용)
           </p>
+          <div class="calc-grid">
+            <div class="calc-field">
+              <label>장비 부위/종류</label>
+              <select id="simPart" class="ctrl-select">
+                <option value="weapon_4">주 무기 (무기 공격력%)</option>
+                <option value="other_3">보조/투구/기타 (모든 공격력%)</option>
+                <option value="other_1">타워 특화 장비 (타워 공격력%)</option>
+                <option value="ring_3">반지 (모든 공격력% × 0.3)</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label>장비 등급</label>
+              <select id="simGrade" class="ctrl-select">
+                <option value="7" selected>신 (Grade 7)</option>
+                <option value="6">전설 (Grade 6)</option>
+                <option value="5">에픽 (Grade 5)</option>
+                <option value="4">미스테리 (Grade 4)</option>
+                <option value="3">엘리트 (Grade 3)</option>
+                <option value="2">유니크 (Grade 2)</option>
+                <option value="1">레어 (Grade 1)</option>
+                <option value="0">일반 (Grade 0)</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label>장비 레벨 (1~400)</label>
+              <input type="number" id="simLv" class="ctrl-input" value="200" min="1" max="400" />
+            </div>
+            <div class="calc-field">
+              <label>품질 난수 (1~100, 100=최상급)</label>
+              <input type="number" id="simRand" class="ctrl-input" value="100" min="1" max="100" />
+            </div>
+            <div class="calc-field">
+              <label>신등급 각성 단계 (0~5성)</label>
+              <select id="simAwk" class="ctrl-select">
+                <option value="0">0성 (보너스 0%)</option>
+                <option value="1">1성 (+50%)</option>
+                <option value="2">2성 (+120%)</option>
+                <option value="3">3성 (+200%)</option>
+                <option value="4">4성 (+300%)</option>
+                <option value="5" selected>★5성 (+400%)</option>
+              </select>
+            </div>
+          </div>
+          <div class="calc-result-box" id="simResultBox"></div>
+        </div>
+
+        <div class="modal-section">
+          <h3 class="modal-sec-title">📊 영웅 · 타워 레벨업 필요 조각 수 (공식 Chart_Lv)</h3>
+          <div class="table-wrap">
+            <table class="db-table">
+              <thead>
+                <tr><th>현재 레벨 → 다음 레벨</th><th>영웅 필요 조각</th><th>일반 타워 조각</th><th>희귀 타워 조각</th><th>전설 타워 조각</th></tr>
+              </thead>
+              <tbody>
+                ${costs.map(c => `
+                  <tr>
+                    <td><strong>Lv.${c.level} → Lv.${c.level + 1}</strong></td>
+                    <td>${c.heroPiece ? `${c.heroPiece}개` : '-'}</td>
+                    <td>${c.towerNormal ? `${c.towerNormal}개` : '-'}</td>
+                    <td>${c.towerRare ? `${c.towerRare}개` : '-'}</td>
+                    <td><strong style="color:var(--accent-amber);">${c.towerLegend ? `${c.towerLegend}개` : '-'}</strong></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3 class="modal-sec-title">🖼️ 인게임 성장 참고표</h3>
+          <img src="assets/underdark_growth.png" alt="성장 테이블" style="max-width:100%;border-radius:12px;border:1px solid var(--border-subtle);" loading="lazy" />
         </div>
       </div>
     `;
 
-    showModal();
+    const updateSim = () => {
+      const partVal = document.getElementById('simPart')?.value || 'weapon_4';
+      const gradeIdx = parseInt(document.getElementById('simGrade')?.value || '7', 10);
+      const lv = parseInt(document.getElementById('simLv')?.value || '200', 10);
+      const rand = Math.min(100, Math.max(1, parseInt(document.getElementById('simRand')?.value || '100', 10)));
+      const awkLv = parseInt(document.getElementById('simAwk')?.value || '5', 10);
+      const qualityPct = (0.9 + 0.2 * (rand / 100)) * 100;
+
+      const dummyItem = {
+        cat: partVal.startsWith('weapon') ? 'weapon' : (partVal.startsWith('ring') ? 'ring' : 'sub'),
+        basicStat: {
+          statCode: partVal.split('_')[1],
+          isRing: partVal.startsWith('ring'),
+        },
+        weaponSpecs: { atk: 50 },
+      };
+      const res = calculateItemMainStat(dummyItem, gradeIdx, lv, qualityPct, awkLv);
+      const box = document.getElementById('simResultBox');
+      if (box) {
+        box.innerHTML = `
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);">적용 배율: 품질 ${(qualityPct).toFixed(1)}% · 각성 보너스 +${gradeIdx === 7 ? AWK_MAIN_BONUS[awkLv] : 0}%</div>
+            <div style="font-weight:700;">계산된 주옵션 수치</div>
+          </div>
+          <div class="calc-result-val">+${res.mainPct.toLocaleString()}%</div>
+        `;
+      }
+    };
+
+    ['simPart', 'simGrade', 'simLv', 'simRand', 'simAwk'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', updateSim);
+      document.getElementById(id)?.addEventListener('change', updateSim);
+    });
+    updateSim();
   }
 
-  // -------------------------------------------------------------
-  // 7. RENDER GROWTH (성장 가이드)
-  // -------------------------------------------------------------
-  function renderGrowthView() {
-    elResultCount.textContent = '1';
-    elItemsGrid.innerHTML = `
-      <div class="growth-view-wrapper">
-        <div class="growth-card">
-          <div class="growth-card-header">
-            <div class="growth-header-info">
-              <span class="growth-badge">성장 가이드</span>
-              <h2 class="growth-title">언더다크 단계별 성장 가이드 차트</h2>
-              <p class="growth-subtitle">캐릭터 단계별 요구 재화, 성장 스탯 증가율 및 레벨별 필요 사항을 담은 종합 안내도입니다. 차트를 클릭하면 전체화면으로 크게 볼 수 있습니다.</p>
-            </div>
-            <div class="growth-card-actions">
-              <button type="button" class="btn-outline btn-sm" id="inlineGrowthZoomBtn">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg>
-                전체화면 확대
-              </button>
-              <a href="assets/growth/underdark_growth.png" download="언더다크_성장.png" class="btn-outline btn-sm">
-                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                이미지 저장
-              </a>
-            </div>
-          </div>
+  // =========================================================================
+  // Detail Modal Renderer
+  // =========================================================================
+  function openDetailModal(tab, id) {
+    let entry = null;
+    if (tab === 'items') entry = (DB.items || []).find(x => x.id === id);
+    else if (tab === 'heroes') entry = (DB.heroes || []).find(x => x.id === id);
+    else if (tab === 'mercenaries') entry = (DB.mercenaries || []).find(x => x.id === id);
+    else if (tab === 'towers') entry = (DB.towers || []).find(x => x.id === id);
+    else if (tab === 'mounts') entry = ((DB.mounts && DB.mounts.mounts) || []).find(x => x.id === id);
+    else if (tab === 'pets') entry = ((DB.pets && DB.pets.pets) || []).find(x => x.id === id);
+    else if (tab === 'camp') entry = ((DB.camp && DB.camp.items) || []).find(x => x.id === id);
+    else if (tab === 'relics') {
+      entry = [...(DB.relics || []), ...(DB.runes || []), ...(DB.skins || [])].find(x => x.id === id);
+    }
 
-          <div class="growth-image-container" id="growthImageTrigger" role="button" tabindex="0" title="클릭하여 원본 크기로 확대">
-            <img src="assets/growth/underdark_growth.png" alt="언더다크 성장 가이드" class="growth-image" loading="lazy">
-            <div class="growth-image-overlay">
-              <span class="growth-zoom-pill">
-                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg>
-                클릭하여 원본 크기(1031 × 1155)로 확대 보기
-              </span>
-            </div>
-          </div>
+    if (!entry) return;
+
+    els.modalHeaderContent.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="card-icon-box">
+          ${entry.img ? `<img src="${escapeHtml(entry.img)}" alt="${escapeHtml(entry.name)}" />` : '✨'}
         </div>
-      </div>
-    `;
-
-    const trigger = elItemsGrid.querySelector('#growthImageTrigger');
-    if (trigger) {
-      trigger.addEventListener('click', openGrowthModal);
-      trigger.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          openGrowthModal();
-        }
-      });
-    }
-
-    const inlineBtn = elItemsGrid.querySelector('#inlineGrowthZoomBtn');
-    if (inlineBtn) {
-      inlineBtn.addEventListener('click', openGrowthModal);
-    }
-  }
-
-  function openGrowthModal() {
-    elModalContent.innerHTML = `
-      <div class="modal-header">
         <div>
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-            <span class="growth-badge">성장 차트</span>
+          <div class="card-title-row">
+            <h2 id="modalTitle" style="font-size:18px;font-weight:900;">${escapeHtml(entry.name)}</h2>
+            <span class="card-id">공식ID #${entry.officialId}</span>
           </div>
-          <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin: 0;">언더다크 성장 가이드 (고해상도 원본)</h2>
+          <div class="card-badges">
+            ${entry.catLabel ? `<span class="badge">${escapeHtml(entry.catLabel)}</span>` : ''}
+            ${entry.range ? `<span class="badge">${escapeHtml(entry.range)}</span>` : ''}
+            ${entry.grade ? `<span class="badge ${tierBadgeClass(entry.grade)}">${escapeHtml(entry.grade)}</span>` : ''}
+            ${entry.tier ? `<span class="badge ${tierBadgeClass(entry.tier)}">${escapeHtml(entry.tier)}</span>` : ''}
+            ${entry.recommend ? `<span class="badge ${tierBadgeClass(entry.recommend)}">추천 ${escapeHtml(entry.recommend)}</span>` : ''}
+            ${entry.usage && entry.usage.length ? `<span class="badge ${tierBadgeClass(entry.usage.join('/'))}">사용 ${escapeHtml(entry.usage.join('/'))}</span>` : ''}
+            ${entry.level ? `<span class="badge badge-level">${escapeHtml(entry.level)}</span>` : ''}
+          </div>
         </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <a href="assets/growth/underdark_growth.png" download="언더다크_성장.png" class="btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
-            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            저장
-          </a>
-          <button class="modal-close-btn" aria-label="닫기">✕</button>
-        </div>
-      </div>
-
-      <div class="modal-body growth-modal-body" style="padding: 1rem; overflow-y: auto; max-height: 80vh; text-align: center; background: #0f172a;">
-        <img src="assets/growth/underdark_growth.png" alt="언더다크 성장 가이드 원본" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
       </div>
     `;
 
-    showModal();
-  }
+    let bodyHtml = '';
 
-  function showModal(isWide = false) {
-    if (elModalContent) elModalContent.classList.toggle('modal-wide', !!isWide);
-    elModalOverlay.classList.add('active');
-  }
-
-  function closeModal() {
-    elModalOverlay.classList.remove('active');
-    if (elModalContent) elModalContent.classList.remove('modal-wide');
-  }
-
-  window.filterByDrop = function (dropName) {
-    closeModal();
-    elDropFilter.value = dropName;
-    state.drop = dropName;
-    updateUrl();
-    renderActiveView();
-  };
-
-  // URL Sync
-  function updateUrl() {
-    const params = new URLSearchParams();
-    params.set('tab', currentTab);
-    if (state.query) params.set('q', state.query);
-
-    if (currentTab === 'items') {
-      if (state.category !== 'all') params.set('cat', state.category);
-      if (state.range !== 'all') params.set('range', state.range);
-      if (state.tier !== 'all') params.set('tier', state.tier);
-      if (state.usage !== 'all') params.set('use', state.usage);
-      if (state.drop !== 'all') params.set('drop', state.drop);
-      if (state.tags.length > 0) params.set('tags', state.tags.join(','));
-      if (state.awakeningLevel > 0) params.set('awak', state.awakeningLevel);
-      if (state.sortBy !== 'default') params.set('sort', state.sortBy);
-    }
-
-    const str = params.toString();
-    const newUrl = str ? `${window.location.pathname}?${str}` : window.location.pathname;
-    window.history.replaceState({}, '', newUrl);
-  }
-
-  function readUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('tab')) currentTab = params.get('tab');
-    if (params.has('q')) {
-      state.query = params.get('q');
-      elSearchInput.value = state.query;
-      elSearchClear.style.display = 'flex';
-    }
-    if (params.has('cat')) state.category = params.get('cat');
-    if (params.has('range')) state.range = params.get('range');
-    if (params.has('tier')) state.tier = params.get('tier');
-    if (params.has('use')) state.usage = params.get('use');
-    if (params.has('drop')) state.drop = params.get('drop');
-    if (params.has('tags')) state.tags = params.get('tags').split(',').filter(Boolean);
-    if (params.has('awak')) state.awakeningLevel = parseInt(params.get('awak'), 10) || 0;
-    if (params.has('sort')) state.sortBy = params.get('sort');
-  }
-
-  // ==========================================
-  // Admin & Google Sheets Integration Modal
-  // ==========================================
-  const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1rT0VUnOxTHSo_k8xa4MIyzWtQdxSuhTi/edit?usp=sharing';
-  const DEFAULT_ADMIN_ID = 'admin';
-  const DEFAULT_ADMIN_PW = 'underdark1234';
-
-  function openAdminModal() {
-    const isAuthed = sessionStorage.getItem('underdark_admin_auth') === 'true';
-    if (isAuthed) {
-      renderAdminDashboardModal();
-    } else {
-      renderAdminLoginModal();
-    }
-  }
-
-  function renderAdminLoginModal(errorMsg = '') {
-    const html = `
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 1.3rem;">🔐</span>
-          <h2 style="font-size: 1.15rem; font-weight: 800; margin: 0; color: #0f172a;">관리자 로그인</h2>
+    if (tab === 'items') {
+      const awkLevels = [0, 1, 2, 3, 4, 5];
+      bodyHtml += `
+        ${entry.comment ? `<div class="card-comment">💬 유저 코멘트: ${escapeHtml(entry.comment)}</div>` : ''}
+        <div class="modal-section">
+          <div class="modal-sec-title">
+            <span>🌟 공식 0성 ~ 5성 각성 단계별 옵션 비교</span>
+            <span style="font-size:11.5px;color:var(--text-muted);">신(Grade 7) 등급에서 각성 가능</span>
+          </div>
+          <div class="table-wrap">
+            <table class="db-table" style="min-width:100%;">
+              <thead><tr><th style="width:85px;">각성 단계</th><th>주옵션 배율</th><th>적용 효과 (공식 3.5.0 데이터)</th></tr></thead>
+              <tbody>
+                ${awkLevels.map(lv => {
+                  const lines = entry.awakening?.[String(lv)]?.lines || entry.abilities || [];
+                  return `
+                    <tr>
+                      <td><span class="badge ${lv === 5 ? 'badge-awk' : ''}">★${lv}성</span></td>
+                      <td><strong>+${AWK_MAIN_BONUS[lv]}%</strong></td>
+                      <td>${lines.map(l => `<div>• ${escapeHtml(l)}</div>`).join('')}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <button type="button" class="modal-close-btn" aria-label="닫기">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 1.5rem; max-width: 440px; margin: 0 auto; width: 100%;">
-        <p style="font-size: 0.88rem; color: #475569; margin-bottom: 1.25rem; line-height: 1.5;">
-          관리자로 로그인하시면 데이터 수정용 <strong>구글 스프레드시트</strong>가 새 창으로 열립니다.
-        </p>
-        <form id="adminLoginForm">
-          <div style="margin-bottom: 1rem;">
-            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: #334155;" for="modalAdminId">아이디</label>
-            <input type="text" id="modalAdminId" class="filter-select" style="width: 100%; border-radius: 8px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc;" placeholder="admin" required autocomplete="username">
+
+        <div class="modal-section">
+          <div class="modal-sec-title">
+            <span>🧮 이 장비의 주옵션(${escapeHtml(entry.basicStat?.name || '공격력')}) 계산기</span>
           </div>
-          <div style="margin-bottom: 1.25rem;">
-            <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem; color: #334155;" for="modalAdminPw">비밀번호</label>
-            <input type="password" id="modalAdminPw" class="filter-select" style="width: 100%; border-radius: 8px; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc;" placeholder="비밀번호 입력" required autocomplete="current-password">
+          <div class="calc-grid">
+            <div class="calc-field">
+              <label>등급</label>
+              <select id="mCalcGrade" class="ctrl-select">
+                <option value="7" selected>신</option>
+                <option value="6">전설</option>
+                <option value="5">에픽</option>
+                <option value="4">미스테리</option>
+              </select>
+            </div>
+            <div class="calc-field">
+              <label>장비 레벨 (1~400)</label>
+              <input type="number" id="mCalcLv" class="ctrl-input" value="200" min="1" max="400" />
+            </div>
+            <div class="calc-field">
+              <label>각성 (0~5성)</label>
+              <select id="mCalcAwk" class="ctrl-select">
+                <option value="0">0성</option>
+                <option value="1">1성</option>
+                <option value="2">2성</option>
+                <option value="3">3성</option>
+                <option value="4">4성</option>
+                <option value="5" selected>★5성</option>
+              </select>
+            </div>
           </div>
-          ${errorMsg ? `
-            <div style="color: #ef4444; font-size: 0.84rem; margin-bottom: 1rem; text-align: center; font-weight: 600; padding: 0.5rem; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;">
-              ${errorMsg}
+          <div class="calc-result-box" id="mCalcResult"></div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-sec-title">📍 획득처 및 부가 정보</div>
+          ${entry.tags && entry.tags.length ? `<p style="margin-bottom:6px;"><strong>주요 옵션 태그:</strong> ${entry.tags.map(t => `<span class="badge badge-rare">${escapeHtml(t)}</span>`).join(' ')}</p>` : ''}
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <strong>드랍/획득처:</strong>
+            <div class="drop-badges-inline">${(entry.drops && entry.drops.length) ? renderDropBadges(entry.drops) : '<span class="badge badge-drop">상자 뽑기 / 일일 상점</span>'}</div>
+          </div>
+          ${entry.aliases?.length ? `<p style="margin-top:6px;"><strong>검색 별칭:</strong> ${escapeHtml(entry.aliases.join(', '))}</p>` : ''}
+        </div>
+      `;
+    } else if (tab === 'heroes') {
+      bodyHtml += `
+        ${entry.comment ? `<div class="card-comment" style="white-space:pre-line;">💬 ${escapeHtml(entry.comment)}</div>` : ''}
+        <div class="modal-section">
+          <div class="modal-sec-title">⚔️ 기본 패시브 및 전투 스펙</div>
+          <p style="margin-bottom:8px;">${escapeHtml(entry.ability)}</p>
+          <div class="card-badges">
+            <span class="badge">공격속도 ${entry.specs?.aspd}</span>
+            <span class="badge">치명타확률 ${entry.specs?.crit}%</span>
+            <span class="badge">치명타피해 ${entry.specs?.critDmg}%</span>
+            <span class="badge">사거리 ${entry.specs?.range}</span>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-sec-title">🌟 레벨별 해금 특성 (Lv.3 / 6 / 9 / 12 / 15) · 별점(★☆)</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${(entry.traits || []).map(tr => `
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <span class="badge badge-level" style="flex-shrink:0;">Lv.${tr.unlockLevel}</span>
+                <span>${escapeHtml(tr.text)}</span>
+                ${tr.star ? `<span style="color:var(--accent-amber);font-weight:700;">${escapeHtml(tr.star)}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        ${entry.skins && entry.skins.length ? `
+          <div class="modal-section">
+            <div class="modal-sec-title">👗 전용 스킨 목록 (${entry.skins.length}종)</div>
+            <div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));">
+              ${entry.skins.map(sk => `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-subtle);">
+                  ${sk.img ? `<img src="${escapeHtml(sk.img)}" alt="" style="width:42px;height:42px;object-fit:contain;" />` : ''}
+                  <div>
+                    <div style="font-weight:800;font-size:13px;">${escapeHtml(sk.name)}</div>
+                    <div style="font-size:12px;color:var(--accent-primary);">${escapeHtml(sk.ability)}</div>
+                    ${sk.comment ? `<div style="font-size:11px;color:var(--accent-amber);">${escapeHtml(sk.comment)}</div>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      `;
+    } else if (tab === 'mercenaries') {
+      const tv = entry.tierValues || {};
+      const gDetails = entry.gradeDetails || [];
+      bodyHtml += `
+        ${entry.comment ? `<div class="card-comment">💬 ${escapeHtml(entry.comment)}</div>` : ''}
+        <div class="modal-section">
+          <div class="modal-sec-title">🛡️ 지원용병 등급별 효과 상승표 (B ~ SSS)</div>
+          <p style="margin-bottom:10px;font-weight:700;">${escapeHtml(entry.templateKo || entry.ability)}</p>
+          <div class="table-wrap">
+            <table class="db-table" style="min-width:100%;">
+              <thead><tr><th>지원 등급</th><th>필요 영웅 레벨</th><th>적용 수치</th><th>상세 설명</th></tr></thead>
+              <tbody>
+                ${gDetails.length ? gDetails.map(gd => `
+                  <tr>
+                    <td><span class="badge ${gd.grade === 'SSS' ? 'badge-tier-0' : (gd.grade === 'SS' ? 'badge-tier-1' : '')}">${escapeHtml(gd.grade)}</span></td>
+                    <td>영웅 Lv.${gd.minHeroLv} 이상</td>
+                    <td><strong>${escapeHtml((gd.values || []).join(' / '))}</strong></td>
+                    <td>${escapeHtml(gd.text)}</td>
+                  </tr>
+                `).join('') : ['B', 'A', 'S', 'SS', 'SSS'].map(g => `
+                  <tr>
+                    <td><span class="badge">${g}</span></td>
+                    <td>-</td>
+                    <td><strong>${escapeHtml(tv[g] || '-')}</strong></td>
+                    <td>${escapeHtml(entry.templateKo || entry.ability)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    } else if (tab === 'towers') {
+      bodyHtml += `
+        ${entry.comment ? `<div class="card-comment">💬 ${escapeHtml(entry.comment)}</div>` : ''}
+        <div class="modal-section">
+          <div class="modal-sec-title">🏰 타워 기본 설명 및 스펙</div>
+          <p style="margin-bottom:8px;">${escapeHtml(entry.ability)}</p>
+          <div class="card-badges">
+            <span class="badge">기본 공격력 ${entry.specs?.atk}</span>
+            <span class="badge">공격속도 ${entry.specs?.aspd}</span>
+            <span class="badge">사거리 ${entry.specs?.range}</span>
+            <span class="badge">타일크기 ${entry.specs?.tileCnt}칸</span>
+            <span class="badge">최대 설치 ${entry.specs?.maxCount === -1 ? '무제한' : entry.specs?.maxCount + '개'}</span>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-sec-title">🃏 인게임 웨이브 버프 카드 목록 (해금 레벨 & 최대 선택 수)</div>
+          <div class="table-wrap">
+            <table class="db-table" style="min-width:100%;">
+              <thead><tr><th>필요 타워 레벨</th><th>최대 선택 횟수</th><th>버프 카드 효과</th></tr></thead>
+              <tbody>
+                ${(entry.waveBuffs || []).map(bf => `
+                  <tr>
+                    <td><span class="badge badge-level">${bf.towerLv === 0 ? '기본 해금' : `타워 Lv.${bf.towerLv}`}</span></td>
+                    <td>최대 ${bf.maxPickCount}회</td>
+                    <td>${escapeHtml(bf.text)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    } else {
+      bodyHtml += `
+        ${entry.comment ? `<div class="card-comment">💬 ${escapeHtml(entry.comment)}</div>` : ''}
+        <div class="modal-section">
+          <div class="modal-sec-title">📌 상세 능력치 및 정보</div>
+          ${entry.set2 && entry.set4 ? `
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+              <div><span class="badge badge-level">2세트 효과</span> <strong>${escapeHtml(entry.set2)}</strong></div>
+              <div><span class="badge badge-legend">4세트 효과</span> <strong>${escapeHtml(entry.set4)}</strong></div>
+            </div>
+          ` : `<p style="font-weight:700;">${escapeHtml(entry.ability)}</p>`}
+          ${entry.acquisition ? `<p style="margin-top:8px;color:var(--text-secondary);">📍 <strong>획득처:</strong> ${escapeHtml(entry.acquisition)}</p>` : ''}
+          ${entry.drops && entry.drops.length ? `<div style="margin-top:8px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span>📍 <strong>획득 스테이지/드랍처:</strong></span> <div class="drop-badges-inline">${renderDropBadges(entry.drops)}</div></div>` : ''}
+          ${entry.heroName ? `<p style="margin-top:8px;color:var(--text-secondary);">🦸 <strong>대상 영웅:</strong> ${escapeHtml(entry.heroName)} (${escapeHtml(entry.purchaseType || '스킨')})</p>` : ''}
+          ${entry.rewardGem ? `<p style="margin-top:8px;color:var(--accent-rose);font-weight:700;">💎 <strong>미션 보상:</strong> 붉은 보석 ${entry.rewardGem.toLocaleString()}개</p>` : ''}
+          ${entry.perGrade ? `
+            <div class="table-wrap" style="margin-top:12px;">
+              <table class="db-table" style="min-width:100%;">
+                <thead><tr><th>구분/세트</th><th>적용 효과</th></tr></thead>
+                <tbody>
+                  ${entry.perGrade.map(pg => `<tr><td><strong>${escapeHtml(pg.grade)}</strong></td><td>${escapeHtml(pg.text)}</td></tr>`).join('')}
+                </tbody>
+              </table>
             </div>
           ` : ''}
-          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; font-weight: 700; padding: 0.8rem; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
-            <span>🔓 로그인 및 구글 시트 열기</span>
-          </button>
-        </form>
-      </div>
-    `;
+        </div>
+      `;
+    }
 
-    elModalContent.innerHTML = html;
-    showModal();
+    els.modalBodyContent.innerHTML = bodyHtml;
+    els.detailModalBackdrop.hidden = false;
 
-    const form = document.getElementById('adminLoginForm');
-    const idInput = document.getElementById('modalAdminId');
-    const pwInput = document.getElementById('modalAdminPw');
+    if (tab === 'items') {
+      const updateModalCalc = () => {
+        const g = parseInt(document.getElementById('mCalcGrade')?.value || '7', 10);
+        const lv = parseInt(document.getElementById('mCalcLv')?.value || '200', 10);
+        const awk = parseInt(document.getElementById('mCalcAwk')?.value || '5', 10);
+        const res = calculateItemMainStat(entry, g, lv, 110, awk);
+        const box = document.getElementById('mCalcResult');
+        if (box) {
+          box.innerHTML = `
+            <div>
+              <div style="font-size:12px;color:var(--text-muted);">최상급(110% 품질) 기준 ${escapeHtml(entry.basicStat?.name || '주옵션')}</div>
+              ${res.weaponFinalAtk ? `<div style="font-size:12.5px;">무기 최종 공격력: <strong>${res.weaponFinalAtk.toLocaleString()}</strong> (기본 ${entry.weaponSpecs.atk})</div>` : ''}
+            </div>
+            <div class="calc-result-val">+${res.mainPct.toLocaleString()}%</div>
+          `;
+        }
+      };
+      ['mCalcGrade', 'mCalcLv', 'mCalcAwk'].forEach(cid => {
+        document.getElementById(cid)?.addEventListener('input', updateModalCalc);
+        document.getElementById(cid)?.addEventListener('change', updateModalCalc);
+      });
+      updateModalCalc();
+    }
+  }
 
-    setTimeout(() => {
-      if (idInput && !idInput.value) idInput.focus();
-      else if (pwInput) pwInput.focus();
-    }, 100);
+  // =========================================================================
+  // Event Bindings & Initialization
+  // =========================================================================
+  function switchTab(newTab) {
+    if (!TAB_TITLES[newTab]) return;
+    STATE.tab = newTab;
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const id = (idInput.value || '').trim();
-      const pw = (pwInput.value || '').trim();
-      const validPw = localStorage.getItem('underdark_admin_pw') || DEFAULT_ADMIN_PW;
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === newTab);
+    });
 
-      if (id === DEFAULT_ADMIN_ID && pw === validPw) {
-        sessionStorage.setItem('underdark_admin_auth', 'true');
-        window.open(GOOGLE_SHEET_URL, '_blank');
-        renderAdminDashboardModal(true);
+    renderStage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function bindEvents() {
+    // Search input
+    els.searchInput.addEventListener('input', e => {
+      STATE.query = e.target.value;
+      els.clearSearchBtn.hidden = !STATE.query.length;
+      renderStage();
+    });
+
+    els.clearSearchBtn.addEventListener('click', () => {
+      STATE.query = '';
+      els.searchInput.value = '';
+      els.clearSearchBtn.hidden = true;
+      els.searchInput.focus();
+      renderStage();
+    });
+
+    // Cross-category jump
+    els.crossMatchBar.addEventListener('click', e => {
+      const btn = e.target.closest('[data-jump-tab]');
+      if (btn) switchTab(btn.getAttribute('data-jump-tab'));
+    });
+
+    // Primary & Mobile Nav
+    els.primaryNav.addEventListener('click', e => {
+      const btn = e.target.closest('[data-tab]');
+      if (btn) switchTab(btn.getAttribute('data-tab'));
+    });
+    els.mobileBottomNav.addEventListener('click', e => {
+      const btn = e.target.closest('[data-tab]');
+      if (btn) switchTab(btn.getAttribute('data-tab'));
+    });
+
+    // Context Filters
+    els.contextToolbar.addEventListener('click', e => {
+      const btn = e.target.closest('[data-fkey]');
+      if (!btn) return;
+      const fkey = btn.getAttribute('data-fkey');
+      const fval = btn.getAttribute('data-fval');
+      if (STATE.filters[STATE.tab]) {
+        STATE.filters[STATE.tab][fkey] = fval;
+        renderStage();
+      }
+    });
+
+    // Quick Search Chips
+    els.quickChipsBar.addEventListener('click', e => {
+      const btn = e.target.closest('[data-qchip]');
+      if (!btn) return;
+      const q = btn.getAttribute('data-qchip');
+      STATE.query = STATE.query.trim() === q ? '' : q;
+      els.searchInput.value = STATE.query;
+      els.clearSearchBtn.hidden = !STATE.query.length;
+      renderStage();
+    });
+
+    // Global Awakening Switcher
+    els.globalAwkSeg.addEventListener('click', e => {
+      const btn = e.target.closest('[data-awk]');
+      if (!btn) return;
+      STATE.globalAwk = btn.getAttribute('data-awk');
+      els.globalAwkSeg.querySelectorAll('.seg-btn').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-awk') === STATE.globalAwk);
+      });
+      renderStage();
+    });
+
+    // Sort & View Mode
+    els.sortSelect.addEventListener('change', e => {
+      STATE.sortBy = e.target.value;
+      renderStage();
+    });
+
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        STATE.viewMode = btn.getAttribute('data-view');
+        document.querySelectorAll('.view-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-view') === STATE.viewMode);
+        });
+        renderStage();
+      });
+    });
+
+    // Card / Table Row Click -> Open Detail Modal (or toggle truncated drop list)
+    els.contentStage.addEventListener('click', e => {
+      const dropBtn = e.target.closest('[data-toggle-drop]');
+      if (dropBtn) {
+        e.stopPropagation();
+        const wrap = dropBtn.closest('.drop-cell-wrap');
+        if (wrap) {
+          const shortEl = wrap.querySelector('.drop-short');
+          const fullEl = wrap.querySelector('.drop-full');
+          const isExpanding = dropBtn.getAttribute('data-toggle-drop') === 'expand';
+          if (shortEl && fullEl) {
+            shortEl.hidden = isExpanding;
+            fullEl.hidden = !isExpanding;
+          }
+        }
+        return;
+      }
+
+      const target = e.target.closest('[data-open-id]');
+      if (!target) return;
+      openDetailModal(target.getAttribute('data-open-tab'), target.getAttribute('data-open-id'));
+    });
+
+    els.closeDetailModalBtn.addEventListener('click', () => {
+      els.detailModalBackdrop.hidden = true;
+    });
+    els.detailModalBackdrop.addEventListener('click', e => {
+      if (e.target === els.detailModalBackdrop) els.detailModalBackdrop.hidden = true;
+    });
+
+    // Google Sheet Modal
+    els.openSheetModalBtn.addEventListener('click', () => {
+      els.sheetIdInput.value = SheetsSync.getActiveSheetId();
+      els.sheetSyncLog.textContent = '';
+      els.sheetConfigBackdrop.hidden = false;
+    });
+    els.closeSheetModalBtn.addEventListener('click', () => {
+      els.sheetConfigBackdrop.hidden = true;
+    });
+    els.sheetConfigBackdrop.addEventListener('click', e => {
+      if (e.target === els.sheetConfigBackdrop) els.sheetConfigBackdrop.hidden = true;
+    });
+
+    els.saveAndSyncSheetBtn.addEventListener('click', async () => {
+      const cleanId = SheetsSync.setActiveSheetId(els.sheetIdInput.value);
+      els.sheetIdInput.value = cleanId;
+      els.sheetSyncLog.textContent = '구글 시트에서 실시간 데이터를 불러오는 중...';
+      const res = await SheetsSync.syncFromGoogleSheets(DB, updateSyncBadge);
+      if (res.ok) {
+        els.sheetSyncLog.textContent = `✅ 동기화 완료! (${res.successTabs}개 시트 탭에서 총 ${res.updated}건의 유저 코멘트/티어 반영)`;
+        renderStage();
       } else {
-        renderAdminLoginModal('아이디 또는 비밀번호가 올바르지 않습니다.');
+        els.sheetSyncLog.textContent = '⚠️ 시트를 불러오지 못했습니다. 시트 공유 권한(링크가 있는 모든 사용자 뷰어)을 확인해주세요.';
+      }
+    });
+
+    els.resetSheetIdBtn.addEventListener('click', () => {
+      const cleanId = SheetsSync.setActiveSheetId(SheetsSync.DEFAULT_SHEET_ID);
+      els.sheetIdInput.value = cleanId;
+      els.sheetSyncLog.textContent = '기본 시트 ID로 복원되었습니다.';
+    });
+
+    // Theme toggle
+    els.themeToggleBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      els.themeIcon.textContent = next === 'light' ? '☀️' : '🌙';
+      try { localStorage.setItem('ara_db_v2_theme', next); } catch (e) {}
+    });
+
+    // Brand Home reset
+    els.brandHomeBtn.addEventListener('click', () => {
+      STATE.query = '';
+      els.searchInput.value = '';
+      els.clearSearchBtn.hidden = true;
+      switchTab('items');
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        els.detailModalBackdrop.hidden = true;
+        els.sheetConfigBackdrop.hidden = true;
+      }
+      if ((e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'k')) &&
+          document.activeElement !== els.searchInput &&
+          !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+        e.preventDefault();
+        els.searchInput.focus();
       }
     });
   }
 
-  function renderAdminDashboardModal(justOpened = false) {
-    const html = `
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 1.3rem;">⚙️</span>
-          <h2 style="font-size: 1.15rem; font-weight: 800; margin: 0; color: #0f172a;">관리자 모드</h2>
-        </div>
-        <button type="button" class="modal-close-btn" aria-label="닫기">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 1.5rem; max-width: 480px; margin: 0 auto; width: 100%;">
-        ${justOpened ? `
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 0.65rem;">
-            <span style="font-size: 1.25rem; line-height: 1;">🚀</span>
-            <div>
-              <div style="font-weight: 700; color: #166534; font-size: 0.9rem;">구글 스프레드시트가 새 창으로 열렸습니다!</div>
-              <div style="font-size: 0.8rem; color: #15803d; margin-top: 0.2rem; line-height: 1.4;">
-                시트에서 내용을 수정하시면 실시간 자동 저장됩니다.
-              </div>
-            </div>
-          </div>
-        ` : `
-          <p style="font-size: 0.88rem; color: #475569; margin-bottom: 1.25rem;">
-            현재 <strong>관리자(admin)</strong>로 인증되어 있습니다.
-          </p>
-        `}
-
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.1rem; margin-bottom: 1.25rem;">
-          <div style="font-size: 0.9rem; font-weight: 700; color: #166534; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem;">
-            <span>⚡</span> 실시간 자동 동기화 활성화됨
-          </div>
-          <p style="font-size: 0.82rem; color: #15803d; line-height: 1.55; margin: 0;">
-            구글 시트에서 수정하신 내용은 <strong>웹사이트 접속 및 새로고침 시 실시간으로 즉시 반영</strong>됩니다. 별도의 터미널이나 파일 실행이 전혀 필요 없습니다!
-          </p>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-          <a href="${GOOGLE_SHEET_URL}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 0.85rem; font-weight: 700; font-size: 0.95rem; justify-content: center; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border-radius: 10px; display: flex; align-items: center; gap: 0.4rem; text-decoration: none; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
-            <span>📊 구글 스프레드시트 새창 열기</span>
-            <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          </a>
-          <button type="button" id="adminForceSyncBtn" class="btn-secondary" style="padding: 0.75rem; font-size: 0.85rem; font-weight: 600; justify-content: center; color: #1e293b; border-color: #cbd5e1; background: #f8fafc; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; border-radius: 8px;">
-            <span>🔄 지금 즉시 구글 시트 동기화</span>
-          </button>
-          <button type="button" id="adminLogoutBtn" class="btn-outline" style="padding: 0.7rem; font-size: 0.85rem; justify-content: center; color: #dc2626; border-color: #fecaca; background: #fff;">
-            <span>🚪 로그아웃</span>
-          </button>
-        </div>
-      </div>
-    `;
-
-    elModalContent.innerHTML = html;
-    showModal();
-
-    const forceSyncBtn = document.getElementById('adminForceSyncBtn');
-    if (forceSyncBtn) {
-      forceSyncBtn.addEventListener('click', async () => {
-        forceSyncBtn.disabled = true;
-        forceSyncBtn.innerHTML = '<span>⏳ 구글 시트 동기화 중...</span>';
-        await triggerBackgroundSheetSync(true);
-        forceSyncBtn.disabled = false;
-        forceSyncBtn.innerHTML = '<span>✅ 동기화 완료!</span>';
-        setTimeout(() => {
-          forceSyncBtn.innerHTML = '<span>🔄 지금 즉시 구글 시트 동기화</span>';
-        }, 2000);
-      });
-    }
-
-    const logoutBtn = document.getElementById('adminLogoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('underdark_admin_auth');
-        renderAdminLoginModal();
-      });
-    }
+  function updateSyncBadge(state, text) {
+    if (!els.syncStatusDot || !els.syncStatusText) return;
+    els.syncStatusDot.classList.toggle('syncing', state === 'syncing');
+    els.syncStatusText.textContent = text;
   }
 
-  // ==========================================
-  // Background Real-Time Sheet Revalidation
-  // ==========================================
-  let isSyncingSheets = false;
-  async function triggerBackgroundSheetSync(isManual = false) {
-    if (isSyncingSheets || !window.SheetsSync) return;
-    isSyncingSheets = true;
+  function init() {
     try {
-      const fresh = await window.SheetsSync.fetchLiveExpansionData(isManual);
-      if (fresh) {
-        if (!fresh.camp) {
-          fresh.camp = (expansionData && expansionData.camp) || (window.UNDERDARK_EXPANSION && window.UNDERDARK_EXPANSION.camp);
-        }
-        let itemsChanged = false;
-        if (fresh.items && fresh.items.length && rawItemData) {
-          const oldItemsJson = JSON.stringify(rawItemData.items || []);
-          const newItemsJson = JSON.stringify(fresh.items);
-          if (oldItemsJson !== newItemsJson) {
-            rawItemData.items = fresh.items;
-            if (window.UNDERDARK_DATA) {
-              window.UNDERDARK_DATA.items = fresh.items;
-            }
-            searchEngine = new window.UnderdarkSearch(rawItemData);
-            itemsChanged = true;
-          }
-        }
-        const oldHash = JSON.stringify(expansionData || {});
-        const newHash = JSON.stringify(fresh);
-        if (oldHash !== newHash || itemsChanged) {
-          expansionData = fresh;
-          window.UNDERDARK_EXPANSION = fresh;
-          renderActiveView();
-
-          // If detail modal is currently open, re-render it with fresh item data
-          if (elModalOverlay && elModalOverlay.classList.contains('active')) {
-            const openHeader = elModalContent.querySelector('.modal-header[data-modal-item-id]');
-            const openId = openHeader ? openHeader.getAttribute('data-modal-item-id') : null;
-            if (openId && rawItemData && rawItemData.items) {
-              const freshItem = rawItemData.items.find(x => x.id === openId);
-              if (freshItem) openItemModal(freshItem);
-            }
-          }
-
-          if (isManual) {
-            showToast('✅ 구글 시트 최신 데이터가 반영되었습니다.');
-          } else {
-            console.log('⚡ Live Google Sheets data updated and rendered.');
-          }
-        } else if (isManual) {
-          showToast('✅ 이미 최신 데이터 상태입니다.');
-        }
+      const savedTheme = localStorage.getItem('ara_db_v2_theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        els.themeIcon.textContent = savedTheme === 'light' ? '☀️' : '🌙';
       }
-    } catch (e) {
-      console.warn('Live Google Sheets background sync failed:', e);
-      if (isManual) {
-        showToast('⚠️ 구글 시트 연결 실패. 잠시 후 다시 시도해주세요.');
-      }
-    } finally {
-      isSyncingSheets = false;
+    } catch (e) {}
+
+    // Sync viewMode button active state (Desktop = table default, Mobile = grid default)
+    document.querySelectorAll('.view-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-view') === STATE.viewMode);
+    });
+
+    bindEvents();
+    renderStage();
+
+    // Trigger live Google Sheets sync in background
+    if (SheetsSync) {
+      SheetsSync.syncFromGoogleSheets(DB, updateSyncBadge).then(res => {
+        if (res && res.ok) renderStage();
+      });
     }
   }
 
-  function showToast(msg) {
-    let toast = document.getElementById('appToast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.id = 'appToast';
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(15,23,42,0.92);color:#fff;padding:10px 20px;border-radius:30px;font-size:0.85rem;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.25);z-index:9999;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);pointer-events:none;opacity:0;display:flex;align-items:center;gap:6px;';
-      document.body.appendChild(toast);
-    }
-    toast.innerHTML = msg;
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateX(-50%) translateY(0)';
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(-50%) translateY(100px)';
-    }, 2800);
-  }
+  init();
 })();
+
