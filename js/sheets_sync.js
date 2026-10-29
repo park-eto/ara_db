@@ -9,10 +9,10 @@
 (function (global) {
   'use strict';
 
-  const DEFAULT_SHEET_ID = '';
-  const STORAGE_SHEET_ID_KEY = 'ara_db_v2_custom_sheet_id_v2';
-  const STORAGE_CACHE_KEY = 'ara_db_v2_live_overrides_v3';
-  const STORAGE_TIME_KEY = 'ara_db_v2_live_timestamp_v3';
+  const DEFAULT_SHEET_ID = '1MnjLbc4A9bggvl87ZG77dpzvaMCnFoWy';
+  const STORAGE_SHEET_ID_KEY = 'ara_db_v2_custom_sheet_id_v3';
+  const STORAGE_CACHE_KEY = 'ara_db_v2_live_overrides_v4';
+  const STORAGE_TIME_KEY = 'ara_db_v2_live_timestamp_v4';
 
   function extractSheetId(input) {
     const raw = String(input || '').trim();
@@ -116,21 +116,28 @@
     return '';
   }
 
+  function hasHeader(headerMap, candidateNames) {
+    return candidateNames.some(name => headerMap[name.replace(/\s+/g, '').toLowerCase()] !== undefined);
+  }
+
   function parseRowsToOverrides(rows) {
     if (!rows || rows.length < 2) return [];
     const hMap = buildHeaderMap(rows[0]);
+    const hasCommentCol = hasHeader(hMap, ['코멘트', '한줄평', '비고', '설명/코멘트']);
     const list = [];
 
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i];
       const officialId = getCell(r, hMap, ['공식id', 'parserid']);
-      const name = getCell(r, hMap, ['아이템명', '영웅명', '용병명', '타워명', '탈것명', '펫이름', '펫명', '이름', '종류']);
+      const name = getCell(r, hMap, ['아이템명', '영웅명', '영웅', '용병명', '타워명', '타워', '탈것명', '펫이름', '펫명', '펫', '이름', '종류']);
       if (!officialId && !name) continue;
 
       const subType = getCell(r, hMap, ['구분', '분류']);
       const tier = getCell(r, hMap, ['티어', '종합티어']);
       const grade = getCell(r, hMap, ['펫등급', '종합등급', '등급']);
       const usage = getCell(r, hMap, ['사용여부']);
+      const tagsRaw = getCell(r, hMap, ['주요옵션']);
+      const dropsRaw = getCell(r, hMap, ['드랍']);
       const recommend = getCell(r, hMap, ['추천도', '영웅덱추천', '추천']);
       const aliasesRaw = getCell(r, hMap, ['별칭(검색어)', '별칭', '검색어']);
       const comment = getCell(r, hMap, ['코멘트', '한줄평', '비고', '설명/코멘트']);
@@ -143,8 +150,11 @@
         tier,
         grade,
         usage,
+        tags: tagsRaw ? tagsRaw.split(/[,]+/).map(s => s.trim()).filter(Boolean) : null,
+        drops: dropsRaw ? dropsRaw.split(/[,]+/).map(s => s.trim()).filter(Boolean) : null,
         recommend,
         aliases: aliasesRaw ? aliasesRaw.split(/[,/]+/).map(s => s.trim()).filter(Boolean) : null,
+        hasCommentCol,
         comment,
       });
     }
@@ -175,16 +185,24 @@
         item.usage = ov.usage.split(/[/,\s]+/).filter(Boolean);
         changed = true;
       }
+      if (ov.tags && 'tags' in item) {
+        item.tags = ov.tags;
+        changed = true;
+      }
+      if (ov.drops && 'drops' in item) {
+        item.drops = ov.drops;
+        changed = true;
+      }
       if (ov.recommend) {
         if ('recommend' in item) item.recommend = ov.recommend;
         if ('heroDeckRec' in item) item.heroDeckRec = ov.recommend;
         changed = true;
       }
-      if (ov.aliases && ov.aliases.length && 'aliases' in item) {
+      if (ov.aliases && 'aliases' in item) {
         item.aliases = ov.aliases;
         changed = true;
       }
-      if (ov.comment !== undefined && ov.comment !== '' && 'comment' in item) {
+      if (ov.hasCommentCol && 'comment' in item) {
         item.comment = ov.comment;
         changed = true;
       }
