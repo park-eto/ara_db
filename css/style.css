@@ -343,8 +343,8 @@ button, input, select {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: 7px;
+  padding: 9px 14px;
   background: transparent;
   border: none;
   border-bottom: 2.5px solid transparent;
@@ -353,6 +353,46 @@ button, input, select {
   font-weight: 600;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.nav-ic-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.m-ic-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.cat-title-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 6px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+}
+
+.chip-ic-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.cross-ic-img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: 3px;
 }
 
 .nav-tab:hover {
@@ -666,6 +706,74 @@ button, input, select {
   width: 46px;
   height: 46px;
   object-fit: contain;
+}
+
+/* Hero Skin Enlarged Image Styles (100~120px) */
+.skin-icon-box {
+  width: 114px !important;
+  height: 114px !important;
+  border-radius: 14px !important;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.skin-icon-box img {
+  width: 106px !important;
+  height: 106px !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+
+.modal-skin-icon-box {
+  width: 120px !important;
+  height: 120px !important;
+}
+
+.modal-skin-icon-box img {
+  width: 112px !important;
+  height: 112px !important;
+}
+
+.tbl-skin-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 260px;
+}
+
+.tbl-skin-icon {
+  width: 104px !important;
+  height: 104px !important;
+  border-radius: 12px !important;
+  object-fit: contain !important;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 4px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+@media (max-width: 480px) {
+  .skin-icon-box {
+    width: 96px !important;
+    height: 96px !important;
+  }
+  .skin-icon-box img {
+    width: 90px !important;
+    height: 90px !important;
+  }
+  .tbl-skin-icon {
+    width: 84px !important;
+    height: 84px !important;
+  }
 }
 
 .card-head-info {

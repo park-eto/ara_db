@@ -8,7 +8,7 @@
   <title>Ara DB V2 — 언더다크 공식 데이터 통합 도감 (3.5.0)</title>
   <meta name="description"
     content="언더다크 디펜스 공식 데이터(3.5.0-35003) 기반 통합 도감. 장비 0~5각성 계산기, 영웅·스킨, 지원용병, 타워 웨이브 버프, 탈것, 펫, 야영지, 유물·룬 초성·수치 통합 검색." />
-  <link rel="stylesheet" href="css/style.css?v=20261030_v12" />
+  <link rel="stylesheet" href="css/style.css?v=20261031_v14" />
 </head>
 
 <body>
@@ -63,44 +63,44 @@
       <nav class="primary-nav" id="primaryNav" aria-label="도감 카테고리">
         <div class="nav-scroll">
           <button type="button" class="nav-tab active" data-tab="items">
-            <span class="nav-ic">⚔️</span>
+            <img class="nav-ic-img" src="assets/icons/InGameUI/Weapon_011.webp" alt="" />
             <span class="nav-label">장비</span>
             <span class="nav-cnt" id="cnt-items">208</span>
           </button>
           <button type="button" class="nav-tab" data-tab="heroes">
-            <span class="nav-ic">🦸</span>
+            <img class="nav-ic-img" src="assets/icons/OutGameUI/icon_skin.png" alt="" />
             <span class="nav-label">영웅·스킨</span>
-            <span class="nav-cnt" id="cnt-heroes">35</span>
+            <span class="nav-cnt" id="cnt-heroes">35·74</span>
           </button>
           <button type="button" class="nav-tab" data-tab="mercenaries">
-            <span class="nav-ic">🛡️</span>
+            <img class="nav-ic-img" src="assets/icons/Reward2/Icon_Hero_009.webp" alt="" />
             <span class="nav-label">지원용병</span>
             <span class="nav-cnt" id="cnt-mercenaries">35</span>
           </button>
           <button type="button" class="nav-tab" data-tab="towers">
-            <span class="nav-ic">🏰</span>
+            <img class="nav-ic-img" src="assets/icons/Reward2/Icon_Tower_036.webp" alt="" />
             <span class="nav-label">타워·버프</span>
             <span class="nav-cnt" id="cnt-towers">46</span>
           </button>
           <button type="button" class="nav-tab" data-tab="mounts">
-            <span class="nav-ic">🦌</span>
+            <img class="nav-ic-img" src="assets/icons/Reward2/Vehicle_117.webp" alt="" />
             <span class="nav-label">탈것</span>
             <span class="nav-cnt" id="cnt-mounts">57</span>
           </button>
           <button type="button" class="nav-tab" data-tab="pets">
-            <span class="nav-ic">🐾</span>
+            <img class="nav-ic-img" src="assets/icons/Reward2/Pet_1.webp" alt="" />
             <span class="nav-label">펫</span>
             <span class="nav-cnt" id="cnt-pets">26</span>
           </button>
           <button type="button" class="nav-tab" data-tab="camp">
-            <span class="nav-ic">⛺</span>
+            <img class="nav-ic-img" src="assets/icons/Reward2/Housing_S_28.webp" alt="" />
             <span class="nav-label">야영지</span>
             <span class="nav-cnt" id="cnt-camp">55</span>
           </button>
           <button type="button" class="nav-tab" data-tab="relics">
-            <span class="nav-ic">🔮</span>
-            <span class="nav-label">유물·룬·스킨</span>
-            <span class="nav-cnt" id="cnt-relics">88</span>
+            <img class="nav-ic-img" src="assets/icons/InGameUI/Rune_Stone_3.webp" alt="" />
+            <span class="nav-label">유물·룬</span>
+            <span class="nav-cnt" id="cnt-relics">14</span>
           </button>
           <button type="button" class="nav-tab" data-tab="growth">
             <span class="nav-ic">📈</span>
@@ -158,35 +158,35 @@
     <!-- Mobile Bottom Navigation Bar -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="모바일 하단 메뉴">
       <button type="button" class="m-nav-item active" data-tab="items">
-        <span class="m-ic">⚔️</span>
+        <img class="m-ic-img" src="assets/icons/InGameUI/Weapon_011.webp" alt="" />
         <span class="m-txt">장비</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="heroes">
-        <span class="m-ic">🦸</span>
-        <span class="m-txt">영웅</span>
+        <img class="m-ic-img" src="assets/icons/OutGameUI/icon_skin.png" alt="" />
+        <span class="m-txt">영웅·스킨</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="mercenaries">
-        <span class="m-ic">🛡️</span>
+        <img class="m-ic-img" src="assets/icons/Reward2/Icon_Hero_009.webp" alt="" />
         <span class="m-txt">용병</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="towers">
-        <span class="m-ic">🏰</span>
+        <img class="m-ic-img" src="assets/icons/Reward2/Icon_Tower_036.webp" alt="" />
         <span class="m-txt">타워</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="mounts">
-        <span class="m-ic">🦌</span>
+        <img class="m-ic-img" src="assets/icons/Reward2/Vehicle_117.webp" alt="" />
         <span class="m-txt">탈것</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="pets">
-        <span class="m-ic">🐾</span>
+        <img class="m-ic-img" src="assets/icons/Reward2/Pet_1.webp" alt="" />
         <span class="m-txt">펫</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="camp">
-        <span class="m-ic">⛺</span>
+        <img class="m-ic-img" src="assets/icons/Reward2/Housing_S_28.webp" alt="" />
         <span class="m-txt">야영지</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="relics">
-        <span class="m-ic">🔮</span>
+        <img class="m-ic-img" src="assets/icons/InGameUI/Rune_Stone_3.webp" alt="" />
         <span class="m-txt">유물·룬</span>
       </button>
       <button type="button" class="m-nav-item" data-tab="growth">
@@ -246,10 +246,10 @@
   </div>
 
   <!-- Scripts -->
-  <script src="data/db_v2.js?v=20261030_v12"></script>
-  <script src="js/search.js?v=20261030_v12"></script>
-  <script src="js/sheets_sync.js?v=20261030_v12"></script>
-  <script src="js/app.js?v=20261030_v12"></script>
+  <script src="data/db_v2.js?v=20261031_v14"></script>
+  <script src="js/search.js?v=20261031_v14"></script>
+  <script src="js/sheets_sync.js?v=20261031_v14"></script>
+  <script src="js/app.js?v=20261031_v14"></script>
 </body>
 
 </html>

@@ -190,14 +190,17 @@
   function countAllCategories(db, rawQuery) {
     const tokens = parseQueryTokens(rawQuery);
     if (!tokens.length || !db) return null;
+    const heroesBundle = [
+      ...(db.heroes || []),
+      ...(db.skins || []),
+    ];
     const relicsBundle = [
       ...(db.relics || []),
       ...(db.runes || []),
-      ...(db.skins || []),
     ];
     return {
       items: (db.items || []).filter(e => matchEntry(e, tokens)).length,
-      heroes: (db.heroes || []).filter(e => matchEntry(e, tokens)).length,
+      heroes: heroesBundle.filter(e => matchEntry(e, tokens)).length,
       mercenaries: (db.mercenaries || []).filter(e => matchEntry(e, tokens)).length,
       towers: (db.towers || []).filter(e => matchEntry(e, tokens)).length,
       mounts: ((db.mounts && db.mounts.mounts) || []).filter(e => matchEntry(e, tokens)).length,

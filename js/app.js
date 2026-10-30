@@ -14,6 +14,17 @@
     return;
   }
 
+  const CATEGORY_ICONS = {
+    items: 'assets/icons/InGameUI/Weapon_011.webp',
+    heroes: 'assets/icons/OutGameUI/icon_skin.png',
+    mercenaries: 'assets/icons/Reward2/Icon_Hero_009.webp',
+    towers: 'assets/icons/Reward2/Icon_Tower_036.webp',
+    mounts: 'assets/icons/Reward2/Vehicle_117.webp',
+    pets: 'assets/icons/Reward2/Pet_1.webp',
+    camp: 'assets/icons/Reward2/Housing_S_28.webp',
+    relics: 'assets/icons/InGameUI/Rune_Stone_3.webp',
+  };
+
   const STATE = {
     tab: 'items',
     query: '',
@@ -22,7 +33,7 @@
     globalAwk: '0',
     filters: {
       items: { cat: 'all', range: 'all', grade: 'all', usage: 'all' },
-      heroes: { grade: 'all', tier: 'all' },
+      heroes: { subView: 'heroes', grade: 'all', tier: 'all', skinType: 'all' },
       mercenaries: { recommend: 'all', grade: 'all' },
       towers: { grade: 'all', deck: 'all' },
       mounts: { pool: 'all', subView: 'list' },
@@ -48,6 +59,7 @@
       { label: '🔥 SSS티어', q: 'SSS' },
       { label: '⭐ SS티어', q: 'SS' },
       { label: '💥 치명타', q: '치명타' },
+      { label: '⚔️ 공격력', q: '공격력' },
       { label: '💫 스턴', q: '스턴' },
       { label: '❄️ 감속', q: '감속' },
       { label: '👑 보스', q: '보스' },
@@ -90,23 +102,24 @@
       { label: '💥 치명타', q: '치명타' },
     ],
     relics: [
-      { label: '🔮 유물', q: '쿨타임' },
-      { label: '💠 룬', q: '룬' },
-      { label: '👗 치명타 스킨', q: '치명타' },
-      { label: '⚔️ 공격력 스킨', q: '공격력' },
+      { label: '⏱️ 쿨타임', q: '쿨타임' },
+      { label: '💠 문양', q: '문양' },
+      { label: '💥 치명타', q: '치명타' },
+      { label: '⚔️ 공격력', q: '공격력' },
+      { label: '👑 보스', q: '보스' },
     ],
     growth: [],
   };
 
   const TAB_TITLES = {
-    items: '⚔️ 장비 도감 (공식 0~5각성)',
-    heroes: '🦸 영웅 · 스킨 도감',
-    mercenaries: '🛡️ 지원용병 도감 (B~SSS)',
-    towers: '🏰 타워 · 인게임 웨이브 버프 도감',
-    mounts: '🦌 탈것 도감 · 부옵션/강화표',
-    pets: '🐾 펫 도감 · 드랍 가이드',
-    camp: '⛺ 야영지 도감 (구조물·소품·배경)',
-    relics: '🔮 유물 · 룬 · 스킨 도감',
+    items: '장비 도감 (공식 0~5각성)',
+    heroes: '영웅 · 스킨 도감',
+    mercenaries: '지원용병 도감 (B~SSS)',
+    towers: '타워 · 인게임 웨이브 버프 도감',
+    mounts: '탈것 도감 · 부옵션/강화표',
+    pets: '펫 도감 · 드랍 가이드',
+    camp: '야영지 도감 (구조물·소품·배경)',
+    relics: '유물 · 룬 도감',
     growth: '📈 공식 성장 테이블 & 스탯 계산기',
   };
 
@@ -275,22 +288,36 @@
       ]);
     } else if (tab === 'heroes') {
       const f = STATE.filters.heroes;
-      html += buildFilterRow('등급', 'grade', f.grade, [
-        ['all', '전체 (35)'],
-        ['전설', '전설'],
-        ['희귀', '희귀'],
-        ['일반', '일반'],
+      html += buildFilterRow('화면보기', 'subView', f.subView, [
+        ['heroes', '영웅 도감 (35종)', 'assets/icons/Reward2/Icon_Hero_001.webp'],
+        ['skins', '영웅 스킨 도감 (74종)', 'assets/icons/OutGameUI/icon_skin.png'],
       ]);
-      html += buildFilterRow('티어', 'tier', f.tier, [
-        ['all', '전체'],
-        ['SSS', 'SSS (SSS/SSS-)'],
-        ['SS', 'SS'],
-        ['S', 'S'],
-        ['A', 'A'],
-        ['B', 'B'],
-        ['C', 'C'],
-        ['D', 'D~F'],
-      ]);
+      if (f.subView === 'skins') {
+        html += buildFilterRow('획득 구분', 'skinType', f.skinType, [
+          ['all', '전체 (74종)'],
+          ['시즌/이벤트 한정', '시즌/이벤트 한정 (39)'],
+          ['일반/이벤트', '일반/이벤트 (16)'],
+          ['패스/패키지 한정', '패스/패키지 한정 (11)'],
+          ['특별 한정', '특별 한정 (8)'],
+        ]);
+      } else {
+        html += buildFilterRow('등급', 'grade', f.grade, [
+          ['all', '전체 (35)'],
+          ['전설', '전설'],
+          ['희귀', '희귀'],
+          ['일반', '일반'],
+        ]);
+        html += buildFilterRow('티어', 'tier', f.tier, [
+          ['all', '전체'],
+          ['SSS', 'SSS (SSS/SSS-)'],
+          ['SS', 'SS'],
+          ['S', 'S'],
+          ['A', 'A'],
+          ['B', 'B'],
+          ['C', 'C'],
+          ['D', 'D~F'],
+        ]);
+      }
     } else if (tab === 'mercenaries') {
       const f = STATE.filters.mercenaries;
       html += buildFilterRow('추천', 'recommend', f.recommend, [
@@ -325,7 +352,7 @@
     } else if (tab === 'mounts') {
       const f = STATE.filters.mounts;
       html += buildFilterRow('화면보기', 'subView', f.subView, [
-        ['list', '🦌 탈것 도감 (57종)'],
+        ['list', '탈것 도감 (57종)', CATEGORY_ICONS.mounts],
         ['subOptions', '📋 탈것 부옵션 30종 표'],
         ['upgrade', '⬆️ 탈것 강화 확률·사료 표'],
       ]);
@@ -339,7 +366,7 @@
     } else if (tab === 'pets') {
       const f = STATE.filters.pets;
       html += buildFilterRow('화면보기', 'subView', f.subView, [
-        ['list', '🐾 펫 도감 (26종)'],
+        ['list', '펫 도감 (26종)', CATEGORY_ICONS.pets],
         ['guide', '🗺️ 스테이지별 드랍 & 육성 가이드'],
       ]);
       if (f.subView === 'list') {
@@ -355,7 +382,7 @@
     } else if (tab === 'camp') {
       const f = STATE.filters.camp;
       html += buildFilterRow('화면보기', 'subView', f.subView, [
-        ['list', '⛺ 야영지 도감 (55종)'],
+        ['list', '야영지 도감 (55종)', CATEGORY_ICONS.camp],
         ['common', '📊 야영지 등급·부옵션·랜덤옵션 표'],
       ]);
       if (f.subView === 'list') {
@@ -376,9 +403,8 @@
     } else if (tab === 'relics') {
       const f = STATE.filters.relics;
       html += buildFilterRow('구분', 'subType', f.subType, [
-        ['relic', '🔮 유물 (5종)'],
-        ['rune', '💠 룬 (9종)'],
-        ['skin', '👗 영웅 스킨 (74종)'],
+        ['relic', '유물 (5종)', 'assets/icons/InGameUI/Relics_Full_2.webp'],
+        ['rune', '룬 (9종)', CATEGORY_ICONS.relics],
         ['relicGrade', '📊 유물 등급별 수치표'],
       ]);
     }
@@ -387,9 +413,10 @@
   }
 
   function buildFilterRow(label, filterKey, activeVal, options) {
-    const chips = options.map(([val, text]) => {
+    const chips = options.map(([val, text, iconPath]) => {
       const cls = val === activeVal ? 'filter-chip active' : 'filter-chip';
-      return `<button type="button" class="${cls}" data-fkey="${escapeHtml(filterKey)}" data-fval="${escapeHtml(val)}">${escapeHtml(text)}</button>`;
+      const icHtml = iconPath ? `<img class="chip-ic-img" src="${escapeHtml(iconPath)}" alt="" />` : '';
+      return `<button type="button" class="${cls}" data-fkey="${escapeHtml(filterKey)}" data-fval="${escapeHtml(val)}">${icHtml}${escapeHtml(text)}</button>`;
     }).join('');
     return `
       <div class="filter-row">
@@ -429,20 +456,22 @@
       return;
     }
     const labels = [
-      ['items', '⚔️ 장비'],
-      ['heroes', '🦸 영웅'],
-      ['mercenaries', '🛡️ 용병'],
-      ['towers', '🏰 타워'],
-      ['mounts', '🦌 탈것'],
-      ['pets', '🐾 펫'],
-      ['camp', '⛺ 야영지'],
-      ['relics', '🔮 유물·룬·스킨'],
+      ['items', '장비'],
+      ['heroes', '영웅·스킨'],
+      ['mercenaries', '지원'],
+      ['towers', '타워·버프'],
+      ['mounts', '탈것'],
+      ['pets', '펫'],
+      ['camp', '야영지'],
+      ['relics', '유물·룬'],
     ];
     els.crossMatchBar.hidden = false;
     els.crossMatchBar.innerHTML = labels.map(([tabKey, label]) => {
       const cnt = counts[tabKey] || 0;
       const cls = tabKey === STATE.tab ? 'cross-match-pill active' : 'cross-match-pill';
-      return `<button type="button" class="${cls}" data-jump-tab="${tabKey}">${label} <strong>${cnt}</strong></button>`;
+      const icPath = CATEGORY_ICONS[tabKey];
+      const icHtml = icPath ? `<img class="cross-ic-img" src="${escapeHtml(icPath)}" alt="" />` : '';
+      return `<button type="button" class="${cls}" data-jump-tab="${tabKey}">${icHtml}${escapeHtml(label)} <strong>${cnt}</strong></button>`;
     }).join('');
   }
 
@@ -471,7 +500,7 @@
       });
     } else if (tab === 'heroes') {
       const f = STATE.filters.heroes;
-      list = (DB.heroes || []).filter(h => {
+      const filterHeroes = () => (DB.heroes || []).filter(h => {
         if (f.grade !== 'all' && h.grade !== f.grade) return false;
         if (f.tier !== 'all') {
           const ht = String(h.tier || '').trim().toUpperCase();
@@ -485,6 +514,21 @@
         }
         return Search.matchEntry(h, tokens);
       });
+      const filterSkins = () => (DB.skins || []).map(s => ({ ...s, _kind: 'skin', _kindLabel: '스킨' })).filter(s => {
+        if (f.skinType !== 'all' && s.purchaseType !== f.skinType) return false;
+        return Search.matchEntry(s, tokens);
+      });
+
+      list = f.subView === 'skins' ? filterSkins() : filterHeroes();
+      if (!list.length && tokens.length > 0) {
+        const altSub = f.subView === 'skins' ? 'heroes' : 'skins';
+        const altMatches = altSub === 'skins' ? filterSkins() : filterHeroes();
+        if (altMatches.length > 0) {
+          f.subView = altSub;
+          list = altMatches;
+          renderContextToolbar();
+        }
+      }
     } else if (tab === 'mercenaries') {
       const f = STATE.filters.mercenaries;
       list = (DB.mercenaries || []).filter(m => {
@@ -533,12 +577,11 @@
       const combined = [
         ...(DB.relics || []).map(r => ({ ...r, _kind: 'relic', _kindLabel: '유물' })),
         ...(DB.runes || []).map(r => ({ ...r, _kind: 'rune', _kindLabel: '룬' })),
-        ...(DB.skins || []).map(s => ({ ...s, _kind: 'skin', _kindLabel: '스킨' })),
       ];
-      let activeSub = (f.subType && f.subType !== 'all' && f.subType !== 'relicGrade') ? f.subType : 'relic';
+      let activeSub = (f.subType && f.subType !== 'all' && f.subType !== 'relicGrade' && f.subType !== 'skin') ? f.subType : 'relic';
       list = combined.filter(e => e._kind === activeSub && Search.matchEntry(e, tokens));
       if (!list.length && tokens.length > 0) {
-        for (const cand of ['relic', 'rune', 'skin']) {
+        for (const cand of ['relic', 'rune']) {
           const candMatches = combined.filter(e => e._kind === cand && Search.matchEntry(e, tokens));
           if (candMatches.length > 0) {
             f.subType = cand;
@@ -583,7 +626,11 @@
     renderCrossCategoryBar();
 
     const tab = STATE.tab;
-    els.resultsCategoryTitle.textContent = TAB_TITLES[tab] || '도감';
+    const catIcon = CATEGORY_ICONS[tab];
+    const titleText = TAB_TITLES[tab] || '도감';
+    els.resultsCategoryTitle.innerHTML = catIcon
+      ? `<img class="cat-title-icon" src="${escapeHtml(catIcon)}" alt="" /><span>${escapeHtml(titleText)}</span>`
+      : escapeHtml(titleText);
 
     if (tab === 'growth') {
       renderGrowthCalculatorStage();
@@ -658,13 +705,13 @@
   function renderCardGridView(tab, entries) {
     const cardsHtml = entries.map(entry => {
       if (tab === 'items') return renderItemCard(entry);
-      if (tab === 'heroes') return renderHeroCard(entry);
+      if (tab === 'heroes') return entry._kind === 'skin' ? renderRelicRuneSkinCard(entry, 'heroes') : renderHeroCard(entry);
       if (tab === 'mercenaries') return renderMercCard(entry);
       if (tab === 'towers') return renderTowerCard(entry);
       if (tab === 'mounts') return renderMountCard(entry);
       if (tab === 'pets') return renderPetCard(entry);
       if (tab === 'camp') return renderCampCard(entry);
-      if (tab === 'relics') return renderRelicRuneSkinCard(entry);
+      if (tab === 'relics') return renderRelicRuneSkinCard(entry, 'relics');
       return '';
     }).join('');
 
@@ -925,30 +972,39 @@
     `;
   }
 
-  function renderRelicRuneSkinCard(e) {
+  function renderRelicRuneSkinCard(e, openTab = 'relics') {
+    const isSkin = e._kind === 'skin' || (e.id && String(e.id).startsWith('skin_'));
     return `
-      <article class="db-card" data-open-id="${escapeHtml(e.id)}" data-open-tab="relics">
-        <div class="card-top">
-          <div class="card-icon-box">
-            ${e.img ? `<img src="${escapeHtml(e.img)}" alt="${escapeHtml(e.name)}" loading="lazy" />` : '🔮'}
+      <article class="db-card ${isSkin ? 'db-skin-card' : ''}" data-open-id="${escapeHtml(e.id)}" data-open-tab="${escapeHtml(openTab)}">
+        <div class="card-top ${isSkin ? 'skin-card-top' : ''}">
+          <div class="card-icon-box ${isSkin ? 'skin-icon-box' : ''}">
+            ${e.img ? `<img src="${escapeHtml(e.img)}" alt="${escapeHtml(e.name)}" loading="lazy" />` : (isSkin ? '👗' : '🔮')}
           </div>
           <div class="card-head-info">
             <div class="card-title-row">
-              <h3 class="card-title">${escapeHtml(e.name)}</h3>
+              <h3 class="card-title" style="${isSkin ? 'font-size:16px;' : ''}">${escapeHtml(e.name)}</h3>
               <span class="card-id">#${e.officialId}</span>
             </div>
             <div class="card-badges">
               <span class="badge badge-rare">${escapeHtml(e._kindLabel)}</span>
               ${e.heroName ? `<span class="badge badge-level">${escapeHtml(e.heroName)} 전용</span>` : ''}
+              ${e.purchaseType ? `<span class="badge">${escapeHtml(e.purchaseType)}</span>` : ''}
               ${e.coolTime ? `<span class="badge">쿨타임 ${e.coolTime}초</span>` : ''}
               ${e.recommend ? `<span class="badge ${tierBadgeClass(e.recommend)}">${escapeHtml(e.recommend)}</span>` : ''}
             </div>
+            ${isSkin ? `
+              <div class="card-abilities" style="margin-top:8px;">
+                <div class="ability-line" style="font-weight:700;color:var(--accent-teal);">• ${escapeHtml(e.ability)}</div>
+              </div>
+            ` : ''}
           </div>
         </div>
-        <div class="card-abilities">
-          <div class="ability-line">${escapeHtml(e.ability)}</div>
-        </div>
-        ${e.comment ? `<div class="card-comment">💬 ${escapeHtml(e.comment)}</div>` : ''}
+        ${!isSkin ? `
+          <div class="card-abilities">
+            <div class="ability-line">${escapeHtml(e.ability)}</div>
+          </div>
+        ` : ''}
+        ${e.comment ? `<div class="card-comment" style="margin-top:8px;">💬 ${escapeHtml(e.comment)}</div>` : ''}
       </article>
     `;
   }
@@ -1018,49 +1074,79 @@
         `;
       }).join('');
     } else if (tab === 'heroes') {
-      headHtml = `
-        <tr>
-          <th style="width:70px;text-align:center;">등급</th>
-          <th style="width:75px;text-align:center;">티어</th>
-          <th>영웅 (별칭)</th>
-          <th>능력</th>
-          <th>레벨별 추가능력 (Lv.3 / 6 / 9 / 12 / 15) · 별점(★☆)</th>
-          <th>${COMMENT_TH_HTML}</th>
-        </tr>
-      `;
-      rowsHtml = entries.map(h => {
-        const traits = (h.traits || []).filter(t => t.text);
-        return `
-          <tr data-open-id="${escapeHtml(h.id)}" data-open-tab="heroes">
-            <td style="text-align:center;">
-              <span class="badge ${h.grade === '전설' ? 'badge-legend' : (h.grade === '희귀' ? 'badge-rare' : '')}">${escapeHtml(h.grade)}</span>
-            </td>
-            <td style="text-align:center;">
-              ${h.tier ? `<span class="badge ${tierBadgeClass(h.tier)}">${escapeHtml(h.tier)}</span>` : '-'}
-            </td>
+      const isSkinsView = STATE.filters.heroes.subView === 'skins' || (entries[0] && entries[0]._kind === 'skin');
+      if (isSkinsView) {
+        headHtml = `
+          <tr>
+            <th style="width:120px;text-align:center;">대상 영웅</th>
+            <th style="min-width:260px;">스킨</th>
+            <th>착용/보유 능력치</th>
+            <th style="width:140px;text-align:center;">획득 구분</th>
+            <th>${COMMENT_TH_HTML}</th>
+          </tr>
+        `;
+        rowsHtml = entries.map(e => `
+          <tr data-open-id="${escapeHtml(e.id)}" data-open-tab="heroes">
+            <td style="text-align:center;"><span class="badge badge-level">${escapeHtml(e.heroName || '-')}</span></td>
             <td>
-              <div class="tbl-item-cell">
-                ${h.img ? `<img class="tbl-icon" src="${escapeHtml(h.img)}" alt="" loading="lazy" />` : ''}
+              <div class="tbl-item-cell tbl-skin-cell">
+                ${e.img ? `<img class="tbl-icon tbl-skin-icon" src="${escapeHtml(e.img)}" alt="${escapeHtml(e.name)}" loading="lazy" />` : ''}
                 <div>
-                  <strong>${escapeHtml(h.name)}</strong>
-                  ${h.aliases?.length ? `<div class="card-id">(${escapeHtml(h.aliases.join(', '))})</div>` : ''}
+                  <strong style="font-size:14px;display:block;margin-bottom:2px;">${escapeHtml(e.name)}</strong>
+                  <span class="card-id">#${e.officialId}</span>
                 </div>
               </div>
             </td>
-            <td style="max-width:250px;white-space:pre-line;">${escapeHtml(h.ability)}</td>
-            <td style="max-width:400px;font-size:12px;">
-              ${traits.length ? traits.map(tr => `
-                <div style="margin-bottom:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-                  <span class="badge badge-level" style="padding:1px 5px;font-size:11px;">${tr.unlockLevel}Lv</span>
-                  <span>${escapeHtml(tr.text)}</span>
-                  ${tr.star ? `<span style="color:var(--accent-amber);font-size:11.5px;font-weight:700;">${escapeHtml(tr.star)}</span>` : ''}
-                </div>
-              `).join('') : '<span style="color:var(--text-muted);">-</span>'}
-            </td>
-            <td style="color:var(--accent-amber);font-size:12px;max-width:270px;white-space:pre-line;">${escapeHtml(h.comment || '')}</td>
+            <td><strong style="color:var(--accent-teal);">${escapeHtml(e.ability)}</strong></td>
+            <td style="text-align:center;"><span class="badge">${escapeHtml(e.purchaseType || '스킨')}</span></td>
+            <td style="color:var(--accent-amber);font-size:12px;">${escapeHtml(e.comment || '')}</td>
+          </tr>
+        `).join('');
+      } else {
+        headHtml = `
+          <tr>
+            <th style="width:70px;text-align:center;">등급</th>
+            <th style="width:75px;text-align:center;">티어</th>
+            <th>영웅 (별칭)</th>
+            <th>능력</th>
+            <th>레벨별 추가능력 (Lv.3 / 6 / 9 / 12 / 15) · 별점(★☆)</th>
+            <th>${COMMENT_TH_HTML}</th>
           </tr>
         `;
-      }).join('');
+        rowsHtml = entries.map(h => {
+          const traits = (h.traits || []).filter(t => t.text);
+          return `
+            <tr data-open-id="${escapeHtml(h.id)}" data-open-tab="heroes">
+              <td style="text-align:center;">
+                <span class="badge ${h.grade === '전설' ? 'badge-legend' : (h.grade === '희귀' ? 'badge-rare' : '')}">${escapeHtml(h.grade)}</span>
+              </td>
+              <td style="text-align:center;">
+                ${h.tier ? `<span class="badge ${tierBadgeClass(h.tier)}">${escapeHtml(h.tier)}</span>` : '-'}
+              </td>
+              <td>
+                <div class="tbl-item-cell">
+                  ${h.img ? `<img class="tbl-icon" src="${escapeHtml(h.img)}" alt="" loading="lazy" />` : ''}
+                  <div>
+                    <strong>${escapeHtml(h.name)}</strong>
+                    ${h.aliases?.length ? `<div class="card-id">(${escapeHtml(h.aliases.join(', '))})</div>` : ''}
+                  </div>
+                </div>
+              </td>
+              <td style="max-width:250px;white-space:pre-line;">${escapeHtml(h.ability)}</td>
+              <td style="max-width:400px;font-size:12px;">
+                ${traits.length ? traits.map(tr => `
+                  <div style="margin-bottom:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                    <span class="badge badge-level" style="padding:1px 5px;font-size:11px;">${tr.unlockLevel}Lv</span>
+                    <span>${escapeHtml(tr.text)}</span>
+                    ${tr.star ? `<span style="color:var(--accent-amber);font-size:11.5px;font-weight:700;">${escapeHtml(tr.star)}</span>` : ''}
+                  </div>
+                `).join('') : '<span style="color:var(--text-muted);">-</span>'}
+              </td>
+              <td style="color:var(--accent-amber);font-size:12px;max-width:270px;white-space:pre-line;">${escapeHtml(h.comment || '')}</td>
+            </tr>
+          `;
+        }).join('');
+      }
     } else if (tab === 'mercenaries') {
       headHtml = `
         <tr>
@@ -1260,7 +1346,7 @@
             <td style="color:var(--accent-amber);font-size:12px;">${escapeHtml(e.comment || '')}</td>
           </tr>
         `).join('');
-      } else if (subType === 'rune') {
+      } else {
         headHtml = `
           <tr>
             <th>룬 이름</th>
@@ -1281,32 +1367,6 @@
             </td>
             <td><span class="badge badge-level">2세트</span> ${escapeHtml(e.set2 || '-')}</td>
             <td><span class="badge badge-legend">4세트</span> <strong>${escapeHtml(e.set4 || e.ability || '-')}</strong></td>
-            <td style="color:var(--accent-amber);font-size:12px;">${escapeHtml(e.comment || '')}</td>
-          </tr>
-        `).join('');
-      } else {
-        headHtml = `
-          <tr>
-            <th>대상 영웅</th>
-            <th>스킨명</th>
-            <th>착용/보유 능력치</th>
-            <th style="width:100px;text-align:center;">구분</th>
-            <th>${COMMENT_TH_HTML}</th>
-          </tr>
-        `;
-        rowsHtml = entries.map(e => `
-          <tr data-open-id="${escapeHtml(e.id)}" data-open-tab="relics">
-            <td><span class="badge badge-level">${escapeHtml(e.heroName || '-')}</span></td>
-            <td>
-              <div class="tbl-item-cell">
-                ${e.img ? `<img class="tbl-icon" src="${escapeHtml(e.img)}" alt="" loading="lazy" />` : ''}
-                <div>
-                  <strong>${escapeHtml(e.name)}</strong>
-                </div>
-              </div>
-            </td>
-            <td><strong>${escapeHtml(e.ability)}</strong></td>
-            <td style="text-align:center;"><span class="badge">${escapeHtml(e.purchaseType || '스킨')}</span></td>
             <td style="color:var(--accent-amber);font-size:12px;">${escapeHtml(e.comment || '')}</td>
           </tr>
         `).join('');
@@ -1704,22 +1764,24 @@
   function openDetailModal(tab, id) {
     let entry = null;
     if (tab === 'items') entry = (DB.items || []).find(x => x.id === id);
-    else if (tab === 'heroes') entry = (DB.heroes || []).find(x => x.id === id);
+    else if (tab === 'heroes') entry = [...(DB.heroes || []), ...(DB.skins || [])].find(x => x.id === id);
     else if (tab === 'mercenaries') entry = (DB.mercenaries || []).find(x => x.id === id);
     else if (tab === 'towers') entry = (DB.towers || []).find(x => x.id === id);
     else if (tab === 'mounts') entry = ((DB.mounts && DB.mounts.mounts) || []).find(x => x.id === id);
     else if (tab === 'pets') entry = ((DB.pets && DB.pets.pets) || []).find(x => x.id === id);
     else if (tab === 'camp') entry = ((DB.camp && DB.camp.items) || []).find(x => x.id === id);
     else if (tab === 'relics') {
-      entry = [...(DB.relics || []), ...(DB.runes || []), ...(DB.skins || [])].find(x => x.id === id);
+      entry = [...(DB.relics || []), ...(DB.runes || [])].find(x => x.id === id);
     }
 
     if (!entry) return;
 
+    const isSkin = entry._kind === 'skin' || String(entry.id).startsWith('skin_');
+
     els.modalHeaderContent.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div class="card-icon-box">
-          ${entry.img ? `<img src="${escapeHtml(entry.img)}" alt="${escapeHtml(entry.name)}" />` : '✨'}
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="card-icon-box ${isSkin ? 'skin-icon-box modal-skin-icon-box' : ''}">
+          ${entry.img ? `<img src="${escapeHtml(entry.img)}" alt="${escapeHtml(entry.name)}" />` : (isSkin ? '👗' : '✨')}
         </div>
         <div>
           <div class="card-title-row">
@@ -1732,6 +1794,8 @@
             ${entry.grade ? `<span class="badge ${tierBadgeClass(entry.grade)}">${escapeHtml(entry.grade)}</span>` : ''}
             ${entry.tier ? `<span class="badge ${tierBadgeClass(entry.tier)}">${escapeHtml(entry.tier)}</span>` : ''}
             ${entry.recommend ? `<span class="badge ${tierBadgeClass(entry.recommend)}">추천 ${escapeHtml(entry.recommend)}</span>` : ''}
+            ${entry.heroName ? `<span class="badge badge-level">${escapeHtml(entry.heroName)} 전용</span>` : ''}
+            ${entry.purchaseType ? `<span class="badge">${escapeHtml(entry.purchaseType)}</span>` : ''}
             ${entry.usage && entry.usage.length ? `<span class="badge ${tierBadgeClass(entry.usage.join('/'))}">사용 ${escapeHtml(entry.usage.join('/'))}</span>` : ''}
             ${entry.level ? `<span class="badge badge-level">${escapeHtml(entry.level)}</span>` : ''}
           </div>
@@ -1812,7 +1876,7 @@
           ${entry.aliases?.length ? `<p style="margin-top:6px;"><strong>검색 별칭:</strong> ${escapeHtml(entry.aliases.join(', '))}</p>` : ''}
         </div>
       `;
-    } else if (tab === 'heroes') {
+    } else if (tab === 'heroes' && !String(entry.id).startsWith('skin_')) {
       bodyHtml += `
         ${entry.comment ? `<div class="card-comment" style="white-space:pre-line;">💬 ${escapeHtml(entry.comment)}</div>` : ''}
         <div class="modal-section">
@@ -1842,20 +1906,32 @@
         ${entry.skins && entry.skins.length ? `
           <div class="modal-section">
             <div class="modal-sec-title">👗 전용 스킨 목록 (${entry.skins.length}종)</div>
-            <div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));">
+            <div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;">
               ${entry.skins.map(sk => `
-                <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:var(--bg-card);border:1px solid var(--border-subtle);">
-                  ${sk.img ? `<img src="${escapeHtml(sk.img)}" alt="" style="width:42px;height:42px;object-fit:contain;" />` : ''}
-                  <div>
-                    <div style="font-weight:800;font-size:13px;">${escapeHtml(sk.name)}</div>
-                    <div style="font-size:12px;color:var(--accent-primary);">${escapeHtml(sk.ability)}</div>
-                    ${sk.comment ? `<div style="font-size:11px;color:var(--accent-amber);">${escapeHtml(sk.comment)}</div>` : ''}
+                <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:var(--bg-card);border:1px solid var(--border-subtle);">
+                  ${sk.img ? `<img src="${escapeHtml(sk.img)}" alt="${escapeHtml(sk.name)}" style="width:104px;height:104px;object-fit:contain;flex-shrink:0;background:var(--bg-surface);border-radius:10px;border:1px solid var(--border-subtle);padding:3px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));" loading="lazy" />` : ''}
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:800;font-size:14px;">${escapeHtml(sk.name)}</div>
+                    <div style="font-size:12px;color:var(--accent-primary);margin-top:4px;font-weight:600;">${escapeHtml(sk.ability)}</div>
+                    ${sk.comment ? `<div style="font-size:11.5px;color:var(--accent-amber);margin-top:4px;">💬 ${escapeHtml(sk.comment)}</div>` : ''}
                   </div>
                 </div>
               `).join('')}
             </div>
           </div>
         ` : ''}
+      `;
+    } else if (tab === 'heroes' && String(entry.id).startsWith('skin_')) {
+      bodyHtml += `
+        ${entry.comment ? `<div class="card-comment" style="white-space:pre-line;">💬 ${escapeHtml(entry.comment)}</div>` : ''}
+        <div class="modal-section">
+          <div class="modal-sec-title">👗 영웅 스킨 정보</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;">
+            <div>🦸 <strong>대상 영웅:</strong> <span class="badge badge-level">${escapeHtml(entry.heroName || '-')}</span></div>
+            <div>✨ <strong>착용/보유 능력치:</strong> <strong style="color:var(--accent-teal);">${escapeHtml(entry.ability)}</strong></div>
+            <div>🏷️ <strong>획득 구분:</strong> <span class="badge">${escapeHtml(entry.purchaseType || '스킨')}</span></div>
+          </div>
+        </div>
       `;
     } else if (tab === 'mercenaries') {
       const tv = entry.tierValues || {};
