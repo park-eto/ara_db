@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1120" />
+  <title>Ara DB V3 — 언더다크 마스터 DB V3 & 일일던전 배치 공유·파밍 도감</title>
+  <meta name="description"
+    content="언더다크 팬 커뮤니티 마스터 DB V3. 실시간 구글 스프레드시트 연동, 일일던전 배치 공유 시뮬레이터, 심연 & 메두사(빛의 단검·감염된 신궁의 활) 드랍 정리, 장비 0~5각성 계산기." />
+
+  <!-- Open Graph & SNS Preview Metadata -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Ara DB V3 — 언더다크 마스터 DB V3 & 일일던전 배치 공유·파밍 도감" />
+  <meta property="og:description"
+    content="언더다크 팬 커뮤니티 마스터 DB V3. 실시간 구글 스프레드시트 연동, 일일던전 배치 공유 시뮬레이터, 심연 & 메두사(빛의 단검·감염된 신궁의 활) 드랍 정리, 장비 0~5각성 계산기." />
+  <meta property="og:image" content="assets/og_image.png" />
+  <meta property="og:image:width" content="2048" />
+  <meta property="og:image:height" content="2048" />
+  <meta property="og:image:type" content="image/png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Ara DB V3 — 언더다크 마스터 DB V3 & 일일던전 배치 공유·파밍 도감" />
+  <meta name="twitter:description"
+    content="언더다크 팬 커뮤니티 마스터 DB V3. 실시간 구글 스프레드시트 연동, 일일던전 배치 공유 시뮬레이터, 심연 & 메두사(빛의 단검·감염된 신궁의 활) 드랍 정리, 장비 0~5각성 계산기." />
+  <meta name="twitter:image" content="assets/og_image.png" />
+  <!-- Favicon & Touch Icons -->
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20261116_v37" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20261116_v37" />
+
+  <link rel="stylesheet" href="css/style.css?v=20261116_v39" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-inner">
+        <div class="brand-group" id="brandHomeBtn" role="button" tabindex="0" title="홈으로 초기화">
+          <div class="brand-logo"><img src="assets/home.png" alt="홈" class="brand-logo-img" /></div>
+          <div class="brand-titles">
+            <div class="brand-title-row">
+              <h1 class="brand-title">Ara DB</h1>
+              <span class="ver-badge">VER 3.0</span>
+              <span class="official-badge" title="구글 스프레드시트 마스터 DB V3 연동">마스터 V3</span>
+            </div>
+            <p class="brand-sub">언더다크 통합 도감 · 일일던전 배치 공유 · 심연/메두사 파밍 가이드</p>
+          </div>
+        </div>
+
+        <!-- Global Search Bar (Desktop & Mobile Sticky) -->
+        <div class="omni-search-wrap" id="omniSearchWrap">
+          <div class="omni-search-box" id="omniSearchBox">
+            <svg class="search-ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+              stroke-width="2.2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
+            </svg>
+            <input type="search" id="globalSearchInput" class="omni-input"
+              placeholder="통합 검색: 이름, 초성(ㅂㄷ/ㅎㄹ), 별칭(빛단/감신궁), 수치(치피>=60, 사거리>=8)…" autocomplete="off"
+              spellcheck="false" />
+            <button type="button" id="clearSearchBtn" class="clear-search-btn" hidden aria-label="검색어 지우기">✕</button>
+            <kbd class="search-kbd" title="단축키 / 또는 Ctrl+K">/</kbd>
+          </div>
+
+          <!-- Cross-Category Instant Match Bar (shows when typing search query) -->
+          <div class="cross-match-bar" id="crossMatchBar" hidden></div>
+        </div>
+
+        <!-- Right Utility Actions -->
+        <div class="header-actions">
+          <button type="button" class="action-pill sim-shortcut-pill" id="headerSimBtn" title="일일던전 배치 공유 보드 열기">
+            <img class="pill-ic-img" src="assets/icons/OutGameUI/Housing_4.webp" alt="" />
+            <span>배치 공유</span>
+          </button>
+          <button type="button" class="action-pill sync-pill" id="openSheetModalBtn" hidden style="display:none;"
+            title="구글 마스터 시트 실시간 연동 설정">
+            <span class="sync-dot" id="syncStatusDot"></span>
+            <span id="syncStatusText">구글시트 연동</span>
+          </button>
+          <button type="button" class="icon-btn" id="themeToggleBtn" title="다크/라이트 테마 전환" aria-label="테마 전환">
+            <span id="themeIcon">🌙</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Primary Category Navigation (2-Deck Grouped Bar — Zero Clipping / Overflow) -->
+      <nav class="primary-nav" id="primaryNav" aria-label="도감 및 공략 카테고리">
+        <div class="nav-deck-container">
+          <!-- Deck 1: Core DB Encyclopedias (8 Tabs) -->
+          <div class="nav-deck-row">
+            <span class="nav-deck-badge">도감 DB</span>
+            <div class="nav-deck-items">
+              <button type="button" class="nav-tab active" data-tab="items">
+                <img class="nav-ic-img" src="assets/icons/InGameUI/Weapon_011.webp" alt="" />
+                <span class="nav-label">장비</span>
+                <span class="nav-cnt" id="cnt-items">208</span>
+              </button>
+              <button type="button" class="nav-tab" data-tab="heroes">
+                <img class="nav-ic-img" src="assets/icon_skin.png" alt="" />
+                <span class="nav-label">영웅·스킨</span>
+                <span class="nav-cnt" id="cnt-heroes">35·74</span>
+              </button>
+              <button type="button" class="nav-tab" data-tab="mercenaries">
+                <img class="nav-ic-img" src="assets/icons/Reward2/Icon_Hero_025.webp" alt="" />
+                <span class="nav-label">지원용병</span>
+                <span class="nav-cnt" id="cnt-mercenaries">35</span>
+              </button>
+              <button type="button" class="nav-tab" data-tab="towers">
+                <img class="nav-ic-img" src="assets/icons/InGameUI/Tower_25.webp" alt="" />
+                <span class="nav-label">타워·버프</span>
+                <span class="nav-cnt" id="cnt-towers">46</span>
+              </button>
+              <button type="button" class="nav-tab" data-tab="mounts">
+                <img class="nav-ic-img" src="assets/icons/Reward2/Vehicle_117.webp" alt="" />
+                <span class="nav-label">탈것</span>
+                <span class="nav-cnt" id="cnt-mounts">57</span>
+              </button>
+              <button type="button" class="nav-tab" data-tab="pets">
+                <img class="nav-ic-img" src="assets/icons/Reward2/Pet_17.webp" alt="" />
+                <span class="nav-label">펫</span>
+                <span class="nav-cnt" id="cnt-pets">26</span>
+              </button>
+              <button type="button" class="nav-tab" data-tab="camp">
+                <img class="nav-ic-img" src="assets/icons/Reward2/Housing_2.webp" alt="" />
+                <span class="nav-label">야영지</span>
+                <span class="nav-cnt" id="cnt-camp">55</span>
+              </button>
+              <button type="button" class="nav-tab" data-tab="relics">
+                <img class="nav-ic-img" src="assets/icons/InGameUI/Rune_Stone_3.webp" alt="" />
+                <span class="nav-label">유물·룬</span>
+                <span class="nav-cnt" id="cnt-relics">14</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Deck 2: Strategy Tools, Farming, Stage Balance & Shop Gacha (4 Prominent Tabs) -->
+          <div class="nav-deck-row nav-deck-tools">
+            <span class="nav-deck-badge badge-tools">공략·도구</span>
+            <div class="nav-deck-items">
+              <button type="button" class="nav-tab nav-tab-highlight" data-tab="simulator">
+                <img class="nav-ic-img" src="assets/icons/OutGameUI/Housing_4.webp" alt="" />
+                <span class="nav-label">일일던전 배치 시뮬레이터</span>
+                <span class="nav-cnt nav-cnt-hot">Beta</span>
+              </button>
+              <button type="button" class="nav-tab nav-tab-highlight" data-tab="farming" hidden style="display:none;">
+                <img class="nav-ic-img" src="assets/icons/InGameUI/Weapon2_20.webp" alt="" />
+                <span class="nav-label">파밍 (심연·메두사)</span>
+                <span class="nav-cnt nav-cnt-hot">확률</span>
+              </button>
+              <button type="button" class="nav-tab nav-tab-feature" data-tab="stages">
+                <img class="nav-ic-img" src="assets/icons/InGameUI/Bag_30.webp" alt="" />
+                <span class="nav-label">스테이지 밸런스 · 상점 뽑기</span>
+                <span class="nav-cnt" id="cnt-stages">1010·576</span>
+              </button>
+              <button type="button" class="nav-tab nav-tab-feature" data-tab="growth">
+                <span class="nav-ic">📈</span>
+                <span class="nav-label">성장 테이블 · 스탯 계산기</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Mobile Sub-Category Switcher Bar (Appears on Mobile under Header for active bottom group) -->
+      <div class="mobile-subnav-bar" id="mobileSubnavBar"></div>
+    </header>
+
+    <!-- Main Content Workspace -->
+    <main class="main-workspace" id="mainWorkspace">
+      <!-- Mobile Filter Collapse Bar -->
+      <div class="mobile-filter-bar" id="mobileFilterBar">
+        <button type="button" class="mobile-filter-toggle-btn" id="mobileFilterToggleBtn" aria-expanded="false">
+          <span>🎛️ 상세 필터 · 세부 메뉴</span>
+          <span class="m-filter-active-badge" id="mobileFilterActiveBadge">기본</span>
+          <span class="m-filter-chevron" id="mobileFilterChevron">▼</span>
+        </button>
+      </div>
+
+      <!-- Dynamic Contextual Filter & Toolbar -->
+      <section class="context-toolbar" id="contextToolbar"></section>
+
+      <!-- Quick Smart Search Chips -->
+      <section class="quick-chips-bar" id="quickChipsBar"></section>
+
+      <!-- Result Summary & View Mode Switcher -->
+      <section class="results-header" id="resultsHeader">
+        <div class="results-count-wrap">
+          <span class="results-title" id="resultsCategoryTitle">장비 도감</span>
+          <span class="results-badge" id="resultsCountBadge">208개</span>
+          <span class="active-filter-summary" id="activeFilterSummary"></span>
+        </div>
+        <div class="results-controls">
+          <div class="awk-global-toggle" id="awkGlobalToggleWrap" title="장비 목록 표시 각성 단계 일괄 전환">
+            <span class="awk-toggle-label">목록 각성:</span>
+            <div class="seg-group" id="globalAwkSeg">
+              <button type="button" class="seg-btn active" data-awk="0">0성</button>
+              <button type="button" class="seg-btn" data-awk="1">1성</button>
+              <button type="button" class="seg-btn" data-awk="2">2성</button>
+              <button type="button" class="seg-btn" data-awk="3">3성</button>
+              <button type="button" class="seg-btn" data-awk="4">4성</button>
+              <button type="button" class="seg-btn awk-max" data-awk="5">★5성</button>
+            </div>
+          </div>
+
+          <select id="sortSelect" class="ctrl-select" aria-label="정렬 기준">
+            <option value="default">기본 순번/번호순</option>
+            <option value="tier">등급/티어/추천 높은순</option>
+            <option value="name">이름 가나다순</option>
+          </select>
+
+          <div class="view-mode-group" role="group" aria-label="보기 방식">
+            <button type="button" class="view-btn active" data-view="grid" title="카드 그리드 보기">▦ 카드</button>
+            <button type="button" class="view-btn" data-view="table" title="고밀도 테이블 보기">☰ 표</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dynamic Content Container -->
+      <section class="content-stage" id="contentStage" aria-live="polite"></section>
+
+      <!-- Fan Community Disclaimer & Copyright Footer -->
+      <footer class="site-footer" id="siteFooter">
+        <div class="footer-inner">
+          <p class="footer-disclaimer">
+            ※ 본 사이트(Ara DB)는 『언더다크 : 디펜스(UnderDark: Defense)』 팬 커뮤니티를 위한 비공식 정보 공유 및 배치 시뮬레이터 사이트입니다.
+          </p>
+          <p class="footer-copyright">
+            게임 내 모든 상표, 명칭, 캐릭터 및 이미지 원본 리소스의 지식재산권은 원작자 및 개발사인 <strong>LibertyDust</strong>에 귀속되어 있습니다.
+          </p>
+          <p class="footer-meta">
+            UnderDark Fan Community Project · DB Version 3.0 · Built with ❤️ for UnderDark Players
+          </p>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar (5 Ergonomic Groups — Zero Overflow Bug) -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="모바일 하단 메뉴">
+      <button type="button" class="m-nav-item active" data-mgroup="equip" data-default-tab="items">
+        <img class="m-ic-img" src="assets/icons/InGameUI/Weapon_011.webp" alt="" />
+        <span class="m-txt">장비·유물</span>
+      </button>
+      <button type="button" class="m-nav-item" data-mgroup="hero" data-default-tab="heroes">
+        <img class="m-ic-img" src="assets/icon_skin.png" alt="" />
+        <span class="m-txt">영웅·용병</span>
+      </button>
+      <button type="button" class="m-nav-item" data-mgroup="tower" data-default-tab="simulator">
+        <img class="m-ic-img" src="assets/icons/OutGameUI/Housing_4.webp" alt="" />
+        <span class="m-txt">타워·배치</span>
+      </button>
+      <button type="button" class="m-nav-item" data-mgroup="companion" data-default-tab="mounts">
+        <img class="m-ic-img" src="assets/icons/Reward2/Vehicle_117.webp" alt="" />
+        <span class="m-txt">탈것·펫·야영</span>
+      </button>
+      <button type="button" class="m-nav-item" data-mgroup="farming" data-default-tab="stages">
+        <img class="m-ic-img" src="assets/icons/InGameUI/Bag_30.webp" alt="" />
+        <span class="m-txt">스테이지·정보</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Detail Modal / Mobile Bottom Sheet -->
+  <div class="modal-backdrop" id="detailModalBackdrop" hidden>
+    <div class="modal-sheet" id="detailModalSheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-drag-handle" id="detailModalDragHandle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div class="modal-title-wrap" id="modalHeaderContent"></div>
+        <button type="button" class="modal-close-btn" id="closeDetailModalBtn" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body" id="modalBodyContent"></div>
+    </div>
+  </div>
+
+  <!-- Google Sheets Live Sync Configuration Modal -->
+  <div class="modal-backdrop" id="sheetConfigBackdrop" hidden>
+    <div class="modal-sheet modal-sheet-sm" role="dialog" aria-modal="true" aria-labelledby="sheetModalTitle">
+      <div class="modal-drag-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-h2" id="sheetModalTitle">📊 구글 마스터 시트 V3 실시간 연동</h2>
+          <p class="modal-sub">유저 코멘트 · 티어 · 별칭을 구글 스프레드시트에서 실시간으로 불러옵니다.</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="closeSheetModalBtn" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="sheet-guide-card">
+          <h3>📁 1단계: 마스터 DB V3 시트 파일 안내</h3>
+          <p>구글 드라이브에 업로드된 V3 마스터 시트(<code>1Ln2YWMLTQV9BzcqfDG8ni_5a9v5Nhi7u</code>)와 실시간으로 연동되어 있습니다.</p>
+          <p class="sheet-tip">💡 시트 탭 구성: <code>아이템</code>, <code>영웅</code>, <code>지원용병</code>, <code>타워</code>,
+            <code>탈것</code>, <code>펫</code>, <code>야영지</code>, <code>유물_룬_스킨</code>
+          </p>
+        </div>
+
+        <div class="sheet-guide-card">
+          <h3>🔗 2단계: 구글 스프레드시트 주소 또는 ID 입력</h3>
+          <p>구글 시트 우측 상단 <strong>[공유] → 링크가 있는 모든 사용자(뷰어)</strong>로 설정 후 아래에 링크나 시트 ID를 붙여넣으세요.</p>
+          <div class="sheet-input-group">
+            <input type="text" id="sheetIdInput" class="ctrl-input"
+              placeholder="예: https://docs.google.com/spreadsheets/d/1Ln2YWMLTQV9BzcqfDG8ni_5a9v5Nhi7u/edit" />
+          </div>
+          <div class="sheet-btn-row">
+            <button type="button" class="btn-primary" id="saveAndSyncSheetBtn">🔄 지금 동기화 및 저장</button>
+            <button type="button" class="btn-secondary" id="resetSheetIdBtn">기본 V3 시트로 복원</button>
+          </div>
+          <div class="sheet-sync-log" id="sheetSyncLog"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="data/db_v3.js?v=20261116_v39"></script>
+  <script src="js/search.js?v=20261116_v39"></script>
+  <script src="js/sheets_sync.js?v=20261116_v39"></script>
+  <script src="js/simulator.js?v=20261116_v39"></script>
+  <script src="js/app.js?v=20261116_v39"></script>
+</body>
+
+</html>

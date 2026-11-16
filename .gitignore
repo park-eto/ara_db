@@ -1,0 +1,11 @@
+# 엑셀 원본 파일 및 임시 파일
+*.xlsx
+~$*.xlsx
+
+# 빌드/테스트용 로컬 스크립트 및 캐시 제외
+tools/
+server.py
+scratch/
+__pycache__/
+*.pyc
+.agents/
