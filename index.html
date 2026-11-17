@@ -27,7 +27,7 @@
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20261116_v37" />
   <link rel="apple-touch-icon" href="assets/favicon.png?v=20261116_v37" />
 
-  <link rel="stylesheet" href="css/style.css?v=20261116_v39" />
+  <link rel="stylesheet" href="css/style.css?v=20261117_v41" />
 </head>
 
 <body>
@@ -68,9 +68,10 @@
 
         <!-- Right Utility Actions -->
         <div class="header-actions">
-          <button type="button" class="action-pill sim-shortcut-pill" id="headerSimBtn" title="일일던전 배치 공유 보드 열기">
-            <img class="pill-ic-img" src="assets/icons/OutGameUI/Housing_4.webp" alt="" />
-            <span>배치 공유</span>
+          <button type="button" class="action-pill patch-shortcut-pill" id="headerPatchBtn" title="언더다크 인게임 업데이트 패치노트 열기">
+            <span class="patch-pill-ic">📢</span>
+            <span>패치 노트</span>
+            <span class="patch-new-dot" id="patchNewBadge" hidden>N</span>
           </button>
           <button type="button" class="action-pill sync-pill" id="openSheetModalBtn" hidden style="display:none;"
             title="구글 마스터 시트 실시간 연동 설정">
@@ -271,6 +272,36 @@
     </div>
   </div>
 
+  <!-- In-Game Patch Notes Modal -->
+  <div class="modal-backdrop" id="patchNoteBackdrop" hidden>
+    <div class="modal-sheet patch-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="patchModalTitle">
+      <div class="modal-drag-handle" id="patchModalDragHandle" aria-hidden="true"></div>
+      <div class="modal-header patch-modal-header">
+        <div class="patch-header-title-wrap">
+          <div class="patch-header-top-row">
+            <h2 class="modal-h2" id="patchModalTitle">📢 언더다크 인게임 패치노트</h2>
+            <button type="button" class="patch-refresh-btn" id="refreshPatchNotesBtn" title="구글 시트에서 최신 패치노트 다시 불러오기">
+              <span>🔄 최신화</span>
+            </button>
+          </div>
+          <p class="modal-sub">인게임 업데이트 · 신규 영웅/타워/장비 출시 · 밸런스 조정 내역 (구글 시트 실시간 연동)</p>
+        </div>
+        <button type="button" class="modal-close-btn" id="closePatchModalBtn" aria-label="닫기">✕</button>
+      </div>
+      <div class="patch-toolbar">
+        <div class="patch-search-box">
+          <svg class="search-ic" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
+          </svg>
+          <input type="search" id="patchSearchInput" class="patch-search-input" placeholder="패치 내역 검색 (버전, 영웅명, 타워, 밸런스…)" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="patch-cat-pills" id="patchCategoryPills"></div>
+      </div>
+      <div class="modal-body patch-modal-body" id="patchModalBody"></div>
+    </div>
+  </div>
+
   <!-- Google Sheets Live Sync Configuration Modal -->
   <div class="modal-backdrop" id="sheetConfigBackdrop" hidden>
     <div class="modal-sheet modal-sheet-sm" role="dialog" aria-modal="true" aria-labelledby="sheetModalTitle">
@@ -278,7 +309,7 @@
       <div class="modal-header">
         <div>
           <h2 class="modal-h2" id="sheetModalTitle">📊 구글 마스터 시트 V3 실시간 연동</h2>
-          <p class="modal-sub">유저 코멘트 · 티어 · 별칭을 구글 스프레드시트에서 실시간으로 불러옵니다.</p>
+          <p class="modal-sub">유저 코멘트 · 티어 · 별칭 · 패치노트를 구글 스프레드시트에서 실시간으로 불러옵니다.</p>
         </div>
         <button type="button" class="modal-close-btn" id="closeSheetModalBtn" aria-label="닫기">✕</button>
       </div>
@@ -287,7 +318,7 @@
           <h3>📁 1단계: 마스터 DB V3 시트 파일 안내</h3>
           <p>구글 드라이브에 업로드된 V3 마스터 시트(<code>1Ln2YWMLTQV9BzcqfDG8ni_5a9v5Nhi7u</code>)와 실시간으로 연동되어 있습니다.</p>
           <p class="sheet-tip">💡 시트 탭 구성: <code>아이템</code>, <code>영웅</code>, <code>지원용병</code>, <code>타워</code>,
-            <code>탈것</code>, <code>펫</code>, <code>야영지</code>, <code>유물_룬_스킨</code>
+            <code>탈것</code>, <code>펫</code>, <code>야영지</code>, <code>유물_룬_스킨</code>, <code>패치노트</code>
           </p>
         </div>
 
@@ -309,11 +340,11 @@
   </div>
 
   <!-- Scripts -->
-  <script src="data/db_v3.js?v=20261116_v39"></script>
-  <script src="js/search.js?v=20261116_v39"></script>
-  <script src="js/sheets_sync.js?v=20261116_v39"></script>
-  <script src="js/simulator.js?v=20261116_v39"></script>
-  <script src="js/app.js?v=20261116_v39"></script>
+  <script src="data/db_v3.js?v=20261117_v41"></script>
+  <script src="js/search.js?v=20261117_v41"></script>
+  <script src="js/sheets_sync.js?v=20261117_v41"></script>
+  <script src="js/simulator.js?v=20261117_v41"></script>
+  <script src="js/app.js?v=20261117_v41"></script>
 </body>
 
 </html>

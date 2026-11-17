@@ -401,6 +401,83 @@
     return updatedCount;
   }
 
+  function parseRowsToPatchNotes(rows) {
+    if (!rows || rows.length < 1) return [];
+    const hMap = buildHeaderMap(rows[0]);
+    const verCols = ['버전', '패치버전', '업데이트버전', '회차', 'version', 'ver'];
+    const dateCols = ['날짜', '패치날짜', '업데이트날짜', '일자', '일시', 'date'];
+    const catCols = ['구분', '분류', '카테고리', '항목', '패치구분', 'type', 'category'];
+    const titleCols = ['제목', '패치제목', '요약', '대상', '내용요약', '항목명', 'title'];
+    const contentCols = ['내용', '상세내용', '패치내용', '설명', '내역', '상세', '업데이트내용', 'content', 'desc'];
+    const pinCols = ['고정', '중요', '강조', '핀', 'pin', 'important'];
+
+    const hasKnownHeader =
+      hasHeader(hMap, verCols) ||
+      hasHeader(hMap, dateCols) ||
+      hasHeader(hMap, catCols) ||
+      hasHeader(hMap, titleCols) ||
+      hasHeader(hMap, contentCols);
+
+    const startIdx = hasKnownHeader ? 1 : 0;
+    const notes = [];
+    let lastVersion = '';
+    let lastDate = '';
+
+    for (let i = startIdx; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !r.some(c => String(c || '').trim().length > 0)) continue;
+
+      let version = '';
+      let date = '';
+      let category = '';
+      let title = '';
+      let content = '';
+      let pinnedRaw = '';
+
+      if (hasKnownHeader) {
+        version = getCell(r, hMap, verCols);
+        date = getCell(r, hMap, dateCols);
+        category = getCell(r, hMap, catCols);
+        title = getCell(r, hMap, titleCols);
+        content = getCell(r, hMap, contentCols);
+        pinnedRaw = getCell(r, hMap, pinCols);
+      } else {
+        // Positional fallback: [버전, 날짜, 구분, 제목, 내용, 고정]
+        version = String(r[0] || '').trim();
+        date = String(r[1] || '').trim();
+        category = String(r[2] || '').trim();
+        title = String(r[3] || '').trim();
+        content = String(r[4] !== undefined ? r[4] : (r[3] || '')).trim();
+        pinnedRaw = String(r[5] || '').trim();
+      }
+
+      if (!version && !date && !title && !content) continue;
+
+      if (version) lastVersion = version;
+      if (date) lastDate = date;
+
+      const effVersion = version || lastVersion || date || lastDate || '인게임 업데이트';
+      const effDate = date || lastDate || '';
+
+      // If only title is filled and content is empty, treat title as content if no content column exists
+      if (!content && title && !hasHeader(hMap, contentCols)) {
+        content = title;
+        title = '';
+      }
+
+      notes.push({
+        id: 'patch_' + i,
+        version: effVersion,
+        date: effDate,
+        category: category || '업데이트',
+        title: title || '',
+        content: content || '',
+        pinned: /^(o|ㅇ|true|1|★|☆|고정|중요|y|yes)$/i.test(String(pinnedRaw || '').trim()),
+      });
+    }
+    return notes;
+  }
+
   function applyAllOverridesToDB(db, overridesBundle) {
     if (!db || !overridesBundle) return 0;
     let total = 0;
@@ -415,6 +492,10 @@
       total += applyListOverrides(db.relics, overridesBundle.etc, '유물');
       total += applyListOverrides(db.runes, overridesBundle.etc, '룬');
       total += applyListOverrides(db.skins, overridesBundle.etc, '스킨');
+    }
+    if (Array.isArray(overridesBundle.patchNotes) && overridesBundle.patchNotes.length > 0) {
+      db.patchNotes = overridesBundle.patchNotes;
+      total += overridesBundle.patchNotes.length;
     }
     return total;
   }
@@ -448,6 +529,7 @@
       { key: 'pets', names: ['펫'] },
       { key: 'camp', names: ['야영지'] },
       { key: 'etc', names: ['유물_룬_스킨', '스킨'] },
+      { key: 'patchNotes', names: ['패치노트', '패치 노트', '인게임패치', '업데이트'], isPatchNote: true },
     ];
 
     const bundle = {};
@@ -457,8 +539,8 @@
       for (const tabName of tab.names) {
         try {
           const rows = await fetchSheetCSV(sheetId, tabName);
-          if (rows && rows.length > 1) {
-            const parsed = parseRowsToOverrides(rows);
+          if (rows && rows.length > 0) {
+            const parsed = tab.isPatchNote ? parseRowsToPatchNotes(rows) : (rows.length > 1 ? parseRowsToOverrides(rows) : []);
             if (parsed.length > 0) {
               bundle[tab.key] = parsed;
               successTabs++;
@@ -497,11 +579,39 @@
     };
   }
 
+  async function syncPatchNotesOnly(db) {
+    const sheetId = getActiveSheetId();
+    if (!sheetId) return { ok: false, count: 0 };
+    const candidateNames = ['패치노트', '패치 노트', '인게임패치', '업데이트'];
+    for (const tabName of candidateNames) {
+      try {
+        const rows = await fetchSheetCSV(sheetId, tabName);
+        if (rows && rows.length > 0) {
+          const parsed = parseRowsToPatchNotes(rows);
+          if (parsed.length > 0) {
+            if (db) db.patchNotes = parsed;
+            try {
+              const cachedRaw = localStorage.getItem(STORAGE_CACHE_KEY);
+              const cached = cachedRaw ? JSON.parse(cachedRaw) : { sheetId, bundle: {} };
+              if (cached && cached.bundle) {
+                cached.bundle.patchNotes = parsed;
+                localStorage.setItem(STORAGE_CACHE_KEY, JSON.stringify(cached));
+              }
+            } catch (e) {}
+            return { ok: true, count: parsed.length, notes: parsed };
+          }
+        }
+      } catch (err) {}
+    }
+    return { ok: false, count: 0 };
+  }
+
   global.AraSheetsSyncV3 = {
     DEFAULT_SHEET_ID,
     getActiveSheetId,
     setActiveSheetId,
     syncFromGoogleSheets,
+    syncPatchNotesOnly,
     getLastSyncTime: function () {
       try { return localStorage.getItem(STORAGE_TIME_KEY) || ''; } catch (e) { return ''; }
     },

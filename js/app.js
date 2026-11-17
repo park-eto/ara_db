@@ -246,6 +246,15 @@
     themeIcon: document.getElementById('themeIcon'),
     brandHomeBtn: document.getElementById('brandHomeBtn'),
     headerSimBtn: document.getElementById('headerSimBtn'),
+    headerPatchBtn: document.getElementById('headerPatchBtn'),
+    patchNewBadge: document.getElementById('patchNewBadge'),
+    patchNoteBackdrop: document.getElementById('patchNoteBackdrop'),
+    patchModalDragHandle: document.getElementById('patchModalDragHandle'),
+    closePatchModalBtn: document.getElementById('closePatchModalBtn'),
+    refreshPatchNotesBtn: document.getElementById('refreshPatchNotesBtn'),
+    patchSearchInput: document.getElementById('patchSearchInput'),
+    patchCategoryPills: document.getElementById('patchCategoryPills'),
+    patchModalBody: document.getElementById('patchModalBody'),
   };
 
   function escapeHtml(str) {
@@ -263,6 +272,7 @@
   function closeAllModals() {
     els.detailModalBackdrop.hidden = true;
     els.sheetConfigBackdrop.hidden = true;
+    if (els.patchNoteBackdrop) els.patchNoteBackdrop.hidden = true;
     setModalLock(false);
   }
 
@@ -3505,6 +3515,302 @@
   }
 
   // =========================================================================
+  // In-Game Patch Notes Modal (Google Sheet '패치노트' Tab Live Sync)
+  // =========================================================================
+  const PATCH_SEEN_STORAGE_KEY = 'ara_db_v3_seen_patch_sig_v1';
+
+  const DEFAULT_PATCH_NOTES = [
+    {
+      id: 'default_1',
+      version: '최신 업데이트',
+      date: '2026-11-15',
+      category: '신규 출시',
+      title: '신규 영웅 · 스킨 · 타워 · 펫 데이터 반영',
+      content: '인게임 최신 버전 기준 영웅(35종), 영웅 스킨(74종), 타워(46종), 탈것(57종), 펫(26종), 야영지(55종) 마스터 데이터가 반영되었습니다.\n구글 마스터 시트에 [패치노트] 탭을 추가하면 인게임 패치 내역이 이곳에 실시간으로 표시됩니다.',
+      pinned: true,
+    },
+  ];
+
+  const patchFilterState = {
+    category: 'all',
+    query: '',
+  };
+
+  function getPatchNotesList() {
+    if (Array.isArray(DB.patchNotes) && DB.patchNotes.length > 0) {
+      return DB.patchNotes;
+    }
+    return DEFAULT_PATCH_NOTES;
+  }
+
+  function getPatchSignature(notes) {
+    if (!notes || !notes.length) return '';
+    const first = notes[0];
+    return `${first.version || ''}|${first.date || ''}|${first.title || ''}|${notes.length}`;
+  }
+
+  function updatePatchNewBadge() {
+    if (!els.patchNewBadge) return;
+    const notes = getPatchNotesList();
+    if (!Array.isArray(DB.patchNotes) || DB.patchNotes.length === 0) {
+      els.patchNewBadge.hidden = true;
+      return;
+    }
+    const sig = getPatchSignature(notes);
+    let seenSig = '';
+    try {
+      seenSig = localStorage.getItem(PATCH_SEEN_STORAGE_KEY) || '';
+    } catch (e) {}
+    els.patchNewBadge.hidden = !sig || sig === seenSig;
+  }
+
+  function patchCatBadgeClass(catStr) {
+    const s = String(catStr || '').trim();
+    if (/신규|출시|추가|영웅|타워|스킨|장비|펫|탈것/.test(s)) return 'patch-cat-new';
+    if (/밸런스|상향|하향|조정|리워크|너프|버프/.test(s)) return 'patch-cat-balance';
+    if (/컨텐츠|콘텐츠|던전|스테이지|길드|보스/.test(s)) return 'patch-cat-content';
+    if (/이벤트|보상|출석|패스|패키지/.test(s)) return 'patch-cat-event';
+    if (/버그|수정|오류|개선|편의|최적화|시스템/.test(s)) return 'patch-cat-fix';
+    return 'patch-cat-default';
+  }
+
+  function highlightPatchNumbers(text) {
+    let out = escapeHtml(text);
+    // +숫자% 또는 +숫자%p
+    out = out.replace(/(\+\d+(?:\.\d+)?(?:%p?|배|점|개|회|마리|단계)?)/g, '<strong class="patch-val-up">$1</strong>');
+    // -숫자% 또는 감소
+    out = out.replace(/((?:-|▲|▼)\d+(?:\.\d+)?(?:%p?|배|점|개|회)?)/g, '<strong class="patch-val-down">$1</strong>');
+    // A에서 B로 단축 / 변경
+    out = out.replace(/(\d+회?에서\s*\d+회?로\s*(?:단축|감소|증가|확장|개편))/g, '<strong class="patch-val-change">$1</strong>');
+    // 괄호 보조 설명
+    out = out.replace(/(\([^)]+\))/g, '<span class="patch-sub-note">$1</span>');
+    return out;
+  }
+
+  function formatPatchContentLines(rawContent) {
+    const rawLines = String(rawContent || '')
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(Boolean);
+    if (!rawLines.length) return '';
+
+    return `
+      <div class="patch-content-blocks">
+        ${rawLines.map(line => {
+          const clean = line.replace(/^[-•*·]\s*/, '').trim();
+
+          // 1) Lv.X 또는 Lv.X~Y 패턴 (인게임 특성 / 스킬)
+          const lvMatch = clean.match(/^(Lv\.?\s*[\d~]+(?:Lv)?)(?:\s*[:：]?\s*)(.*)$/i);
+          if (lvMatch) {
+            const lvBadge = lvMatch[1].replace(/\s+/g, '');
+            const rest = lvMatch[2];
+            const subKeyMatch = rest.match(/^([^:：\n]{2,16}?)\s*[:：]\s*(.*)$/);
+            if (subKeyMatch) {
+              return `
+                <div class="patch-stat-row">
+                  <div class="patch-stat-left">
+                    <span class="patch-lv-badge">${escapeHtml(lvBadge)}</span>
+                    <strong class="patch-stat-label">${escapeHtml(subKeyMatch[1])}</strong>
+                  </div>
+                  <div class="patch-stat-val">${highlightPatchNumbers(subKeyMatch[2])}</div>
+                </div>
+              `;
+            }
+            return `
+              <div class="patch-stat-row">
+                <div class="patch-stat-left">
+                  <span class="patch-lv-badge">${escapeHtml(lvBadge)}</span>
+                </div>
+                <div class="patch-stat-val">${highlightPatchNumbers(rest)}</div>
+              </div>
+            `;
+          }
+
+          // 2) 일반 키: 값 패턴 (예: "공격력 증가: ...", "순위 결정: ...")
+          const kvMatch = clean.match(/^([^:：\n]{2,16}?)\s*[:：]\s*(.*)$/);
+          if (kvMatch) {
+            return `
+              <div class="patch-stat-row patch-kv-row">
+                <div class="patch-stat-left">
+                  <span class="patch-spec-chip">${escapeHtml(kvMatch[1])}</span>
+                </div>
+                <div class="patch-stat-val">${highlightPatchNumbers(kvMatch[2])}</div>
+              </div>
+            `;
+          }
+
+          // 3) 단순 설명/문장
+          return `
+            <div class="patch-desc-row">
+              <span class="patch-bullet-dot">▸</span>
+              <div class="patch-desc-text">${highlightPatchNumbers(clean)}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function renderPatchNoteModal() {
+    if (!els.patchModalBody || !els.patchCategoryPills) return;
+    const allNotes = getPatchNotesList();
+    const isCustomSheetLoaded = Array.isArray(DB.patchNotes) && DB.patchNotes.length > 0;
+
+    // Build category count map
+    const catCounts = new Map();
+    allNotes.forEach(n => {
+      const c = String(n.category || '업데이트').trim();
+      catCounts.set(c, (catCounts.get(c) || 0) + 1);
+    });
+
+    if (patchFilterState.category !== 'all' && !catCounts.has(patchFilterState.category)) {
+      patchFilterState.category = 'all';
+    }
+
+    let pillsHtml = `
+      <button type="button" class="patch-cat-pill ${patchFilterState.category === 'all' ? 'active' : ''}" data-patch-cat="all">
+        전체 <span class="patch-pill-cnt">${allNotes.length}</span>
+      </button>
+    `;
+    catCounts.forEach((cnt, catName) => {
+      const isAct = patchFilterState.category === catName;
+      pillsHtml += `
+        <button type="button" class="patch-cat-pill ${isAct ? 'active' : ''}" data-patch-cat="${escapeHtml(catName)}">
+          ${escapeHtml(catName)} <span class="patch-pill-cnt">${cnt}</span>
+        </button>
+      `;
+    });
+    els.patchCategoryPills.innerHTML = pillsHtml;
+
+    // Filter notes by category & search query
+    const q = patchFilterState.query.trim().toLowerCase();
+    const filtered = allNotes.filter(n => {
+      if (patchFilterState.category !== 'all' && String(n.category || '업데이트').trim() !== patchFilterState.category) {
+        return false;
+      }
+      if (q) {
+        const hay = `${n.version || ''} ${n.date || ''} ${n.category || ''} ${n.title || ''} ${n.content || ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    if (!filtered.length) {
+      els.patchModalBody.innerHTML = `
+        <div class="empty-state" style="padding:36px 16px;">
+          <div style="font-size:32px;margin-bottom:8px;">🔍</div>
+          <div>조건에 맞는 인게임 패치노트 내역이 없습니다.</div>
+        </div>
+      `;
+      return;
+    }
+
+    // Group filtered items by (version + date)
+    const groupMap = new Map();
+    filtered.forEach(item => {
+      const gKey = `${item.version || '업데이트'}__${item.date || ''}`;
+      if (!groupMap.has(gKey)) {
+        groupMap.set(gKey, {
+          version: item.version || '인게임 업데이트',
+          date: item.date || '',
+          pinned: Boolean(item.pinned),
+          items: [],
+        });
+      }
+      const g = groupMap.get(gKey);
+      if (item.pinned) g.pinned = true;
+      g.items.push(item);
+    });
+
+    const groups = Array.from(groupMap.values());
+    // Sort pinned groups first while keeping sheet order
+    groups.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+    let bodyHtml = `
+      <div class="patch-timeline-wrap">
+        ${groups.map((g, idx) => {
+          const isLatest = idx === 0 && patchFilterState.category === 'all' && !q;
+          return `
+            <article class="patch-version-card ${g.pinned ? 'is-pinned' : ''} ${isLatest ? 'is-latest' : ''}">
+              <div class="patch-version-header">
+                <div class="patch-version-title-row">
+                  ${g.pinned ? `<span class="patch-pin-badge">📌 중요</span>` : ''}
+                  ${isLatest ? `<span class="patch-latest-badge">LATEST</span>` : ''}
+                  <h3 class="patch-version-title">${escapeHtml(g.version)}</h3>
+                </div>
+                <div class="patch-version-meta">
+                  ${g.date ? `<span class="patch-date-badge">📅 ${escapeHtml(g.date)}</span>` : ''}
+                  <span class="patch-count-badge">${g.items.length}개 항목</span>
+                </div>
+              </div>
+              <div class="patch-version-items">
+                ${g.items.map(it => {
+                  const rawTitle = String(it.title || '').trim();
+                  // 앞머리 이모지 및 순번(1. 2. 등) 추출
+                  const emojiMatch = rawTitle.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic}|[\u2600-\u27BF])\s*(.*)$/u);
+                  let iconAvatar = '';
+                  let cleanTitle = rawTitle;
+                  if (emojiMatch) {
+                    iconAvatar = emojiMatch[1];
+                    cleanTitle = emojiMatch[2].replace(/^\d+[\.\)]\s*/, '');
+                  } else {
+                    cleanTitle = rawTitle.replace(/^\d+[\.\)]\s*/, '');
+                  }
+
+                  return `
+                    <div class="patch-entry-row">
+                      <div class="patch-entry-head">
+                        ${iconAvatar ? `<div class="patch-entry-avatar">${iconAvatar}</div>` : ''}
+                        <div class="patch-entry-title-wrap">
+                          <div class="patch-entry-tags">
+                            <span class="patch-cat-badge ${patchCatBadgeClass(it.category)}">${escapeHtml(it.category || '업데이트')}</span>
+                          </div>
+                          ${cleanTitle ? `<h4 class="patch-entry-title">${escapeHtml(cleanTitle)}</h4>` : ''}
+                        </div>
+                      </div>
+                      ${it.content ? `<div class="patch-entry-body">${formatPatchContentLines(it.content)}</div>` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    if (!isCustomSheetLoaded) {
+      bodyHtml += `
+        <div class="patch-sheet-tip-box">
+          <div style="font-weight:800;margin-bottom:4px;color:var(--accent-primary);">💡 구글 마스터 시트 연동 안내</div>
+          <div>현재 마스터 시트에 <strong><code>패치노트</code></strong> 탭을 추가하고 <code>버전 | 날짜 | 구분 | 제목 | 내용 | 고정</code> 열을 입력하시면, 재배포 없이 인게임 업데이트 내역이 실시간으로 반영됩니다.</div>
+        </div>
+      `;
+    }
+
+    els.patchModalBody.innerHTML = bodyHtml;
+  }
+
+  function openPatchNoteModal() {
+    if (!els.patchNoteBackdrop) return;
+    closeAllModals();
+    els.patchNoteBackdrop.hidden = false;
+    setModalLock(true);
+
+    // Mark current patch notes as seen
+    const notes = getPatchNotesList();
+    const sig = getPatchSignature(notes);
+    if (sig && Array.isArray(DB.patchNotes) && DB.patchNotes.length > 0) {
+      try {
+        localStorage.setItem(PATCH_SEEN_STORAGE_KEY, sig);
+      } catch (e) {}
+    }
+    if (els.patchNewBadge) els.patchNewBadge.hidden = true;
+
+    renderPatchNoteModal();
+  }
+
+  // =========================================================================
   // Event Bindings & Initialization
   // =========================================================================
   function switchTab(newTab) {
@@ -3549,9 +3855,64 @@
       if (btn) switchTab(btn.getAttribute('data-jump-tab'));
     });
 
-    // Header simulator shortcut button
+    // Header simulator shortcut button (legacy fallback)
     els.headerSimBtn?.addEventListener('click', () => {
       switchTab('simulator');
+    });
+
+    // Header In-Game Patch Notes button
+    els.headerPatchBtn?.addEventListener('click', () => {
+      openPatchNoteModal();
+    });
+
+    els.closePatchModalBtn?.addEventListener('click', closeAllModals);
+    els.patchNoteBackdrop?.addEventListener('click', e => {
+      if (e.target === els.patchNoteBackdrop) closeAllModals();
+    });
+
+    let patchTouchStartY = 0;
+    els.patchModalDragHandle?.addEventListener('touchstart', e => {
+      patchTouchStartY = e.touches[0]?.clientY || 0;
+    }, { passive: true });
+    els.patchModalDragHandle?.addEventListener('touchend', e => {
+      const endY = e.changedTouches[0]?.clientY || 0;
+      if (endY - patchTouchStartY > 45) closeAllModals();
+    }, { passive: true });
+
+    els.patchSearchInput?.addEventListener('input', e => {
+      patchFilterState.query = e.target.value || '';
+      renderPatchNoteModal();
+    });
+
+    els.patchCategoryPills?.addEventListener('click', e => {
+      const btn = e.target.closest('[data-patch-cat]');
+      if (!btn) return;
+      patchFilterState.category = btn.getAttribute('data-patch-cat') || 'all';
+      renderPatchNoteModal();
+    });
+
+    els.refreshPatchNotesBtn?.addEventListener('click', async () => {
+      if (!SheetsSync || !SheetsSync.syncPatchNotesOnly) return;
+      const origHtml = els.refreshPatchNotesBtn.innerHTML;
+      els.refreshPatchNotesBtn.disabled = true;
+      els.refreshPatchNotesBtn.innerHTML = '<span>⏳ 동기화중…</span>';
+      try {
+        const res = await SheetsSync.syncPatchNotesOnly(DB);
+        if (res && res.ok) {
+          renderPatchNoteModal();
+          els.refreshPatchNotesBtn.innerHTML = '<span>✅ 최신화됨</span>';
+        } else {
+          els.refreshPatchNotesBtn.innerHTML = '<span>⚠️ 시트 확인</span>';
+        }
+      } catch (e) {
+        els.refreshPatchNotesBtn.innerHTML = '<span>⚠️ 오류</span>';
+      }
+      setTimeout(() => {
+        if (els.refreshPatchNotesBtn) {
+          els.refreshPatchNotesBtn.disabled = false;
+          els.refreshPatchNotesBtn.innerHTML = origHtml;
+        }
+      }, 1500);
     });
 
     // Primary Desktop Nav
@@ -3767,6 +4128,7 @@
     });
 
     bindEvents();
+    updatePatchNewBadge();
 
     // If URL has a shared layout (#sim=...), open simulator tab automatically
     if (Simulator && Simulator.checkUrlHashAndLoad()) {
@@ -3778,6 +4140,10 @@
     // Trigger live Google Sheets sync in background
     if (SheetsSync) {
       SheetsSync.syncFromGoogleSheets(DB, updateSyncBadge).then(res => {
+        updatePatchNewBadge();
+        if (els.patchNoteBackdrop && !els.patchNoteBackdrop.hidden) {
+          renderPatchNoteModal();
+        }
         if (res && res.ok && STATE.tab !== 'simulator') renderStage();
       });
     }
